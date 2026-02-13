@@ -9,10 +9,18 @@ Dokumen ini ditujukan untuk **IT Administrator** atau **Developer** yang bertang
 Aplikasi ini menggunakan arsitektur modern terpisah (Decoupled Architecture):
 
 - **Backend API**: Laravel 11 (PHP 8.2) + MySQL
-- **Frontend SPA**: Next.js 14 (Node.js 18+)
+- **Frontend SPA**: Next.js 16 (Node.js 20+)
 - **Realtime Server**: Laravel Reverb (WebSocket)
 
 Komunikasi antara Frontend dan Backend menggunakan REST API dan WebSocket (Channel Private).
+
+---
+
+## 1.1 Mobile-First Ergonomics
+Aplikasi ini menggunakan pendekatan **Mobile-First Excellence** dengan fokus pada:
+- **Responsive Card Layouts**: Transformasi otomatis dari tabel data kompleks menjadi kartu informasi yang padat (high-density) pada layar smartphone.
+- **Aggressive Typography Scaling**: Penggunaan ukuran font spesifik (`9px` - `11px`) untuk metadata agar informasi maksimal tetap terlihat tanpa scroll berlebihan.
+- **Landscape Optimization**: Penyesuaian viewport khusus untuk mode landscape smartphone guna menjaga visibilitas menu navigasi.
 
 ---
 

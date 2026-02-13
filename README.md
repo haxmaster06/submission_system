@@ -8,6 +8,8 @@ Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Fro
 
 - **Manajemen Pengajuan**: Create, Read, Update, Delete (CRUD) pengajuan anggaran.
 - **Approval Workflow**: Persetujuan bertingkat (Manager -> Senior Manager -> Director).
+- **Mobile-First Excellence**: Antarmuka premium yang dioptimalkan untuk smartphone (Portrait & Landscape) dengan komponen *glassmorphism* dan *data-density* tinggi.
+- **Table-to-Card Transformation**: Konversi otomatis tabel data menjadi *card layout* pada layar kecil untuk kenyamanan navigasi satu tangan.
 - **Notifikasi Realtime**: Menggunakan Laravel Reverb & Echo untuk update status instan.
 - **Signature Digital**: Tanda tangan digital untuk persetujuan dokumen.
 - **Audit Trail**: Pencatatan aktivitas pengguna untuk keamanan dan transparansi.
