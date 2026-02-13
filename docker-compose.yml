@@ -1,6 +1,6 @@
 version: "3.7"
 services:
-  app:
+  hbm-app:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -17,14 +17,14 @@ services:
       APP_DEBUG: true
       APP_URL: http://localhost:8065
       DB_CONNECTION: mysql
-      DB_HOST: db
+      DB_HOST: hbm-db
       DB_PORT: 3306
       DB_DATABASE: ${DB_DATABASE}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       BROADCAST_CONNECTION: reverb
       QUEUE_CONNECTION: database
-      REDIS_HOST: redis
+      REDIS_HOST: hbm-redis
       REDIS_PASSWORD: null
       REDIS_PORT: 6379
       REVERB_APP_ID: ${REVERB_APP_ID}
@@ -36,7 +36,7 @@ services:
     networks:
       - hbm-network
 
-  webserver:
+  hbm-webserver:
     image: nginx:alpine
     container_name: hbm-nginx
     restart: unless-stopped
@@ -48,9 +48,9 @@ services:
     networks:
       - hbm-network
     depends_on:
-      - app
+      - hbm-app
 
-  db:
+  hbm-db:
     image: mysql:8.0
     container_name: hbm-db
     restart: unless-stopped
@@ -68,7 +68,7 @@ services:
     networks:
       - hbm-network
 
-  redis:
+  hbm-redis:
     image: redis:alpine
     container_name: hbm-redis
     restart: unless-stopped
@@ -77,7 +77,7 @@ services:
     networks:
       - hbm-network
 
-  reverb:
+  hbm-reverb:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -92,10 +92,10 @@ services:
     networks:
       - hbm-network
     depends_on:
-      - app
-      - redis
+      - hbm-app
+      - hbm-redis
 
-  frontend:
+  hbm-frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
