@@ -1,8 +1,9 @@
 # HBM Budgeting System
 
 Sistem Budgeting & Pengajuan Anggaran untuk PT. HBM.
-Aplikasi ini dibangun menggunakan **Laravel 11 (Backend)** dan **Next.js 14 (Frontend)**.
+Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Frontend)**.
 
+## Fitur Utama
 ## Fitur Utama
 
 - **Manajemen Pengajuan**: Create, Read, Update, Delete (CRUD) pengajuan anggaran.
@@ -57,25 +58,31 @@ npm run dev
 ```
 
 Aplikasi dapat diakses di `http://localhost:3000`.
-
 ### 4. Running with Docker (Recommended)
 
-Pastikan Docker Desktop sudah terinstall.
+Pastikan Docker sudah terinstall.
 
 ```bash
-# Build dan Jalankan Container
-docker-compose up -d --build
+# 1. Pastikan file .env ada di root dan di dalam folder backend
+# Root .env digunakan untuk variabel docker-compose
+# Backend .env digunakan untuk koneksi internal laravel
 
-# Setup Database di dalam Container
-docker-compose exec app php artisan migrate --seed
-docker-compose exec app php artisan key:generate
+# 2. Build dan Jalankan Container
+docker compose up -d --build
+
+# 3. Install Dependencies (Jika vendor belum ada)
+docker compose run --rm hbm-app composer install
+
+# 4. Setup Database di dalam Container
+docker compose exec hbm-app php artisan migrate --force
+docker compose exec hbm-app php artisan key:generate
 ```
 
 Akses Aplikasi:
 
 - Frontend: `http://localhost:3030`
 - Backend API: `http://localhost:8065`
-- Reverb WebSocket: `ws://localhost:8066`
+- Reverb WebSocket: `http://localhost:8066` (Proxy via Nginx accessible at `http://localhost:8065/app`)
 
 ## Testing
 
