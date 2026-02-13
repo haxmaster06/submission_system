@@ -1,0 +1,98 @@
+App: HBM Staff Budgeting System
+Company: CV Hasil Barokah Mandiri
+Stack: Laravel 12 + filament 5(Optional) + livewire(latest) + next.JS + Alpine. JS(Optional) + Tailwind CSS
+Type: Non Modular 
+Style: Professional, Interactive, Modern, Unique
+
+Goals: Mempermudah user untuk Input pengajuan, jadi pastikan semua form efisien, minimalkan / otomatiskan  inputan jika memungkinkan.
+
+Warna Dominan Thema: Biru langit
+
+Port for Dev: 6090
+
+DB Type: MySQL
+
+Other Instruction:
+1. RBAC
+2. Sanctum
+3. laravel scramble
+
+4. Audit Trail
+5. Approval Signature / Digital Approval
+
+Approval:
+Khusus jika pengajuan oleh HRD maka Approval oleh:
+1. HRD(Pengaju)
+2. GA-Legal
+3. Finance
+4. GM
+5. Direksi
+
+Jenis Perjalanan:
+1. Dinas
+Jika Dinas maka Approval ditambah HRD(GA Legal)
+2. Non Dinas
+
+Status:
+1. Urgent
+2. Normal
+
+Jenis Pengajuan:
+1. Anggaran Oprasional
+2. Pelatihan
+3. Perjalanan
+4. dll
+Note: Inputan akan berubah sesuai dengan Jenis Pengajuan
+
+Diskripsi:
+Berisi apa saja yang diajukan
+
+Keterangan: 
+Berisi keterangan dari pengaju
+
+Tanggal(sampai level jam):
+1. Tanggal Pengajuan
+2. Tanggal Aprroval per Approver
+tanggal masing2 Approver melakukan approve
+
+Qty:
+Berisi jumlah yang di ajukan
+1. Misal jika Pelatihan maka XX peserta
+2. Misal jika Perjalanan maka XX orang
+3. Misal jika Anggaran Operasional XX pcs
+4. dll
+
+UoM:
+Berisi Satuan
+
+Nominal:
+Berisi Nominal Harga per satuan
+
+Total(Auto):
+Total = Qty x Nominal
+
+No Pengajuan:
+Formatnya -> AJU.HBM-<Divisi>-<bulan(angka)>-<Tahun(2 digit)>-<4 digit angka unik>
+
+=========================================================================================
+
+Case / Challange: 
+1. Untuk Tanda tangan Direksi karena pak direktur kadang meminta untuk tanda tangan basah jadi butuh solusi, agar bisa memastikan bahwa pengajuan sudah benar2 ditanda tangani pak direktur
+
+2. Butuh upload screenshot bukti juga
+
+3. Tiap Akun bisa membuat tanda tangannya sendiri baik input dengan upload gambar maupun dengan canvas, jadi tanda tangan akan melekat pada masing2 akun
+
+4. Khusus Finance punya kuasa untuk menggunakan memilih / menggunakan tanda tangan direktur
+
+5. Butuh reporting juga pdf / print
+
+6. Butuh fitur binding printer
+
+7. Pastikan Code dan Struktur Data Clean dan Maintainable
+
+8. Pastikan semua data pilihan dinamis / tersimpan di database jadi bisa di tambahkan maupun di kurangi
+
+9. Pastikan Keamanan Aplikasi terjamin
+
+10. Butuh Unit Test
