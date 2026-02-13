@@ -3,11 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Shell from '@/components/layout/Shell';
 import api from '@/lib/api';
-import { 
-  BarChart3, 
-  Search, 
-  Filter, 
-  ChevronDown, 
+import {
+  BarChart3,
+  Search,
+  Filter,
+  ChevronDown,
   X,
   FileText,
   Printer,
@@ -30,7 +30,7 @@ export default function ReportingPage() {
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  
+
   // Filter states
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({
@@ -73,11 +73,11 @@ export default function ReportingPage() {
         search,
         ...filters
       }).toString();
-      
+
       const response = await api.get(`/reports/submissions/export?${params}`, {
         responseType: 'blob'
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -132,10 +132,10 @@ export default function ReportingPage() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">Saring dan ekspor data pengajuan budget</p>
           </div>
-          <button 
+          <button
             onClick={handleExport}
             disabled={exporting || submissions.length === 0}
-            className="bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
+            className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
           >
             {exporting ? <Loader2 className="animate-spin" size={18} /> : <Printer size={18} />}
             Ekspor ke PDF
@@ -147,7 +147,7 @@ export default function ReportingPage() {
           <div className="flex flex-col md:flex-row items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
+              <input
                 type="text"
                 placeholder="Cari No. Pengajuan atau Deskripsi..."
                 value={search}
@@ -156,7 +156,7 @@ export default function ReportingPage() {
                 className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-bold text-slate-700 bg-slate-50/50"
               />
             </div>
-            <button 
+            <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-6 py-2.5 rounded-xl border font-bold text-sm transition-all ${showFilters ? 'bg-slate-800 border-slate-100 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
             >
@@ -168,7 +168,7 @@ export default function ReportingPage() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div 
+              <motion.div
                 initial={{ height: 0, opacity: 0 }}
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
@@ -177,9 +177,9 @@ export default function ReportingPage() {
                 <div className="pt-4 grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-slate-100">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
-                    <select 
+                    <select
                       value={filters.status}
-                      onChange={(e) => setFilters({...filters, status: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="all">Semua Status</option>
@@ -190,9 +190,9 @@ export default function ReportingPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Divisi</label>
-                    <select 
+                    <select
                       value={filters.division_id}
-                      onChange={(e) => setFilters({...filters, division_id: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, division_id: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Divisi</option>
@@ -201,9 +201,9 @@ export default function ReportingPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Jenis</label>
-                    <select 
+                    <select
                       value={filters.jenis_pengajuan_id}
-                      onChange={(e) => setFilters({...filters, jenis_pengajuan_id: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, jenis_pengajuan_id: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Jenis</option>
@@ -212,25 +212,25 @@ export default function ReportingPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Dari Tanggal</label>
-                    <input 
+                    <input
                       type="date"
                       value={filters.date_from}
-                      onChange={(e) => setFilters({...filters, date_from: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sampai Tanggal</label>
-                    <input 
+                    <input
                       type="date"
                       value={filters.date_to}
-                      onChange={(e) => setFilters({...filters, date_to: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     />
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">
-                  <button 
+                  <button
                     onClick={resetFilters}
                     className="flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-red-500 transition-all uppercase tracking-widest"
                   >
@@ -294,16 +294,15 @@ export default function ReportingPage() {
                       <td className="px-6 py-4 text-sm text-slate-600 font-medium max-w-xs truncate">{sub.description}</td>
                       <td className="px-6 py-4 text-sm font-black text-sky-600 text-right">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                          sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                          sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
-                          'bg-amber-50 text-amber-600'
-                        }`}>
+                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                            sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
+                              'bg-amber-50 text-amber-600'
+                          }`}>
                           {sub.final_status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <button 
+                        <button
                           onClick={() => handleView(sub.id)}
                           className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
                           title="Lihat Detail & Cetak"
@@ -318,31 +317,31 @@ export default function ReportingPage() {
             </table>
           </div>
         </div>
+      </div>
+
+      {/* Detail Modal */}
+      <Modal
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        title="Detail Pengajuan"
+        size="xl"
+      >
+        <div className="p-0">
+          {detailLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Loader2 className="animate-spin mb-4 text-sky-500" size={40} />
+              <p className="font-bold">Memuat detail...</p>
+            </div>
+          ) : selectedSubmission ? (
+            <SubmissionDetailView
+              submission={selectedSubmission}
+              showPrintButton={true}
+            />
+          ) : (
+            <p className="text-center text-slate-400 py-10">Data tidak ditemukan</p>
+          )}
         </div>
-        
-        {/* Detail Modal */}
-        <Modal
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          title="Detail Pengajuan"
-          size="xl"
-        >
-          <div className="p-0">
-            {detailLoading ? (
-              <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-                <Loader2 className="animate-spin mb-4 text-sky-500" size={40} />
-                <p className="font-bold">Memuat detail...</p>
-              </div>
-            ) : selectedSubmission ? (
-              <SubmissionDetailView 
-                submission={selectedSubmission} 
-                showPrintButton={true} 
-              />
-            ) : (
-              <p className="text-center text-slate-400 py-10">Data tidak ditemukan</p>
-            )}
-          </div>
-        </Modal>
+      </Modal>
     </Shell>
   );
 }

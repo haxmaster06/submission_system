@@ -7,12 +7,12 @@ import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Loader2, 
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Loader2,
   Plus,
   Eye,
   AlertCircle,
@@ -34,10 +34,10 @@ export default function SubmissionsListPage() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const { user } = useAuth();
-  
+
   const hasRole = (roleName: string) => user?.roles.some(r => r.name === roleName);
   const canSeeAll = hasRole('Super Admin') || hasRole('Director') || hasRole('Finance') || hasRole('GM');
-  
+
   // Filter states
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -48,7 +48,7 @@ export default function SubmissionsListPage() {
     date_to: '',
   });
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +91,7 @@ export default function SubmissionsListPage() {
         status: activeTab,
         ...filters
       };
-      
+
       const [submissionsRes, lookupsRes] = await Promise.all([
         api.get('/submissions', { params }),
         api.get('/lookups')
@@ -213,18 +213,18 @@ export default function SubmissionsListPage() {
   return (
     <Shell>
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Pengajuan Saya</h1>
-            <p className="text-slate-500 mt-2">Kelola dan lacak riwayat pengajuan anggaran Anda</p>
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">Kelola dan lacak riwayat pengajuan anggaran Anda</p>
           </div>
-          <button 
+          <button
             onClick={openModal}
-            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-sky-100 flex items-center gap-2"
+            className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-6 rounded-xl transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
           >
             <Plus size={20} />
             Buat Pengajuan Baru
-            </button>
+          </button>
         </header>
 
         {/* Filter Toolbar - MOVED TO TOP */}
@@ -232,15 +232,15 @@ export default function SubmissionsListPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder="Cari No. Pengajuan atau Deskripsi..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-sky-500 focus:ring-4 focus:ring-sky-50 outline-none transition-all font-medium text-slate-900"
               />
               {search && (
-                <button 
+                <button
                   onClick={() => setSearch('')}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
@@ -248,13 +248,12 @@ export default function SubmissionsListPage() {
                 </button>
               )}
             </div>
-            <button 
+            <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border ${
-                showFilters || Object.values(filters).some(v => v !== '')
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border ${showFilters || Object.values(filters).some(v => v !== '')
                   ? 'bg-sky-50 border-sky-200 text-sky-600 shadow-sm'
                   : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
-              }`}
+                }`}
             >
               <Filter size={18} />
               Filter
@@ -264,7 +263,7 @@ export default function SubmissionsListPage() {
 
           <AnimatePresence>
             {showFilters && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
@@ -274,9 +273,9 @@ export default function SubmissionsListPage() {
                   {canSeeAll && (
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Divisi</label>
-                      <select 
+                      <select
                         value={filters.division_id}
-                        onChange={(e) => setFilters({...filters, division_id: e.target.value})}
+                        onChange={(e) => setFilters({ ...filters, division_id: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                       >
                         <option value="">Semua Divisi</option>
@@ -286,9 +285,9 @@ export default function SubmissionsListPage() {
                   )}
                   <div className={canSeeAll ? "" : "md:col-span-2"}>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Jenis Pengajuan</label>
-                    <select 
+                    <select
                       value={filters.jenis_pengajuan_id}
-                      onChange={(e) => setFilters({...filters, jenis_pengajuan_id: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, jenis_pengajuan_id: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Jenis</option>
@@ -297,25 +296,25 @@ export default function SubmissionsListPage() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Dari Tanggal</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={filters.date_from}
-                      onChange={(e) => setFilters({...filters, date_from: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Sampai Tanggal</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={filters.date_to}
-                      onChange={(e) => setFilters({...filters, date_to: e.target.value})}
+                      onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     />
                   </div>
                 </div>
                 <div className="flex justify-end pt-4">
-                  <button 
+                  <button
                     onClick={() => {
                       setFilters({ division_id: '', jenis_pengajuan_id: '', date_from: '', date_to: '' });
                       setSearch('');
@@ -335,8 +334,8 @@ export default function SubmissionsListPage() {
         {/* Filter Toolbar removed from here */}
 
         {/* Create Submission Modal */}
-        <Modal 
-          isOpen={isModalOpen} 
+        <Modal
+          isOpen={isModalOpen}
           onClose={closeModal}
           title="Buat Pengajuan Baru"
           size="xl"
@@ -353,9 +352,9 @@ export default function SubmissionsListPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-10 border-l-2 border-slate-100 ml-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-900 mb-3">Divisi</label>
-                  <select 
+                  <select
                     value={form.division_id}
-                    onChange={(e) => setForm({...form, division_id: e.target.value})}
+                    onChange={(e) => setForm({ ...form, division_id: e.target.value })}
                     className={`w-full px-5 py-4 rounded-2xl border ${form.division_id ? 'border-slate-200 bg-slate-50' : 'border-slate-200 bg-white'} text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm disabled:opacity-75 disabled:cursor-not-allowed`}
                     required
                     disabled={!!user?.division_id}
@@ -377,12 +376,11 @@ export default function SubmissionsListPage() {
                       <button
                         key={status}
                         type="button"
-                        onClick={() => setForm({...form, status_urgent: status})}
-                        className={`flex-1 py-4 rounded-2xl border text-sm font-black uppercase tracking-wider transition-all shadow-sm ${
-                          form.status_urgent === status 
-                            ? 'bg-sky-600 border-sky-600 text-white ring-4 ring-sky-50' 
+                        onClick={() => setForm({ ...form, status_urgent: status })}
+                        className={`flex-1 py-4 rounded-2xl border text-sm font-black uppercase tracking-wider transition-all shadow-sm ${form.status_urgent === status
+                            ? 'bg-sky-600 border-sky-600 text-white ring-4 ring-sky-50'
                             : 'bg-white border-slate-200 text-slate-500 hover:border-slate-900'
-                        }`}
+                          }`}
                       >
                         {status === 'urgent' ? <AlertCircle className="inline w-4 h-4 mr-1.5" /> : null}
                         {status}
@@ -404,9 +402,9 @@ export default function SubmissionsListPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-10 border-l-2 border-slate-100 ml-4">
                 <div>
                   <label className="block text-sm font-bold text-slate-900 mb-3">Kategori Pengajuan</label>
-                  <select 
+                  <select
                     value={form.jenis_pengajuan_id}
-                    onChange={(e) => setForm({...form, jenis_pengajuan_id: e.target.value})}
+                    onChange={(e) => setForm({ ...form, jenis_pengajuan_id: e.target.value })}
                     className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm"
                     required
                   >
@@ -417,9 +415,9 @@ export default function SubmissionsListPage() {
 
                 <div>
                   <label className="block text-sm font-bold text-slate-900 mb-3">Jenis Perjalanan (Opsional)</label>
-                  <select 
+                  <select
                     value={form.jenis_perjalanan_id}
-                    onChange={(e) => setForm({...form, jenis_perjalanan_id: e.target.value})}
+                    onChange={(e) => setForm({ ...form, jenis_perjalanan_id: e.target.value })}
                     className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm"
                   >
                     <option value="" className="text-slate-400 font-bold">Tidak Ada</option>
@@ -429,9 +427,9 @@ export default function SubmissionsListPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-900 mb-3">Judul Pengajuan</label>
-                  <textarea 
+                  <textarea
                     value={form.description}
-                    onChange={(e) => setForm({...form, description: e.target.value})}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
                     placeholder="Contoh: Pengajuan Biaya Operasional Kantor Cabang..."
                     rows={2}
                     className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 placeholder:font-medium focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm resize-none"
@@ -441,9 +439,9 @@ export default function SubmissionsListPage() {
 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-slate-900 mb-3 cursor-help">Catatan Tambahan (Opsional)</label>
-                  <textarea 
+                  <textarea
                     value={form.notes}
-                    onChange={(e) => setForm({...form, notes: e.target.value})}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     placeholder="Berikan konteks tambahan jika diperlukan..."
                     rows={2}
                     className="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 text-slate-900 placeholder:text-slate-300 placeholder:font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm resize-none"
@@ -482,11 +480,11 @@ export default function SubmissionsListPage() {
                         <X size={16} />
                       </button>
                     )}
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                       <div className="md:col-span-12">
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Deskripsi Item {form.items.length > 1 ? `#${index + 1}` : ''}</label>
-                        <input 
+                        <input
                           type="text"
                           value={item.description}
                           onChange={(e) => updateItem(index, 'description', e.target.value)}
@@ -498,7 +496,7 @@ export default function SubmissionsListPage() {
 
                       <div className="md:col-span-2">
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Jumlah</label>
-                        <input 
+                        <input
                           type="number"
                           value={item.qty || ''}
                           onChange={(e) => updateItem(index, 'qty', parseFloat(e.target.value) || 0)}
@@ -512,7 +510,7 @@ export default function SubmissionsListPage() {
 
                       <div className="md:col-span-3">
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Satuan</label>
-                        <select 
+                        <select
                           value={item.uom_id}
                           onChange={(e) => updateItem(index, 'uom_id', e.target.value)}
                           className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold"
@@ -527,7 +525,7 @@ export default function SubmissionsListPage() {
                         <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Harga Satuan</label>
                         <div className="relative">
                           <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</div>
-                          <input 
+                          <input
                             type="number"
                             value={item.nominal || ''}
                             onChange={(e) => updateItem(index, 'nominal', parseFloat(e.target.value) || 0)}
@@ -550,36 +548,36 @@ export default function SubmissionsListPage() {
                 ))}
 
                 <div className="sm:col-span-3 pt-4">
-                   <div className="bg-slate-900 rounded-[40px] p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-200">
-                      <div className="flex items-center gap-5">
-                        <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center text-white ring-1 ring-white/20">
-                           <Save size={32} />
-                        </div>
-                        <div>
-                          <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Grand Total Estimasi</p>
-                          <p className="text-white text-base font-bold mt-1 opacity-60">Total kumulatif dari {form.items.length} item pengajuan</p>
-                        </div>
+                  <div className="bg-slate-900 rounded-[40px] p-10 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl shadow-slate-200">
+                    <div className="flex items-center gap-5">
+                      <div className="w-16 h-16 rounded-3xl bg-white/10 flex items-center justify-center text-white ring-1 ring-white/20">
+                        <Save size={32} />
                       </div>
-                      <div className="text-center sm:text-right">
-                        <span className="text-sky-400 font-black text-5xl block font-mono tracking-tighter">
-                          Rp {total.toLocaleString('id-ID')}
-                        </span>
+                      <div>
+                        <p className="text-slate-400 text-xs font-black uppercase tracking-widest">Grand Total Estimasi</p>
+                        <p className="text-white text-base font-bold mt-1 opacity-60">Total kumulatif dari {form.items.length} item pengajuan</p>
                       </div>
-                   </div>
+                    </div>
+                    <div className="text-center sm:text-right">
+                      <span className="text-sky-400 font-black text-5xl block font-mono tracking-tighter">
+                        Rp {total.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Submit */}
             <div className="flex justify-end gap-4 p-8 bg-slate-50 -mx-8 -mb-8 mt-10">
-              <button 
+              <button
                 type="button"
                 onClick={closeModal}
                 className="px-10 py-4 rounded-2xl border border-slate-200 text-slate-600 font-black tracking-tight hover:bg-white hover:border-slate-300 transition-all shadow-sm"
               >
                 Batalkan
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={submitting}
                 className="px-12 py-4 rounded-2xl bg-sky-600 text-white font-black tracking-tight hover:bg-sky-500 shadow-xl shadow-sky-100 flex items-center gap-3 disabled:opacity-70 transition-all ring-offset-2 active:scale-95"
@@ -626,7 +624,7 @@ function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }
                     <span className="font-black text-slate-900 text-lg">{sub.no_pengajuan}</span>
                     <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold capitalize ${getStatusColor(sub.final_status)}`}>
                       {getStatusIcon(sub.final_status)}
-                      {sub.final_status === 'pending' 
+                      {sub.final_status === 'pending'
                         ? (sub.current_step_role ? `Menunggu ${sub.current_step_role}` : 'Menunggu')
                         : (sub.final_status === 'approved' ? 'Disetujui' : 'Ditolak')}
                     </div>

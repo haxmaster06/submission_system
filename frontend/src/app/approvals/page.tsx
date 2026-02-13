@@ -14,7 +14,7 @@ export default function ApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
-  
+
   // Modal State
   const [notes, setNotes] = useState('');
   const [signature, setSignature] = useState('');
@@ -33,7 +33,7 @@ export default function ApprovalsPage() {
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
     if (path.startsWith('data:')) return path;
-    
+
     // Extract the relative path part after /storage/ if it exists
     let relativePath = path;
     const storageIndex = path.indexOf('/storage/');
@@ -43,7 +43,7 @@ export default function ApprovalsPage() {
       const urlMatches = path.match(/^https?:\/\/[^\/]+\/(.*)$/);
       if (urlMatches) relativePath = urlMatches[1];
     }
-    
+
     const cleanPath = relativePath.replace(/^\/?storage\//, '').replace(/^\/+/, '');
     return `${STORAGE_URL}/${cleanPath}`;
   };
@@ -118,28 +118,28 @@ export default function ApprovalsPage() {
 
   const handleAction = async (status: 'approve' | 'reject') => {
     if (!selectedApproval) return;
-    
+
     // Safety check for required fields
     if (status === 'approve') {
       if (!useSavedSignature && !signature && !isDirectorProxy) {
         alert('Tanda tangan digital wajib diisi.');
         return;
       }
-      
+
       // Special check for Director Proxy
       if (isDirectorProxy) {
-          if (!proof) {
-             alert('Bukti tanda tangan (Gambar) wajib diunggah untuk persetujuan mewakili Direktur.');
-             return;
-          }
-          // If director has NO signature, proxy must upload one
-          if (!directorHasSignature && !signature) {
-             alert('Direktur belum memiliki tanda tangan digital. Anda wajib mengunggah gambar tanda tangan Direktur.');
-             return;
-          }
+        if (!proof) {
+          alert('Bukti tanda tangan (Gambar) wajib diunggah untuk persetujuan mewakili Direktur.');
+          return;
+        }
+        // If director has NO signature, proxy must upload one
+        if (!directorHasSignature && !signature) {
+          alert('Direktur belum memiliki tanda tangan digital. Anda wajib mengunggah gambar tanda tangan Direktur.');
+          return;
+        }
       }
     }
-    
+
     if (status === 'reject' && !notes.trim()) {
       alert('Catatan wajib diisi untuk menolak pengajuan.');
       return;
@@ -148,26 +148,26 @@ export default function ApprovalsPage() {
     setProcessingId(selectedApproval.id);
     try {
       if (status === 'approve') {
-        await api.post(`/approvals/${selectedApproval.id}/approve`, { 
-          notes: notes.trim(), 
+        await api.post(`/approvals/${selectedApproval.id}/approve`, {
+          notes: notes.trim(),
           signature_path: useSavedSignature ? null : signature,
           signature_type: signatureType,
           is_director_proxy: isDirectorProxy,
           signed_proof_path: proof
         });
       } else {
-        await api.post(`/approvals/${selectedApproval.id}/reject`, { 
-          notes: notes.trim() 
+        await api.post(`/approvals/${selectedApproval.id}/reject`, {
+          notes: notes.trim()
         });
       }
-      
+
       // Reset Modal & State
       setSelectedApproval(null);
       setNotes('');
       setSignature('');
       setProof(null);
       setIsDirectorProxy(false);
-      
+
       // Refresh List
       fetchApprovals();
       fetchUserSignature();
@@ -192,12 +192,12 @@ export default function ApprovalsPage() {
 
         <div className="grid grid-cols-1 gap-6">
           {approvals.map((app) => (
-            <motion.div 
+            <motion.div
               layout
-              key={app.id} 
+              key={app.id}
               className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"
             >
-              <div className="p-8 flex flex-col md:flex-row gap-8">
+              <div className="p-4 sm:p-6 lg:p-8 flex flex-col md:flex-row gap-6 sm:gap-8">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-4">
                     <span className="text-xs font-black bg-sky-50 text-sky-600 px-3 py-1 rounded-full uppercase tracking-widest border border-sky-100 italic">
@@ -224,10 +224,10 @@ export default function ApprovalsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <button 
+                <div className="flex items-center gap-4 w-full md:w-auto">
+                  <button
                     onClick={() => setSelectedApproval(app)}
-                    className="bg-slate-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 flex items-center gap-2"
+                    className="w-full md:w-auto bg-slate-900 text-white font-bold py-3 px-8 rounded-xl hover:bg-slate-800 transition-all shadow-xl shadow-slate-100 flex items-center justify-center gap-2"
                   >
                     <ShieldCheck size={20} />
                     Proses Review
@@ -239,11 +239,11 @@ export default function ApprovalsPage() {
 
           {approvals.length === 0 && (
             <div className="py-20 text-center bg-white rounded-3xl border-2 border-dashed border-slate-200">
-               <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                 <Check size={32} />
-               </div>
-               <h3 className="text-xl font-bold text-slate-800">Semua Sudah Selesai!</h3>
-               <p className="text-slate-500 mt-2">Tidak ada dokumen yang menunggu persetujuan Anda saat ini.</p>
+              <div className="w-16 h-16 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Check size={32} />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800">Semua Sudah Selesai!</h3>
+              <p className="text-slate-500 mt-2">Tidak ada dokumen yang menunggu persetujuan Anda saat ini.</p>
             </div>
           )}
         </div>
@@ -253,18 +253,18 @@ export default function ApprovalsPage() {
       <AnimatePresence>
         {selectedApproval && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
               className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden overflow-y-auto max-h-[90vh]"
             >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="p-6 sm:p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                 <div>
-                  <h2 className="text-2xl font-bold text-slate-800">Verifikasi Akhir</h2>
-                  <p className="text-slate-500 text-sm mt-1">Persetujuan sebagai: <span className="font-bold text-sky-600">{selectedApproval.role_name}</span></p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-800">Verifikasi Akhir</h2>
+                  <p className="text-slate-500 text-xs sm:text-sm mt-1">Persetujuan sebagai: <span className="font-bold text-sky-600">{selectedApproval.role_name}</span></p>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setSelectedApproval(null);
                     setNotes('');
@@ -273,14 +273,14 @@ export default function ApprovalsPage() {
                     setProof(null);
                     setIsDirectorProxy(false);
                     setDirectorHasSignature(false);
-                  }} 
+                  }}
                   className="p-2 hover:bg-slate-100 rounded-lg text-slate-400"
                 >
                   <X size={20} />
                 </button>
               </div>
-              
-              <div className="p-8 space-y-8">
+
+              <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
                 {/* Proxy Option if applicable */}
                 {selectedApproval.role_name === 'Director' && canApproveAsDirector && (
                   <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl">
@@ -291,7 +291,7 @@ export default function ApprovalsPage() {
                       <h3 className="font-bold text-amber-900">Delegasi Wewenang</h3>
                     </div>
                     <label className="flex items-center gap-3 cursor-pointer group">
-                      <input 
+                      <input
                         type="checkbox"
                         checked={isDirectorProxy}
                         onChange={(e) => setIsDirectorProxy(e.target.checked)}
@@ -301,22 +301,22 @@ export default function ApprovalsPage() {
                     </label>
 
                     {isDirectorProxy && checkingDirectorSig && (
-                        <div className="ml-8 mt-2 text-xs text-amber-600 flex items-center gap-2">
-                            <Loader2 size={12} className="animate-spin" />
-                            Mengecek status tanda tangan Direktur...
-                        </div>
+                      <div className="ml-8 mt-2 text-xs text-amber-600 flex items-center gap-2">
+                        <Loader2 size={12} className="animate-spin" />
+                        Mengecek status tanda tangan Direktur...
+                      </div>
                     )}
 
                     {isDirectorProxy && (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }} 
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         className="mt-6 pt-6 border-t border-amber-200"
                       >
                         <label className="block text-sm font-bold text-amber-900 mb-3">
                           Unggah Bukti Instruksi/Disposisi <span className="text-rose-600">*</span>
                         </label>
-                        <input 
+                        <input
                           type="file"
                           accept="image/*"
                           onChange={handleProofChange}
@@ -324,10 +324,10 @@ export default function ApprovalsPage() {
                         />
                         {proof && (
                           <div className="mt-4 aspect-video rounded-xl bg-white border border-amber-200 overflow-hidden relative">
-                             <img src={getImageUrl(proof) || ''} alt="Proof" className="w-full h-full object-contain" />
-                             <button onClick={() => setProof(null)} className="absolute top-2 right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg">
-                               <X size={12} />
-                             </button>
+                            <img src={getImageUrl(proof) || ''} alt="Proof" className="w-full h-full object-contain" />
+                            <button onClick={() => setProof(null)} className="absolute top-2 right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg">
+                              <X size={12} />
+                            </button>
                           </div>
                         )}
                         <p className="text-[11px] text-amber-600 mt-3 flex items-start gap-2">
@@ -341,129 +341,128 @@ export default function ApprovalsPage() {
 
                 {/* Signature Section - Hide if using Director's existing signature */}
                 {(!isDirectorProxy || (isDirectorProxy && !directorHasSignature)) && (
-                    <div>
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                <ShieldCheck size={16} className="text-sky-600" />
-                                {isDirectorProxy ? 'Upload Tanda Tangan Direktur (Wajib)' : 'Tanda Tangan Digital'}
-                            </label>
-                            {savedSignature ? (
-                                <button 
-                                    onClick={() => setUseSavedSignature(!useSavedSignature)}
-                                    className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${
-                                      useSavedSignature 
-                                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' 
-                                        : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
-                                    }`}
-                                >
-                                    {useSavedSignature ? 'Menggunakan Tanda Tangan Tersimpan' : 'Gunakan Tanda Tangan Tersimpan'}
-                                </button>
-                            ) : (
-                                <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-1 rounded border border-amber-100 italic">
-                                    Belum ada tanda tangan di profil
-                                </span>
-                            )}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <label className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <ShieldCheck size={16} className="text-sky-600" />
+                        {isDirectorProxy ? 'Upload Tanda Tangan Direktur (Wajib)' : 'Tanda Tangan Digital'}
+                      </label>
+                      {savedSignature ? (
+                        <button
+                          onClick={() => setUseSavedSignature(!useSavedSignature)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${useSavedSignature
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                              : 'bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200'
+                            }`}
+                        >
+                          {useSavedSignature ? 'Menggunakan Tanda Tangan Tersimpan' : 'Gunakan Tanda Tangan Tersimpan'}
+                        </button>
+                      ) : (
+                        <span className="text-[10px] bg-amber-50 text-amber-600 px-2 py-1 rounded border border-amber-100 italic">
+                          Belum ada tanda tangan di profil
+                        </span>
+                      )}
+                    </div>
+
+                    {useSavedSignature && savedSignature ? (
+                      <div className="border-2 border-sky-100 rounded-2xl bg-sky-50/30 p-4 flex flex-col items-center justify-center aspect-[2/1] relative group">
+                        <img src={getImageUrl(savedSignature) || ''} alt="Saved Signature" className="max-h-full max-w-full object-contain" />
+                        <div className="absolute inset-0 bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl backdrop-blur-sm">
+                          <button
+                            onClick={() => setUseSavedSignature(false)}
+                            className="bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow-lg border border-slate-200 hover:bg-slate-50"
+                          >
+                            Gunakan Tanda Tangan Baru
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex bg-slate-100 p-1 rounded-xl">
+                          <button
+                            onClick={() => {
+                              setActiveMode('draw');
+                              setSignatureType('canvas');
+                              setSignature('');
+                            }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeMode === 'draw' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            <PenTool size={16} />
+                            Gambar
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveMode('upload');
+                              setSignatureType('upload');
+                              setSignature('');
+                            }}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeMode === 'upload' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                          >
+                            <Upload size={16} />
+                            Upload
+                          </button>
                         </div>
 
-                        {useSavedSignature && savedSignature ? (
-                            <div className="border-2 border-sky-100 rounded-2xl bg-sky-50/30 p-4 flex flex-col items-center justify-center aspect-[2/1] relative group">
-                                <img src={getImageUrl(savedSignature) || ''} alt="Saved Signature" className="max-h-full max-w-full object-contain" />
-                                <div className="absolute inset-0 bg-white/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl backdrop-blur-sm">
-                                    <button 
-                                        onClick={() => setUseSavedSignature(false)}
-                                        className="bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-bold shadow-lg border border-slate-200 hover:bg-slate-50"
-                                    >
-                                        Gunakan Tanda Tangan Baru
-                                    </button>
-                                </div>
-                            </div>
+                        {activeMode === 'draw' ? (
+                          <SignatureCanvas onSave={setSignature} onClear={() => setSignature('')} />
                         ) : (
-                            <div className="space-y-4">
-                                <div className="flex bg-slate-100 p-1 rounded-xl">
-                                    <button 
-                                        onClick={() => {
-                                            setActiveMode('draw');
-                                            setSignatureType('canvas');
-                                            setSignature('');
-                                        }}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeMode === 'draw' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                    >
-                                        <PenTool size={16} />
-                                        Gambar
-                                    </button>
-                                    <button 
-                                        onClick={() => {
-                                            setActiveMode('upload');
-                                            setSignatureType('upload');
-                                            setSignature('');
-                                        }}
-                                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-bold rounded-lg transition-all ${activeMode === 'upload' ? 'bg-white text-sky-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                                    >
-                                        <Upload size={16} />
-                                        Upload
-                                    </button>
-                                </div>
-
-                                {activeMode === 'draw' ? (
-                                    <SignatureCanvas onSave={setSignature} onClear={() => setSignature('')} />
-                                ) : (
-                                    <div className="space-y-4">
-                                        <div 
-                                            onClick={() => sigUploadRef.current?.click()}
-                                            className="aspect-[2/1] bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 hover:border-sky-400 hover:bg-sky-50 transition-all flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
-                                        >
-                                            {signature ? (
-                                                <>
-                                                    <img src={signature} alt="Uploaded Signature" className="max-h-full max-w-full object-contain" />
-                                                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <div className="bg-white p-2 rounded-lg shadow-lg">
-                                                            <Upload className="text-sky-500" size={20} />
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform">
-                                                        <Upload className="text-slate-400 group-hover:text-sky-500" size={20} />
-                                                    </div>
-                                                    <p className="text-xs font-semibold text-slate-700">Klik untuk upload tanda tangan</p>
-                                                    <p className="text-[10px] text-slate-500 mt-1">PNG/JPG, Maks 2MB</p>
-                                                </>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                ref={sigUploadRef}
-                                                onChange={(e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (file) {
-                                                        const reader = new FileReader();
-                                                        reader.onloadend = () => {
-                                                            setSignature(reader.result as string);
-                                                        };
-                                                        reader.readAsDataURL(file);
-                                                    }
-                                                }}
-                                                className="hidden" 
-                                                accept="image/*"
-                                            />
-                                        </div>
+                          <div className="space-y-4">
+                            <div
+                              onClick={() => sigUploadRef.current?.click()}
+                              className="aspect-[2/1] bg-slate-50 rounded-xl border-2 border-dashed border-slate-300 hover:border-sky-400 hover:bg-sky-50 transition-all flex flex-col items-center justify-center cursor-pointer group relative overflow-hidden"
+                            >
+                              {signature ? (
+                                <>
+                                  <img src={signature} alt="Uploaded Signature" className="max-h-full max-w-full object-contain" />
+                                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <div className="bg-white p-2 rounded-lg shadow-lg">
+                                      <Upload className="text-sky-500" size={20} />
                                     </div>
-                                )}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-2 group-hover:scale-110 transition-transform">
+                                    <Upload className="text-slate-400 group-hover:text-sky-500" size={20} />
+                                  </div>
+                                  <p className="text-xs font-semibold text-slate-700">Klik untuk upload tanda tangan</p>
+                                  <p className="text-[10px] text-slate-500 mt-1">PNG/JPG, Maks 2MB</p>
+                                </>
+                              )}
+                              <input
+                                type="file"
+                                ref={sigUploadRef}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setSignature(reader.result as string);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                                accept="image/*"
+                              />
                             </div>
+                          </div>
                         )}
-                    </div>
+                      </div>
+                    )}
+                  </div>
                 )}
-                
+
                 {isDirectorProxy && directorHasSignature && (
-                    <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center gap-3">
-                        <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
-                            <Check size={16} />
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-emerald-800">Tanda Tangan Direktur Tersedia</p>
-                            <p className="text-xs text-emerald-600">Sistem akan otomatis membubuhkan tanda tangan {directorName} pada dokumen ini.</p>
-                        </div>
+                  <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600">
+                      <Check size={16} />
                     </div>
+                    <div>
+                      <p className="text-sm font-bold text-emerald-800">Tanda Tangan Direktur Tersedia</p>
+                      <p className="text-xs text-emerald-600">Sistem akan otomatis membubuhkan tanda tangan {directorName} pada dokumen ini.</p>
+                    </div>
+                  </div>
                 )}
 
                 <div>
@@ -471,7 +470,7 @@ export default function ApprovalsPage() {
                     <MessageSquare size={16} className="text-sky-600" />
                     Catatan Review
                   </label>
-                  <textarea 
+                  <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="w-full px-5 py-4 rounded-2xl border-2 border-slate-200 bg-white focus:border-sky-500 focus:ring-4 focus:ring-sky-50 outline-none transition-all h-28 font-medium text-slate-900 placeholder:text-slate-400"
@@ -480,7 +479,7 @@ export default function ApprovalsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-6 border-t border-slate-100 mt-8">
-                  <button 
+                  <button
                     onClick={() => handleAction('reject')}
                     disabled={processingId === selectedApproval.id}
                     className="flex-1 py-4 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
@@ -492,20 +491,20 @@ export default function ApprovalsPage() {
                     )}
                     Tolak Pengajuan
                   </button>
-                  <button 
+                  <button
                     onClick={() => handleAction('approve')}
                     disabled={
-                        processingId === selectedApproval.id || 
-                        (selectedApproval.role_name === 'Director' && canApproveAsDirector && !isDirectorProxy) ||
-                        (!isDirectorProxy && !useSavedSignature && !signature) || 
-                        (isDirectorProxy && !proof) ||
-                        (isDirectorProxy && !directorHasSignature && !signature)
+                      processingId === selectedApproval.id ||
+                      (selectedApproval.role_name === 'Director' && canApproveAsDirector && !isDirectorProxy) ||
+                      (!isDirectorProxy && !useSavedSignature && !signature) ||
+                      (isDirectorProxy && !proof) ||
+                      (isDirectorProxy && !directorHasSignature && !signature)
                     }
                     title={
-                        selectedApproval.role_name === 'Director' && canApproveAsDirector && !isDirectorProxy ? "Wajib centang 'Setujui mewakili Direktur'" :
+                      selectedApproval.role_name === 'Director' && canApproveAsDirector && !isDirectorProxy ? "Wajib centang 'Setujui mewakili Direktur'" :
                         isDirectorProxy && !proof ? "Upload bukti tanda tangan terlebih dahulu" :
-                        isDirectorProxy && !directorHasSignature && !signature ? "Upload tanda tangan Direktur terlebih dahulu" :
-                        !useSavedSignature && !signature && !isDirectorProxy ? "Tanda tangan wajib diisi" : ""
+                          isDirectorProxy && !directorHasSignature && !signature ? "Upload tanda tangan Direktur terlebih dahulu" :
+                            !useSavedSignature && !signature && !isDirectorProxy ? "Tanda tangan wajib diisi" : ""
                     }
                     className="flex-[2] py-4 bg-sky-600 text-white font-bold rounded-xl hover:bg-sky-500 transition-all shadow-lg shadow-sky-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >

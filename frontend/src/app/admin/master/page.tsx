@@ -149,7 +149,7 @@ export default function MasterDataPage() {
           </div>
           <button
             onClick={handleCreate}
-            className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
+            className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
           >
             <Plus size={18} />
             Tambah Data

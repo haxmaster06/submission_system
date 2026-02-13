@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  FileText, 
-  CheckSquare, 
-  LogOut, 
-  Menu, 
+import {
+  LayoutDashboard,
+  PlusCircle,
+  FileText,
+  CheckSquare,
+  LogOut,
+  Menu,
   X,
   User,
   Users,
@@ -28,13 +28,14 @@ import NotificationDropdown from '@/components/ui/NotificationDropdown';
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  const isApprover = user?.permissions.some(p => p.name === 'view submissions') || 
-                     user?.roles.some(r => ['HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(r.name));
-  
+  const isApprover = user?.permissions.some(p => p.name === 'view submissions') ||
+    user?.roles.some(r => ['HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(r.name));
+
   const isPrivileged = user?.roles.some(r => ['Super Admin', 'Director', 'Finance', 'GM'].includes(r.name));
-  
+
   const isSuperAdmin = user?.roles.some(r => r.name === 'Super Admin');
 
   const navGroups = [
@@ -83,8 +84,70 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+      {/* Mobile Sidebar Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] xl:hidden"
+            />
+            <motion.aside
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 w-72 bg-white z-[70] shadow-2xl xl:hidden flex flex-col"
+            >
+              <div className="p-6 flex items-center justify-between border-b border-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 overflow-hidden">
+                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
+                  </div>
+                  <span className="font-bold text-slate-800">HBM Budgeting</span>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-400">
+                  <X size={20} />
+                </button>
+              </div>
+
+              <nav className="flex-1 px-4 space-y-6 pt-6 overflow-y-auto custom-scrollbar">
+                {navGroups.map((group) => (
+                  <div key={group.group} className="space-y-1.5">
+                    <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                      {group.group}
+                    </p>
+                    {group.items.map((item: any) => {
+                      const isActive = pathname === item.href;
+                      return (
+                        <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                          <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? 'bg-sky-50 text-sky-600 shadow-sm' : 'text-slate-500'}`}>
+                            <item.icon className="w-5 h-5 shrink-0" />
+                            <span className="font-semibold text-sm">{item.name}</span>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ))}
+              </nav>
+
+              <div className="p-4 border-t border-slate-100">
+                <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-4 rounded-xl text-red-500">
+                  <LogOut className="w-5 h-5 shrink-0" />
+                  <span className="font-bold text-sm">Keluar</span>
+                </button>
+              </div>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar - Hidden on mobile/tablet */}
+      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 hidden xl:flex flex-col ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 overflow-hidden">
             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
@@ -120,7 +183,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-4 border-t border-slate-100 mt-auto">
-          <button 
+          <button
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all"
           >
@@ -133,12 +196,23 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
-            {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 xl:px-8 shrink-0">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="xl:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+            >
+              <Menu size={20} />
+            </button>
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="hidden xl:block p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+            >
+              {isSidebarOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <NotificationDropdown userId={user?.id || 0} />
             <div className="h-8 w-px bg-slate-200 mx-1"></div>
             <div className="flex items-center gap-3">
@@ -154,7 +228,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Body */}
-        <section className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
+        <section className="flex-1 overflow-y-auto p-4 sm:p-6 xl:p-8 bg-slate-50/50">
           {children}
         </section>
       </main>

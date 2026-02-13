@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Save, Send, Loader2, Info, FileText, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 export default function NewSubmissionPage() {
   const router = useRouter();
@@ -108,9 +109,16 @@ export default function NewSubmissionPage() {
   return (
     <Shell>
       <div className="max-w-7xl mx-auto pb-12">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
-          <p className="text-slate-500 mt-2">Isi detail pengajuan dan item anggaran dengan lengkap</p>
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">Isi detail pengajuan dan item anggaran dengan lengkap</p>
+          </div>
+          <Link href="/submissions">
+            <button className="text-slate-500 font-bold hover:text-slate-800 transition-all flex items-center gap-2 text-sm">
+              Batal & Kembali
+            </button>
+          </Link>
         </header>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -120,7 +128,7 @@ export default function NewSubmissionPage() {
               <Info className="w-4 h-4 text-sky-500" />
               <h2 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Informasi Umum</h2>
             </div>
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Division - Only show dropdown for Super Admin */}
               {isSuperAdmin ? (
                 <div>
@@ -153,8 +161,8 @@ export default function NewSubmissionPage() {
                       type="button"
                       onClick={() => setForm({ ...form, status_urgent: urgency.code })}
                       className={`flex-1 py-3 rounded-xl border text-sm font-bold capitalize transition-all ${form.status_urgent === urgency.code
-                          ? 'border-transparent text-white shadow-lg'
-                          : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
+                        ? 'border-transparent text-white shadow-lg'
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
                         }`}
                       style={{
                         backgroundColor: form.status_urgent === urgency.code ? urgency.color : undefined,
@@ -332,18 +340,18 @@ export default function NewSubmissionPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <button
               type="button"
               onClick={() => router.back()}
-              className="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
+              className="w-full sm:w-auto px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all text-center"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-70 transition-all"
+              className="w-full sm:w-auto px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center justify-center gap-2 disabled:opacity-70 transition-all"
             >
               {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
               Submit Pengajuan

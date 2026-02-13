@@ -13,7 +13,7 @@ services:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production
       APP_KEY: ${APP_KEY}
-      APP_DEBUG: false
+      APP_DEBUG: "false"
       APP_URL: http://36.92.42.135:3030
       DB_CONNECTION: mysql
       DB_HOST: hbm-db

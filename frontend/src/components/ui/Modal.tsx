@@ -12,24 +12,24 @@ interface ModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-export default function Modal({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
   size = 'lg'
 }: ModalProps) {
-  
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    
+
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
       document.body.style.overflow = 'hidden';
     }
-    
+
     return () => {
       document.removeEventListener('keydown', handleEscape);
       document.body.style.overflow = 'unset';
@@ -56,7 +56,7 @@ export default function Modal({
             onClick={onClose}
             className="fixed inset-0 bg-slate-900/60 backdrop-blur-md"
           />
-          
+
           {/* Modal Content */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -68,19 +68,20 @@ export default function Modal({
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between p-8 border-b border-slate-100 bg-white">
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
+              <div className="flex items-center justify-between p-6 sm:p-8 border-b border-slate-100 bg-white">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="p-3 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all rounded-2xl"
+                  className="p-2 sm:p-3 text-slate-400 hover:text-slate-900 hover:bg-slate-50 transition-all rounded-2xl"
                 >
-                  <X size={24} />
+                  <X size={20} className="sm:hidden" />
+                  <X size={24} className="hidden sm:block" />
                 </button>
               </div>
             )}
-            
+
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
               {children}
             </div>
           </motion.div>
