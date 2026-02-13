@@ -185,7 +185,46 @@ Jika menggunakan Docker, proses deployment jauh lebih sederhana.
 
 ---
 
-## 6. Backup & Maintenance
+## 7. Cara Update Aplikasi (Maintenance)
+
+Jika ada pembaruan kode di repositori GitHub, ikuti langkah ini untuk memperbarui aplikasi di server:
+
+### Langkah-langkah Update:
+
+1. **Masuk ke folder project**
+
+   ```bash
+   cd submission_system
+   ```
+
+2. **Tarik kode terbaru (Git Pull)**
+
+   ```bash
+   git pull origin main
+   ```
+
+3. **Rebuild & Restart Container**
+
+   ```bash
+   # --build memastikan Docker mendeteksi perubahan Dockerfile atau kode frontend
+   docker-compose up -d --build
+   ```
+
+4. **Update Database (Jika ada migrasi baru)**
+
+   ```bash
+   docker-compose exec hbm-app php artisan migrate --force
+   ```
+
+5. **Optimalisasi (Opsional)**
+   ```bash
+   docker-compose exec hbm-app php artisan config:cache
+   docker-compose exec hbm-app php artisan route:cache
+   ```
+
+---
+
+## 8. Backup & Maintenance
 
 Disarankan melakukan **Backup Database Harian** menggunakan cron job:
 
