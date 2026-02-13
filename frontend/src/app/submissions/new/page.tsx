@@ -28,7 +28,7 @@ export default function NewSubmissionPage() {
     division_id: '',
     jenis_pengajuan_id: '',
     jenis_perjalanan_id: '',
-    status_urgent: 'normal',
+    status_urgent: 'Normal',
     description: '',
     notes: '',
   });
@@ -81,7 +81,7 @@ export default function NewSubmissionPage() {
   };
 
   const updateItem = (id: number, field: string, value: any) => {
-    setItems(items.map(item => 
+    setItems(items.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
   };
@@ -125,9 +125,9 @@ export default function NewSubmissionPage() {
               {isSuperAdmin ? (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi</label>
-                  <select 
+                  <select
                     value={form.division_id}
-                    onChange={(e) => setForm({...form, division_id: e.target.value})}
+                    onChange={(e) => setForm({ ...form, division_id: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                     required
                   >
@@ -151,13 +151,12 @@ export default function NewSubmissionPage() {
                     <button
                       key={urgency.code}
                       type="button"
-                      onClick={() => setForm({...form, status_urgent: urgency.code})}
-                      className={`flex-1 py-3 rounded-xl border text-sm font-bold capitalize transition-all ${
-                        form.status_urgent === urgency.code 
-                          ? 'border-transparent text-white shadow-lg' 
+                      onClick={() => setForm({ ...form, status_urgent: urgency.code })}
+                      className={`flex-1 py-3 rounded-xl border text-sm font-bold capitalize transition-all ${form.status_urgent === urgency.code
+                          ? 'border-transparent text-white shadow-lg'
                           : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
-                      }`}
-                      style={{ 
+                        }`}
+                      style={{
                         backgroundColor: form.status_urgent === urgency.code ? urgency.color : undefined,
                         boxShadow: form.status_urgent === urgency.code ? `0 10px 15px -3px ${urgency.color}33` : undefined
                       }}
@@ -170,9 +169,9 @@ export default function NewSubmissionPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Jenis Pengajuan</label>
-                <select 
+                <select
                   value={form.jenis_pengajuan_id}
-                  onChange={(e) => setForm({...form, jenis_pengajuan_id: e.target.value})}
+                  onChange={(e) => setForm({ ...form, jenis_pengajuan_id: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                   required
                 >
@@ -181,12 +180,12 @@ export default function NewSubmissionPage() {
                 </select>
               </div>
 
-              {lookups.jenis_pengajuan.find((j:any) => j.id == form.jenis_pengajuan_id)?.requires_travel_type && (
+              {lookups.jenis_pengajuan.find((j: any) => j.id == form.jenis_pengajuan_id)?.requires_travel_type && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Kategori Perjalanan</label>
-                  <select 
+                  <select
                     value={form.jenis_perjalanan_id}
-                    onChange={(e) => setForm({...form, jenis_perjalanan_id: e.target.value})}
+                    onChange={(e) => setForm({ ...form, jenis_perjalanan_id: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                     required
                   >
@@ -200,16 +199,16 @@ export default function NewSubmissionPage() {
 
           {/* Budget Details */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-             <div className="p-6 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
+            <div className="p-6 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
               <FileText className="w-4 h-4 text-sky-500" />
               <h2 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Rincian Anggaran</h2>
             </div>
             <div className="p-8 space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Judul Pengajuan</label>
-                <textarea 
+                <textarea
                   value={form.description}
-                  onChange={(e) => setForm({...form, description: e.target.value})}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium h-32"
                   placeholder="cth: Pengadaan Peralatan Kantor Divisi IT Q1 2024"
                   required
@@ -323,9 +322,9 @@ export default function NewSubmissionPage() {
 
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Catatan (Opsional)</label>
-                <textarea 
+                <textarea
                   value={form.notes}
-                  onChange={(e) => setForm({...form, notes: e.target.value})}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium h-24 resize-none"
                   placeholder="Tambahkan catatan tambahan jika diperlukan..."
                 />
@@ -334,14 +333,14 @@ export default function NewSubmissionPage() {
           </div>
 
           <div className="flex justify-end gap-4">
-            <button 
+            <button
               type="button"
               onClick={() => router.back()}
               className="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
             >
               Batal
             </button>
-            <button 
+            <button
               type="submit"
               disabled={submitting}
               className="px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-70 transition-all"

@@ -4,12 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Shell from '@/components/layout/Shell';
 import Tabs from '@/components/ui/Tabs';
 import api from '@/lib/api';
-import { 
-  Database, 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2, 
+import {
+  Database,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
   Search as SearchIcon,
   Loader2,
   AlertCircle,
@@ -131,8 +131,8 @@ export default function MasterDataPage() {
     }
   };
 
-  const filteredData = data.filter(item => 
-    item.name?.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredData = data.filter(item =>
+    item.name?.toLowerCase().includes(search.toLowerCase()) ||
     item.code?.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -147,7 +147,7 @@ export default function MasterDataPage() {
             </h1>
             <p className="text-slate-500 text-sm mt-1">Kelola data dasar sistem budgeting HBM</p>
           </div>
-          <button 
+          <button
             onClick={handleCreate}
             className="bg-sky-500 hover:bg-sky-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
           >
@@ -158,17 +158,17 @@ export default function MasterDataPage() {
 
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
           <div className="border-b border-slate-100 p-2">
-            <Tabs 
-              tabs={tabs.map(t => ({ id: t.id, label: t.label, content: null }))} 
-              defaultTab={activeTab} 
-              onChange={setActiveTab} 
+            <Tabs
+              tabs={tabs.map(t => ({ id: t.id, label: t.label, content: null }))}
+              defaultTab={activeTab}
+              onChange={setActiveTab}
             />
           </div>
 
           <div className="p-4 border-b border-slate-100 bg-slate-50/50">
             <div className="relative max-w-sm">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
+              <input
                 type="text"
                 placeholder="Cari data..."
                 value={search}
@@ -192,7 +192,7 @@ export default function MasterDataPage() {
             ) : (
               <table className="w-full text-left">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                  <tr className="bg-slate-50 text-slate-600 text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
                     {isSuperAdmin && <th className="px-6 py-4">ID</th>}
                     {activeTab === 'urgency' && <th className="px-6 py-4 w-10"></th>}
                     <th className="px-6 py-4">Nama</th>
@@ -207,13 +207,13 @@ export default function MasterDataPage() {
                 {activeTab === 'urgency' ? (
                   <Reorder.Group as="tbody" axis="y" values={filteredData} onReorder={handleReorder} className="divide-y divide-slate-50">
                     {filteredData.map((item) => (
-                      <Reorder.Item 
-                        as="tr" 
-                        key={item.id} 
+                      <Reorder.Item
+                        as="tr"
+                        key={item.id}
                         value={item}
                         className="hover:bg-slate-50/50 transition-colors bg-white cursor-move group"
                       >
-                        {isSuperAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-400">#{item.id}</td>}
+                        {isSuperAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-500">#{item.id}</td>}
                         <td className="px-6 py-4">
                           <GripVertical className="text-slate-300 group-hover:text-slate-500 transition-colors" size={16} />
                         </td>
@@ -223,17 +223,17 @@ export default function MasterDataPage() {
                             {item.name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.code}</td>
-                        <td className="px-6 py-4 text-sm text-slate-600">{item.level}</td>
+                        <td className="px-6 py-4 text-sm text-slate-700 font-mono">{item.code}</td>
+                        <td className="px-6 py-4 text-sm text-slate-700">{item.level}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => handleEdit(item)}
                               className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
                             >
                               <Edit2 size={16} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(item.id)}
                               className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             >
@@ -247,10 +247,10 @@ export default function MasterDataPage() {
                 ) : (
                   <tbody className="divide-y divide-slate-50">
                     {filteredData.map((item) => (
-                      <motion.tr 
+                      <motion.tr
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        key={item.id} 
+                        key={item.id}
                         className="hover:bg-slate-50/50 transition-colors"
                       >
                         {isSuperAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-400">#{item.id}</td>}
@@ -259,9 +259,9 @@ export default function MasterDataPage() {
                           <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.code}</td>
                         )}
                         {activeTab === 'divisions' && (
-                           <td className="px-6 py-4 text-sm text-slate-600 text-right font-mono">
-                             {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.budget_limit || 0)}
-                           </td>
+                          <td className="px-6 py-4 text-sm text-slate-700 text-right font-mono">
+                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.budget_limit || 0)}
+                          </td>
                         )}
                         {activeTab === 'types' && isSuperAdmin && (
                           <td className="px-6 py-4 text-sm">
@@ -277,13 +277,13 @@ export default function MasterDataPage() {
                         )}
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => handleEdit(item)}
                               className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
                             >
                               <Edit2 size={16} />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(item.id)}
                               className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             >
@@ -308,95 +308,95 @@ export default function MasterDataPage() {
           size={editingItem ? 'lg' : '2xl'}
         >
           <form onSubmit={handleSave} className="space-y-6">
-            
+
             {/* EDIT MODE (Single Item) */}
             {editingItem && (
               <div className="space-y-4">
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nama</label>
-                    <input 
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Nama</label>
+                  <input
+                    required
+                    type="text"
+                    value={formData.name || ''}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-900 transition-all bg-white"
+                  />
+                </div>
+
+                {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Kode</label>
+                    <input
                       required
                       type="text"
-                      value={formData.name || ''}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-700 transition-all bg-slate-50/30"
+                      value={formData.code || ''}
+                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-900 transition-all bg-white uppercase"
                     />
                   </div>
+                )}
 
-                  {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kode</label>
-                      <input 
-                        required
-                        type="text"
-                        value={formData.code || ''}
-                        onChange={(e) => setFormData({...formData, code: e.target.value})}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-700 transition-all bg-slate-50/30 uppercase"
-                      />
-                    </div>
-                  )}
+                {activeTab === 'divisions' && (
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Budget Limit (Bulanan)</label>
+                    <input
+                      type="number"
+                      value={formData.budget_limit || 0}
+                      onChange={(e) => setFormData({ ...formData, budget_limit: parseFloat(e.target.value) })}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-900 transition-all bg-white text-right font-mono"
+                    />
+                  </div>
+                )}
 
-                  {activeTab === 'divisions' && (
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Budget Limit (Bulanan)</label>
-                      <input 
-                        type="number"
-                        value={formData.budget_limit || 0}
-                        onChange={(e) => setFormData({...formData, budget_limit: parseFloat(e.target.value)})}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-700 transition-all bg-slate-50/30 text-right font-mono"
-                      />
-                    </div>
-                  )}
-
-                  {activeTab === 'urgency' && (
-                    <>
-                      {isSuperAdmin && (
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Level</label>
-                          <input 
-                            required
-                            type="number"
-                            value={formData.level || 0}
-                            onChange={(e) => setFormData({...formData, level: parseInt(e.target.value)})}
-                            className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-700 transition-all"
-                          />
-                        </div>
-                      )}
+                {activeTab === 'urgency' && (
+                  <>
+                    {isSuperAdmin && (
                       <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Warna</label>
-                          <div className="flex gap-3">
-                            <input 
-                              type="color"
-                              value={formData.color || '#000000'}
-                              onChange={(e) => setFormData({...formData, color: e.target.value})}
-                              className="h-10 w-10 rounded cursor-pointer"
-                            />
-                            <input 
-                              type="text"
-                              value={formData.color || ''}
-                              onChange={(e) => setFormData({...formData, color: e.target.value})}
-                              className="flex-1 px-4 py-2 rounded-xl border border-slate-200 font-mono text-sm"
-                            />
-                          </div>
+                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Level</label>
+                        <input
+                          required
+                          type="number"
+                          value={formData.level || 0}
+                          onChange={(e) => setFormData({ ...formData, level: parseInt(e.target.value) })}
+                          className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none font-bold text-slate-900 transition-all bg-white"
+                        />
                       </div>
-                    </>
-                  )}
-                  
-                  {activeTab === 'types' && (
-                    <div className="space-y-4 pt-2">
-                      {isSuperAdmin && (
-                        <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
-                          <input 
-                            type="checkbox"
-                            checked={formData.requires_travel_type || false}
-                            onChange={(e) => setFormData({...formData, requires_travel_type: e.target.checked})}
-                            className="w-5 h-5 text-sky-500 rounded focus:ring-sky-500"
-                          />
-                          <span className="font-bold text-slate-700 text-sm">Membutuhkan Kategori Perjalanan?</span>
-                        </label>
-                      )}
+                    )}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Warna</label>
+                      <div className="flex gap-3">
+                        <input
+                          type="color"
+                          value={formData.color || '#000000'}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          className="h-10 w-10 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={formData.color || ''}
+                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                          className="flex-1 px-4 py-2 rounded-xl border border-slate-200 font-mono text-sm text-slate-900 bg-white"
+                        />
+                      </div>
                     </div>
-                  )}
+                  </>
+                )}
+
+                {activeTab === 'types' && (
+                  <div className="space-y-4 pt-2">
+                    {isSuperAdmin && (
+                      <label className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50">
+                        <input
+                          type="checkbox"
+                          checked={formData.requires_travel_type || false}
+                          onChange={(e) => setFormData({ ...formData, requires_travel_type: e.target.checked })}
+                          className="w-5 h-5 text-sky-500 rounded focus:ring-sky-500"
+                        />
+                        <span className="font-bold text-slate-700 text-sm">Membutuhkan Kategori Perjalanan?</span>
+                      </label>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -405,7 +405,7 @@ export default function MasterDataPage() {
               <div className="space-y-4">
                 <div className="overflow-hidden border border-slate-200 rounded-xl">
                   <table className="w-full text-left bg-slate-50/50">
-                    <thead className="bg-slate-100 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+                    <thead className="bg-slate-100 text-[10px] font-black uppercase text-slate-600 tracking-widest">
                       <tr>
                         <th className="px-4 py-3">Nama</th>
                         {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
@@ -420,44 +420,44 @@ export default function MasterDataPage() {
                       {formDataList.map((row, index) => (
                         <tr key={index} className="group hover:bg-slate-50">
                           <td className="p-2">
-                            <input 
+                            <input
                               required
                               placeholder="Nama..."
                               value={row.name || ''}
                               onChange={(e) => handleBulkChange(index, 'name', e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium"
+                              className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium text-slate-900 placeholder:text-slate-500 bg-white"
                             />
                           </td>
                           {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
                             <td className="p-2">
-                              <input 
+                              <input
                                 required
                                 placeholder="KODE..."
                                 value={row.code || ''}
                                 onChange={(e) => handleBulkChange(index, 'code', e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono uppercase"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono uppercase text-slate-900 placeholder:text-slate-500 bg-white"
                               />
                             </td>
                           )}
                           {activeTab === 'divisions' && (
                             <td className="p-2">
-                              <input 
+                              <input
                                 type="number"
                                 placeholder="0"
                                 value={row.budget_limit || ''}
                                 onChange={(e) => handleBulkChange(index, 'budget_limit', parseFloat(e.target.value))}
-                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono text-right"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono text-right text-slate-900 placeholder:text-slate-500 bg-white"
                               />
                             </td>
                           )}
                           {activeTab === 'urgency' && (
-                             <td className="p-2 w-24">
-                              <input 
+                            <td className="p-2 w-24">
+                              <input
                                 type="number"
                                 placeholder="1"
                                 value={row.level || ''}
                                 onChange={(e) => handleBulkChange(index, 'level', parseInt(e.target.value))}
-                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm"
+                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm text-slate-900 placeholder:text-slate-500 bg-white"
                               />
                             </td>
                           )}
@@ -490,21 +490,21 @@ export default function MasterDataPage() {
             )}
 
             <div className="flex gap-3 pt-4 border-t border-slate-100">
-               <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="flex-[1] py-3 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all text-sm"
-                >
-                  Batal
-                </button>
-                <button 
-                  type="submit"
-                  disabled={saving}
-                  className="flex-[2] py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 transition-all shadow-lg shadow-sky-100 text-sm flex items-center justify-center gap-2"
-                >
-                  {saving && <Loader2 className="animate-spin" size={18} />}
-                  {saving ? 'Menyimpan...' : 'Simpan Data'}
-                </button>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="flex-[1] py-3 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-50 transition-all text-sm"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-[2] py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 transition-all shadow-lg shadow-sky-100 text-sm flex items-center justify-center gap-2"
+              >
+                {saving && <Loader2 className="animate-spin" size={18} />}
+                {saving ? 'Menyimpan...' : 'Simpan Data'}
+              </button>
             </div>
           </form>
         </Modal>

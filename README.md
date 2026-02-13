@@ -78,11 +78,11 @@ docker compose exec hbm-app php artisan migrate --force
 docker compose exec hbm-app php artisan key:generate
 ```
 
-Akses Aplikasi:
+Akses Aplikasi (Single Port 3030):
 
-- Frontend: `http://localhost:3030`
-- Backend API: `http://localhost:8065`
-- Reverb WebSocket: `http://localhost:8066` (Proxy via Nginx accessible at `http://localhost:8065/app`)
+- Frontend: `http://36.92.42.135:3030`
+- Backend API: `http://36.92.42.135:3030/api`
+- Reverb WebSocket: `http://36.92.42.135:3030/app` (Proxy via Nginx)
 
 ## Testing
 
