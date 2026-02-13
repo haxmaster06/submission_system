@@ -103,3 +103,19 @@ Untuk deployment ke server produksi, lihat dokumentasi teknis di `docs/end_user/
 ## Lisensi
 
 Private - PT. HBM
+
+## Troubleshooting
+
+Jika perubahan pada frontend tidak terlihat:
+
+1.  **Rebuild Container**:
+    ```bash
+    docker-compose down
+    docker-compose up -d --build
+    ```
+2.  **Clear Cache (Without Docker)**:
+    ```bash
+    rm -rf .next
+    npm run build
+    npm start
+    ```

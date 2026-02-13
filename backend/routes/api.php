@@ -41,6 +41,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Submissions
     Route::apiResource('submissions', SubmissionController::class);
+    Route::post('/submissions/bulk-delete', [SubmissionController::class, 'bulkDelete']);
     Route::post('/submissions/{submission}/attachments', [SubmissionController::class, 'uploadAttachment']);
     Route::get('/submissions/{submission}/export', [SubmissionController::class, 'downloadPdf']);
     Route::get('/submissions/{submission}/preview-url', [SubmissionController::class, 'getPreviewUrl']);
@@ -72,9 +73,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class, 'markAsRead']);
     Route::put('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class, 'markAllRead']);
 
-    // Approval Flow Management
-    Route::middleware('can:manage master data')->group(function () {
+
+    // Approval Flow Management (Finance & Master Data Managers)
+    Route::middleware('permission:approve submissions|manage master data')->group(function () {
         Route::get('/approval-flows', [\App\Http\Controllers\Api\ApprovalFlowController::class, 'index']);
+    });
+
+    Route::middleware('can:manage master data')->group(function () {
         // Steps
         Route::post('/approval-flows/{flow}/steps', [\App\Http\Controllers\Api\ApprovalFlowController::class, 'storeStep']);
         Route::put('/approval-flows/{flow}/steps/{step}', [\App\Http\Controllers\Api\ApprovalFlowController::class, 'updateStep']);
@@ -87,40 +92,44 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/approval-flows/{flow}/conditions/{condition}/toggle', [\App\Http\Controllers\Api\ApprovalFlowController::class, 'toggleCondition']);
     });
 
-    // Master Data Management
+    // Master Data (Read Access for All Authenticated Users)
+    Route::get('/master/divisions', [\App\Http\Controllers\Api\MasterDataController::class, 'indexDivisions']);
+    Route::get('/master/types', [\App\Http\Controllers\Api\MasterDataController::class, 'indexTypes']);
+    Route::get('/master/uoms', [\App\Http\Controllers\Api\MasterDataController::class, 'indexUoms']);
+    Route::get('/master/travel-types', [\App\Http\Controllers\Api\MasterDataController::class, 'indexTravelTypes']);
+    Route::get('/master/urgency', [\App\Http\Controllers\Api\MasterDataController::class, 'indexUrgency']);
+
+    // Master Data Management (Write Access Restricted)
     Route::middleware('can:manage master data')->group(function () {
         // Divisions
-        Route::get('/master/divisions', [\App\Http\Controllers\Api\MasterDataController::class, 'indexDivisions']);
         Route::post('/master/divisions', [\App\Http\Controllers\Api\MasterDataController::class, 'storeDivision']);
         Route::put('/master/divisions/{division}', [\App\Http\Controllers\Api\MasterDataController::class, 'updateDivision']);
         Route::delete('/master/divisions/{division}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroyDivision']);
 
         // Jenis Pengajuan
-        Route::get('/master/types', [\App\Http\Controllers\Api\MasterDataController::class, 'indexTypes']);
         Route::post('/master/types', [\App\Http\Controllers\Api\MasterDataController::class, 'storeType']);
         Route::put('/master/types/{jenisPengajuan}', [\App\Http\Controllers\Api\MasterDataController::class, 'updateType']);
         Route::delete('/master/types/{jenisPengajuan}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroyType']);
 
         // UOMs
-        Route::get('/master/uoms', [\App\Http\Controllers\Api\MasterDataController::class, 'indexUoms']);
         Route::post('/master/uoms', [\App\Http\Controllers\Api\MasterDataController::class, 'storeUom']);
         Route::put('/master/uoms/{uom}', [\App\Http\Controllers\Api\MasterDataController::class, 'updateUom']);
         Route::delete('/master/uoms/{uom}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroyUom']);
 
         // Jenis Perjalanan
-        Route::get('/master/travel-types', [\App\Http\Controllers\Api\MasterDataController::class, 'indexTravelTypes']);
         Route::post('/master/travel-types', [\App\Http\Controllers\Api\MasterDataController::class, 'storeTravelType']);
         Route::put('/master/travel-types/{jenisPerjalanan}', [\App\Http\Controllers\Api\MasterDataController::class, 'updateTravelType']);
         Route::delete('/master/travel-types/{jenisPerjalanan}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroyTravelType']);
 
         // Urgency Statuses
-        Route::get('/master/urgency', [\App\Http\Controllers\Api\MasterDataController::class, 'indexUrgency']);
         Route::post('/master/urgency', [\App\Http\Controllers\Api\MasterDataController::class, 'storeUrgency']);
         Route::put('/master/urgency/{urgencyStatus}', [\App\Http\Controllers\Api\MasterDataController::class, 'updateUrgency']);
         Route::delete('/master/urgency/{urgencyStatus}', [\App\Http\Controllers\Api\MasterDataController::class, 'destroyUrgency']);
         Route::post('/master/urgency/reorder', [\App\Http\Controllers\Api\MasterDataController::class, 'reorderUrgency']);
-    
-        // Reporting
+    });
+
+    // Reporting (Finance & Master Data Managers)
+    Route::middleware('permission:view reports|manage master data')->group(function () {
         Route::get('/reports/submissions', [\App\Http\Controllers\Api\ReportingController::class, 'index']);
         Route::get('/reports/submissions/export', [\App\Http\Controllers\Api\ReportingController::class, 'exportPdf']);
     });

@@ -162,34 +162,54 @@ class SubmissionController extends Controller
         }
     }
 
+    private function getBase64Signature($path)
+    {
+        if (!$path) return null;
+
+        // If stored as URL, try to parse path
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            $parsed = parse_url($path);
+            $path = $parsed['path'] ?? '';
+            // Remove /storage/ prefix if present
+            $path = str_replace('/storage/', '', $path);
+        }
+
+        // Clean path
+        $path = ltrim($path, '/');
+
+        // Check straight path (e.g. "signatures/file.png")
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
+            $content = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
+            $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($path);
+            return 'data:' . $mime . ';base64,' . base64_encode($content);
+        }
+
+        // Check with signatures prefix if missing
+        if (!str_starts_with($path, 'signatures/') && \Illuminate\Support\Facades\Storage::disk('public')->exists('signatures/' . $path)) {
+             $content = \Illuminate\Support\Facades\Storage::disk('public')->get('signatures/' . $path);
+             $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType('signatures/' . $path);
+             return 'data:' . $mime . ';base64,' . base64_encode($content);
+        }
+
+        return null;
+    }
+
     public function previewPdf(Submission $submission)
     {
         try {
             $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
             
-            // Embed signatures as Base64 to avoid path/URL issues in PDF
+            // Embed Requestor Signature
+            $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
+
+            // Embed Approver Signatures
             foreach($submission->approvals as $approval) {
                 if($approval->signature_used) {
-                    $path = $approval->signature_used;
-                    // If stored as URL, try to parse path
-                    if (filter_var($path, FILTER_VALIDATE_URL)) {
-                        $parsed = parse_url($path);
-                        $path = $parsed['path'] ?? '';
-                        // Remove /storage/ prefix if present to get relative path in storage/app/public
-                        $path = str_replace('/storage/', '', $path);
-                    }
-                    
-                    // Check if file exists in public disk
-                    if(\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
-                        $content = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
-                        $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($path);
-                        $base64 = 'data:' . $mime . ';base64,' . base64_encode($content);
-                        $approval->signature_base64 = $base64;
-                    }
+                    $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
                 }
             }
 
-            $pdf = $this->generatePdf($submission); // generatePdf will use the modified submission object
+            $pdf = $this->generatePdf($submission); 
             
             return response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
@@ -209,27 +229,13 @@ class SubmissionController extends Controller
             $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
             $isPdf = false;
             
-            // Embed signatures as Base64 for reliable printing
+            // Embed Requestor Signature
+            $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
+
+            // Embed Approver Signatures
             foreach($submission->approvals as $approval) {
                 if($approval->signature_used) {
-                    $path = $approval->signature_used;
-                    // If stored as URL, try to parse path
-                    if (filter_var($path, FILTER_VALIDATE_URL)) {
-                        $parsed = parse_url($path);
-                        $path = $parsed['path'] ?? '';
-                         // Remove /storage/ prefix if present
-                        $path = str_replace('/storage/', '', $path);
-                        // Also remove leading slash just in case
-                        $path = ltrim($path, '/');
-                    }
-                    
-                    // Check if file exists in public disk
-                    if(\Illuminate\Support\Facades\Storage::disk('public')->exists($path)) {
-                        $content = \Illuminate\Support\Facades\Storage::disk('public')->get($path);
-                        $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType($path);
-                        $base64 = 'data:' . $mime . ';base64,' . base64_encode($content);
-                        $approval->signature_base64 = $base64;
-                    }
+                    $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
                 }
             }
 
@@ -331,5 +337,44 @@ class SubmissionController extends Controller
         AuditTrailService::log('COMPLETED', 'Submission', $submission->id, ['is_completed' => false], ['is_completed' => true]);
 
         return response()->json(['message' => 'Pengajuan berhasil ditandai selesai.', 'submission' => $submission]);
+    }
+
+    /**
+     * Delete multiple submissions.
+     */
+    public function bulkDelete(Request $request)
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+
+        if (!$user->can('delete submissions')) {
+            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus pengajuan.'], 403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|exists:submissions,id',
+        ]);
+
+        $submissions = \App\Models\Submission::whereIn('id', $request->ids)->get();
+        $count = 0;
+
+        foreach ($submissions as $submission) {
+            // Delete related attachments from storage
+            foreach ($submission->attachments as $attachment) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+            }
+
+            // Cascade delete related records
+            $submission->items()->delete();
+            $submission->approvals()->delete();
+            $submission->attachments()->delete();
+            
+            \App\Services\AuditTrailService::log('BULK_DELETED', 'Submission', $submission->id, $submission->toArray(), null);
+            
+            $submission->delete();
+            $count++;
+        }
+
+        return response()->json(['message' => "{$count} pengajuan berhasil dihapus."]);
     }
 }

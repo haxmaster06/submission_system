@@ -226,7 +226,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 </div>
                 <div className="md:text-right w-full md:w-auto p-4 md:p-0 bg-slate-50 md:bg-transparent rounded-2xl border border-slate-100 md:border-0 shadow-inner md:shadow-none">
                   <p className="text-[9px] text-slate-400 uppercase font-black tracking-[0.3em] mb-2 leading-none">TOTAL ANGGARAN</p>
-                  <p className="text-3xl font-black text-sky-600 font-mono tracking-tighter leading-none">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</p>
+                  <p className="text-3xl font-black text-sky-600 font-mono tracking-tighter leading-none whitespace-nowrap">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</p>
                 </div>
               </div>
 
@@ -277,7 +277,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                           <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
                           <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">UoM</th>
                           <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Unit Price</th>
-                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Total</th>
+                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-60">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
@@ -286,17 +286,17 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                             <td className="px-6 py-4 text-sm font-bold text-slate-700">{item.description}</td>
                             <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">{parseFloat(item.qty).toLocaleString('id-ID')}</td>
                             <td className="px-6 py-4 text-center text-slate-500 font-bold text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900 text-sm">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-4 text-right font-black text-sky-600 text-sm">Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-4 text-right font-bold text-slate-900 text-sm whitespace-nowrap">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-4 text-right font-black text-sky-600 text-sm whitespace-nowrap">Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-slate-900 text-white">
+                      <tfoot className="bg-sky-50/50 border-t-2 border-sky-100">
                         <tr>
-                          <td colSpan={4} className="px-6 py-6 text-right font-black text-white/50 uppercase text-[10px] tracking-widest">
+                          <td colSpan={4} className="px-6 py-6 text-right font-black text-slate-400 uppercase text-[10px] tracking-widest whitespace-nowrap">
                             Grand Total:
                           </td>
-                          <td className="px-6 py-6 text-right font-black text-sky-400 text-2xl tracking-tighter" >
+                          <td className="px-6 py-6 text-right font-black text-sky-600 text-2xl tracking-normal whitespace-nowrap" style={{ minWidth: '220px' }}>
                             Rp {parseFloat(submission.total).toLocaleString('id-ID')}
                           </td>
                         </tr>
@@ -326,9 +326,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                         </div>
                       </div>
                     ))}
-                    <div className="bg-slate-900 p-6 flex items-center justify-between shadow-inner">
-                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.3em]">GRAND TOTAL</span>
-                      <span className="text-2xl font-black text-sky-400 tracking-tighter font-mono leading-none">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
+                    <div className="bg-sky-50/50 p-6 flex items-center justify-between border-t border-sky-100 shadow-sm">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">GRAND TOTAL</span>
+                      <span className="text-2xl font-black text-sky-600 tracking-normal font-mono leading-none whitespace-nowrap ml-4">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
                 </div>
@@ -396,7 +396,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </div>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'realization' ? (
         /* Realization Tab Content */
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -462,7 +462,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                             <th className="px-6 py-3">Item</th>
                             <th className="px-6 py-3 text-center w-24">Qty</th>
                             <th className="px-6 py-3 text-right w-40">Nominal</th>
-                            <th className="px-6 py-3 text-right w-40">Total</th>
+                            <th className="px-6 py-3 text-right w-60">Total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
@@ -500,7 +500,76 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </div>
           )}
         </div>
+      ) : (
+        /* Audit Log Tab Content */
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">Riwayat Aktivitas</h2>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">Jejak rekam perubahan data pengajuan.</p>
+            </div>
+          </div>
+
+          {loadingLogs ? (
+            <div className="flex items-center justify-center py-12 text-slate-400">
+              <Loader2 className="animate-spin mr-2" /> Memuat data log...
+            </div>
+          ) : logs.length === 0 ? (
+            <div className="bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 p-12 text-center">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <History className="text-slate-300" size={32} />
+              </div>
+              <p className="text-slate-500 font-medium">Belum ada riwayat aktivitas tercatat.</p>
+            </div>
+          ) : (
+            <div className="relative border-l-2 border-slate-100 ml-4 space-y-8 pl-8 py-2">
+              {logs.map((log, idx) => (
+                <div key={log.id} className="relative">
+                  <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-white border-2 border-sky-500 flex items-center justify-center z-10">
+                    <div className="w-2 h-2 rounded-full bg-sky-500" />
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-slate-900 text-sm">{log.user?.name || 'Sistem'}</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                          {log.action}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                        <Clock size={10} />
+                        {new Date(log.created_at).toLocaleString('id-ID', {
+                          day: 'numeric', month: 'short', year: 'numeric',
+                          hour: '2-digit', minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+
+                    {/* Changes Details */}
+                    {log.details && (
+                      <div className="mt-3 text-xs bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1">
+                        {Object.entries(log.details).map(([key, val]: [string, any]) => (
+                          <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                            <span className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">{key.replace('_', ' ')}</span>
+                            <div className="sm:col-span-2 text-slate-700 font-medium break-all">
+                              <span className="text-slate-400 line-through mr-2">{String(val.old || '-')}</span>
+                              <span className="text-emerald-600 font-bold">→ {String(val.new || '-')}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!log.details && (
+                      <p className="text-xs text-slate-500 italic">Melakukan aktivitas {log.action.toLowerCase()} pada pengajuan ini.</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
+
       <iframe
         ref={printIframeRef}
         style={{ width: 0, height: 0, position: 'absolute', border: 'none', visibility: 'hidden' }}

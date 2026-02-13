@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Shell from '@/components/layout/Shell';
 import Tabs from '@/components/ui/Tabs';
 import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
+import { useSearchParams } from 'next/navigation';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -24,15 +25,21 @@ import {
   Search,
   Filter,
   ChevronDown,
-  X
+  X,
+  Check,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function SubmissionsListPage() {
+import SubmissionDetailView from '@/components/submissions/SubmissionDetailView';
+
+function SubmissionsPageContent() {
+
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const { user } = useAuth();
 
   const hasRole = (roleName: string) => user?.roles.some(r => r.name === roleName);
@@ -51,6 +58,8 @@ export default function SubmissionsListPage() {
 
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false); // New state for view modal
+  const [selectedSubmission, setSelectedSubmission] = useState<any>(null); // New state for selected submission
   const [submitting, setSubmitting] = useState(false);
   const [lookups, setLookups] = useState<any>({
     uoms: []
@@ -78,6 +87,26 @@ export default function SubmissionsListPage() {
     }, 500);
     return () => clearTimeout(timer);
   }, [search]);
+
+  const searchParams = useSearchParams();
+  const viewId = searchParams.get('view');
+
+  useEffect(() => {
+    if (viewId && !isModalOpen && !viewModalOpen) {
+      // Find submission in current list or fetch it
+      const sub = submissions.find(s => s.id === parseInt(viewId));
+      if (sub) {
+        setSelectedSubmission(sub);
+        setViewModalOpen(true);
+      } else {
+        // If not in list, fetch it (optional, but good for direct links)
+        api.get(`/submissions/${viewId}`).then(res => {
+          setSelectedSubmission(res.data);
+          setViewModalOpen(true);
+        }).catch(console.error);
+      }
+    }
+  }, [viewId, submissions]);
 
   useEffect(() => {
     fetchData();
@@ -138,6 +167,36 @@ export default function SubmissionsListPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    if (!confirm(`Hapus ${selectedIds.length} pengajuan yang dipilih?`)) return;
+
+    setLoading(true);
+    try {
+      await api.post('/submissions/bulk-delete', { ids: selectedIds });
+      setSelectedIds([]);
+      await fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menghapus pengajuan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === submissions.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(submissions.map(s => s.id));
+    }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
@@ -185,28 +244,84 @@ export default function SubmissionsListPage() {
       label: 'Semua',
       icon: <FileText size={18} />,
       badge: statusCounts.all,
-      content: <SubmissionsList submissions={submissions} loading={loading} getStatusColor={getStatusColor} getStatusIcon={getStatusIcon} />
+      content: (
+        <SubmissionsList
+          submissions={submissions}
+          loading={loading}
+          getStatusColor={getStatusColor}
+          getStatusIcon={getStatusIcon}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onView={(sub: any) => {
+            setSelectedSubmission(sub);
+            setViewModalOpen(true);
+          }}
+        />
+      )
     },
     {
       id: 'pending',
       label: 'Menunggu',
       icon: <Clock size={18} />,
       badge: statusCounts.pending,
-      content: <SubmissionsList submissions={submissions} loading={loading} getStatusColor={getStatusColor} getStatusIcon={getStatusIcon} />
+      content: (
+        <SubmissionsList
+          submissions={submissions}
+          loading={loading}
+          getStatusColor={getStatusColor}
+          getStatusIcon={getStatusIcon}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onView={(sub: any) => {
+            setSelectedSubmission(sub);
+            setViewModalOpen(true);
+          }}
+        />
+      )
     },
     {
       id: 'approved',
       label: 'Disetujui',
       icon: <CheckCircle size={18} />,
       badge: statusCounts.approved,
-      content: <SubmissionsList submissions={submissions} loading={loading} getStatusColor={getStatusColor} getStatusIcon={getStatusIcon} />
+      content: (
+        <SubmissionsList
+          submissions={submissions}
+          loading={loading}
+          getStatusColor={getStatusColor}
+          getStatusIcon={getStatusIcon}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onView={(sub: any) => {
+            setSelectedSubmission(sub);
+            setViewModalOpen(true);
+          }}
+        />
+      )
     },
     {
       id: 'rejected',
       label: 'Ditolak',
       icon: <XCircle size={18} />,
       badge: statusCounts.rejected,
-      content: <SubmissionsList submissions={submissions} loading={loading} getStatusColor={getStatusColor} getStatusIcon={getStatusIcon} />
+      content: (
+        <SubmissionsList
+          submissions={submissions}
+          loading={loading}
+          getStatusColor={getStatusColor}
+          getStatusIcon={getStatusIcon}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onView={(sub: any) => {
+            setSelectedSubmission(sub);
+            setViewModalOpen(true);
+          }}
+        />
+      )
     }
   ];
 
@@ -328,6 +443,42 @@ export default function SubmissionsListPage() {
             )}
           </AnimatePresence>
         </div>
+
+        <AnimatePresence>
+          {selectedIds.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-red-50 border border-red-200 rounded-3xl p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl shadow-red-100"
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-14 h-14 bg-red-500 text-white rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg ring-4 ring-white">
+                  {selectedIds.length}
+                </div>
+                <div>
+                  <h3 className="font-black text-red-900 leading-none mb-1 text-lg">Hapus Sekaligus</h3>
+                  <p className="text-red-500 text-xs font-bold uppercase tracking-widest">{selectedIds.length} pengajuan telah dipilih</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 w-full md:w-auto">
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className="flex-1 md:flex-none px-6 py-3 rounded-xl border border-red-200 text-red-600 font-bold text-xs hover:bg-white transition-all uppercase tracking-widest"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex-1 md:flex-none px-8 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-black text-xs transition-all shadow-lg flex items-center justify-center gap-2 uppercase tracking-widest"
+                >
+                  <Trash2 size={16} />
+                  Hapus Selamanya
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <Tabs tabs={tabs} defaultTab="all" onChange={setActiveTab} />
 
@@ -589,13 +740,66 @@ export default function SubmissionsListPage() {
           </form>
         </Modal>
       </div>
+      {/* View Submission Modal */}
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedSubmission(null);
+        }}
+        title="Detail Pengajuan"
+        size="2xl"
+      >
+        {selectedSubmission && (
+          <SubmissionDetailView
+            submission={selectedSubmission}
+            onClose={() => {
+              setViewModalOpen(false);
+              setSelectedSubmission(null);
+            }}
+            onDelete={() => {
+              setViewModalOpen(false);
+              setSelectedSubmission(null);
+              fetchData();
+            }}
+          />
+        )}
+      </Modal>
     </Shell>
   );
 }
 
-function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }: any) {
+function SubmissionsList({
+  submissions,
+  loading,
+  getStatusColor,
+  getStatusIcon,
+  selectedIds = [],
+  onToggleSelect,
+  onToggleSelectAll,
+  onView // New prop
+}: any) {
+  const isAllSelected = submissions.length > 0 && selectedIds.length === submissions.length;
+
   return (
     <div className="p-4 sm:p-6 relative">
+      {submissions.length > 0 && (
+        <div className="mb-4 flex items-center gap-3 px-4 py-2 bg-slate-50/50 rounded-xl border border-slate-100 w-fit">
+          <label className="flex items-center gap-2 cursor-pointer group">
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSelectAll();
+              }}
+              className={`w-5 h-5 rounded-md border-2 transition-all flex items-center justify-center ${isAllSelected ? 'bg-sky-500 border-sky-500 shadow-sm shadow-sky-200' : 'border-slate-300 group-hover:border-slate-400'
+                }`}
+            >
+              {isAllSelected && <Check size={14} className="text-white stroke-[4]" />}
+            </div>
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest select-none">Pilih Semua</span>
+          </label>
+        </div>
+      )}
       {loading && (
         <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-sm z-10 flex items-center justify-center rounded-3xl transition-all">
           <div className="bg-white p-4 rounded-full shadow-2xl border border-slate-100 scale-110">
@@ -623,17 +827,31 @@ function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }
             >
               <div className="flex flex-col gap-5">
                 <div className="flex items-start justify-between">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest"># {sub.no_pengajuan}</span>
+                  {/* Checkbox */}
+                  <div className="flex items-start gap-4 flex-1">
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleSelect(sub.id);
+                      }}
+                      className={`w-6 h-6 rounded-lg border-2 mt-1 transition-all flex items-center justify-center shrink-0 cursor-pointer ${selectedIds.includes(sub.id) ? 'bg-sky-500 border-sky-500 shadow-sm shadow-sky-200' : 'border-slate-200 bg-white hover:border-slate-300'
+                        }`}
+                    >
+                      {selectedIds.includes(sub.id) && <Check size={16} className="text-white stroke-[4]" />}
                     </div>
-                    <h3 className="font-black text-slate-900 text-lg leading-tight group-hover:text-sky-600 transition-colors line-clamp-2 pr-4">{sub.description}</h3>
+                    <div className="space-y-1.5 flex-1 cursor-pointer" onClick={() => onToggleSelect(sub.id)}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest"># {sub.no_pengajuan}</span>
+                      </div>
+                      <h3 className="font-black text-slate-900 text-lg leading-tight group-hover:text-sky-600 transition-colors line-clamp-2 pr-4">{sub.description}</h3>
+                    </div>
                   </div>
-                  <Link href={`/submissions/${sub.id}`}>
-                    <button className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-sky-500 group-hover:text-white rounded-2xl transition-all shadow-sm active:scale-90">
-                      <Eye size={22} />
-                    </button>
-                  </Link>
+                  <div
+                    onClick={() => onView(sub)}
+                    className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-sky-500 group-hover:text-white rounded-2xl transition-all shadow-sm active:scale-90 cursor-pointer"
+                  >
+                    <Eye size={22} />
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -650,20 +868,27 @@ function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-5 border-t border-slate-50">
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tanggal</span>
-                      <span className="text-sm font-bold text-slate-600">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-1">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-100">
+                      <DollarSign size={14} />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total</p>
+                      <p className="font-black text-slate-900 text-sm">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Estimasi</p>
-                    <p className="text-xl font-black text-slate-900 tracking-tight">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
+                  <div className="flex items-center gap-3 text-right">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tanggal</p>
+                      <p className="font-bold text-slate-600 text-xs">{new Date(sub.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
+                      <Calendar size={14} />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform" />
             </motion.div>
           ))}
         </div>
@@ -671,3 +896,19 @@ function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }
     </div>
   );
 }
+
+export default function SubmissionsListPage() {
+  return (
+    <Suspense fallback={
+      <Shell>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="animate-spin text-sky-500 w-8 h-8" />
+        </div>
+      </Shell>
+    }>
+      <SubmissionsPageContent />
+    </Suspense>
+  );
+}
+
+

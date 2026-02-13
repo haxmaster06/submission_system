@@ -502,6 +502,36 @@
         </div> --}}
 
         <div class="approval-grid">
+            {{-- Requestor Box --}}
+            <div class="approval-box">
+                <div class="approval-box-header">
+                    <div class="approval-box-header-inner">PEMOHON</div>
+                </div>
+
+                <div class="approval-signature">
+                    @if ($submission->requestor_signature_base64)
+                        <img src="{{ $submission->requestor_signature_base64 }}" alt="Signed">
+                    @elseif ($submission->user->signature_path)
+                         @if ($isPdf)
+                            <img src="{{ public_path('logo.png') }}" alt="Signed">
+                        @else
+                            <img src="{{ asset($submission->user->signature_path) }}" alt="Signed">
+                        @endif
+                    @else
+                        <div style="color:#bbb; font-size:9px; font-style:italic;">(Draft)</div>
+                    @endif
+                </div>
+
+                <div class="approval-box-footer">
+                    <div style="font-size:9.5px; font-weight:700; color:#333;">
+                        {{ $submission->user->name }}
+                    </div>
+                    <div style="font-size:8px; color:#aaa; margin-top:2px;">
+                        {{ $submission->tanggal_pengajuan->format('d/m/Y') }}
+                    </div>
+                </div>
+            </div>
+
             @foreach ($submission->approvals->sortBy('step_order') as $approval)
                 <div class="approval-box">
 

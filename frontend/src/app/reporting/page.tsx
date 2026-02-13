@@ -105,6 +105,7 @@ export default function ReportingPage() {
   };
 
   const handleView = async (id: number) => {
+    setSelectedSubmission(null);
     setIsDrawerOpen(true);
     setDetailLoading(true);
     try {
@@ -365,7 +366,7 @@ export default function ReportingPage() {
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
         title="Detail Pengajuan"
-        size="xl"
+        size="2xl"
       >
         <div className="p-0">
           {detailLoading ? (

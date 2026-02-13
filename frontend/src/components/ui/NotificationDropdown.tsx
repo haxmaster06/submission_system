@@ -33,38 +33,38 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
 
     // Setup Realtime Listener
     if (userId) {
-        console.log(`Listening to App.Models.User.${userId}`);
-        const channel = echo.private(`App.Models.User.${userId}`);
-        
-        channel.notification((notification: any) => {
-            console.log('New Notification:', notification);
-            // Add new notification to top of list
-            const newNotif = {
-                id: notification.id,
-                type: notification.type,
-                data: notification,
-                read_at: null,
-                created_at: new Date().toISOString()
-            };
-            
-            setNotifications(prev => {
-                // Remove existing notification with same ID to prevent key collision
-                const filtered = prev.filter(n => n.id !== newNotif.id);
-                return [newNotif, ...filtered];
-            });
-            // Only increment unread count if it wasn't already there?
-            // Simplified: Incrementing unread count on new notification event.
-            // If it's a duplicate event, it might double count, but prevents crash.
-            setUnreadCount(prev => prev + 1);
-            
-            // Play sound (optional)
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(e => console.log('Audio play failed', e));
+      console.log(`Listening to App.Models.User.${userId}`);
+      const channel = echo.private(`App.Models.User.${userId}`);
+
+      channel.notification((notification: any) => {
+        console.log('New Notification Event:', notification);
+
+        // Reverb/Pusher notification payload structure might vary
+        // Local fallback if data is nested
+        const notificationData = notification.data || notification;
+
+        const newNotif: Notification = {
+          id: notification.id || `notif-${Date.now()}`,
+          type: notification.type || 'App\\Notifications\\NewSubmissionNotification',
+          data: notificationData,
+          read_at: null,
+          created_at: notificationData.created_at || new Date().toISOString()
+        };
+
+        setNotifications(prev => {
+          const filtered = prev.filter(n => n.id !== newNotif.id);
+          return [newNotif, ...filtered];
         });
 
-        return () => {
-            echo.leave(`App.Models.User.${userId}`);
-        };
+        setUnreadCount(prev => prev + 1);
+
+        // Haptic/Visual cue instead of sound if missing
+        console.log('Real-time notification added to UI');
+      });
+
+      return () => {
+        echo.leave(`App.Models.User.${userId}`);
+      };
     }
   }, [userId]);
 
@@ -83,7 +83,7 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
     try {
       const res = await api.get('/notifications');
       setNotifications(res.data.data);
-      setUnreadCount(res.data.data.length); 
+      setUnreadCount(res.data.data.length);
     } catch (err) {
       console.error('Failed to fetch notifications', err);
     } finally {
@@ -113,7 +113,7 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <button 
+      <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 text-slate-400 hover:text-slate-600 transition-colors relative rounded-full hover:bg-slate-100"
       >
@@ -137,11 +137,11 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
             <div className="flex items-center justify-between p-4 border-b border-slate-100 bg-slate-50/50">
               <h3 className="font-bold text-slate-800 text-sm">Notifikasi</h3>
               {notifications.length > 0 && (
-                <button 
-                    onClick={markAllRead}
-                    className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
+                <button
+                  onClick={markAllRead}
+                  className="text-xs text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1"
                 >
-                    <Check size={14} /> Tandai semua dibaca
+                  <Check size={14} /> Tandai semua dibaca
                 </button>
               )}
             </div>
@@ -158,51 +158,50 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
                 <div className="divide-y divide-slate-50">
                   {notifications.map((notif) => (
                     <div key={notif.id} className="p-4 hover:bg-slate-50 transition-colors group relative">
-                        <div className="flex gap-3">
-                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${
-                                notif.data.status === 'approved' ? 'bg-emerald-500' : 
-                                notif.data.status === 'rejected' ? 'bg-red-500' : 
-                                'bg-sky-500'
-                            }`} />
-                            <div className="flex-1 min-w-0">
-                                <Link 
-                                    href={notif.data.link || '#'} 
-                                    onClick={() => setIsOpen(false)}
-                                    className="block"
-                                >
-                                    <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">
-                                        {notif.data.title || notif.data.message}
-                                    </p>
-                                    <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                        {notif.data.message}
-                                    </p>
-                                    <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                                        {new Date(notif.created_at).toLocaleString('id-ID', {
-                                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
-                                        })}
-                                    </p>
-                                </Link>
-                            </div>
-                            <button 
-                                onClick={() => markAsRead(notif.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-all self-start"
-                                title="Tandai sudah dibaca"
-                            >
-                                <Check size={14} />
-                            </button>
+                      <div className="flex gap-3">
+                        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${notif.data.status === 'approved' ? 'bg-emerald-500' :
+                            notif.data.status === 'rejected' ? 'bg-red-500' :
+                              'bg-sky-500'
+                          }`} />
+                        <div className="flex-1 min-w-0">
+                          <Link
+                            href={notif.data.link || '#'}
+                            onClick={() => setIsOpen(false)}
+                            className="block"
+                          >
+                            <p className="text-sm font-semibold text-slate-800 truncate mb-0.5">
+                              {notif.data.title || notif.data.message}
+                            </p>
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                              {notif.data.message}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                              {new Date(notif.created_at).toLocaleString('id-ID', {
+                                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                              })}
+                            </p>
+                          </Link>
                         </div>
+                        <button
+                          onClick={() => markAsRead(notif.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 transition-all self-start"
+                          title="Tandai sudah dibaca"
+                        >
+                          <Check size={14} />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
-            
+
             {notifications.length > 5 && (
-                <div className="p-2 border-t border-slate-100 bg-slate-50 text-center">
-                    <button className="text-xs text-slate-500 hover:text-sky-600 font-medium transition-colors">
-                        Lihat Semua Notifikasi
-                    </button>
-                </div>
+              <div className="p-2 border-t border-slate-100 bg-slate-50 text-center">
+                <button className="text-xs text-slate-500 hover:text-sky-600 font-medium transition-colors">
+                  Lihat Semua Notifikasi
+                </button>
+              </div>
             )}
           </motion.div>
         )}

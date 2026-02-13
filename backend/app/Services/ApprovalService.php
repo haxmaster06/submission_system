@@ -42,6 +42,13 @@ class ApprovalService
                 ]);
             }
 
+            // Notify First Approver
+            $firstApproval = $submission->approvals->where('step_order', 1)->first();
+            if ($firstApproval) {
+                $approvers = $this->getApproversForRole($firstApproval->role_name);
+                Notification::send($approvers, new NewSubmissionNotification($submission));
+            }
+
             return $submission->approvals;
         });
     }

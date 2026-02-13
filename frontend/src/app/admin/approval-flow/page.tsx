@@ -114,7 +114,7 @@ function DraggableStepCard({
           )}
         </div>
       </div>
-      <div className="absolute -top-2 -right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      <div className="absolute -top-2 -right-2 flex gap-1 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity z-10">
         <button
           type="button"
           onClick={() => onEdit(step)}
@@ -387,7 +387,7 @@ export default function ApprovalFlowPage() {
 
     return scenarios.map(scenario => {
       let roles = [...baseRoles];
-      
+
       // Evaluate conditions (simplified client-side preview)
       for (const cond of activeConds) {
         const ruleResults = cond.condition_rules.map(rule => {
@@ -537,21 +537,19 @@ export default function ApprovalFlowPage() {
                     <motion.div
                       key={cond.id}
                       layout
-                      className={`border rounded-xl p-5 transition-all ${
-                        cond.is_active
+                      className={`border rounded-xl p-5 transition-all ${cond.is_active
                           ? 'border-amber-200 bg-amber-50/30'
                           : 'border-slate-200 bg-slate-50/50 opacity-60'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-bold text-slate-800 text-sm">{cond.name}</h3>
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                              cond.is_active
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${cond.is_active
                                 ? 'bg-emerald-100 text-emerald-700'
                                 : 'bg-slate-200 text-slate-500'
-                            }`}>
+                              }`}>
                               {cond.is_active ? 'Aktif' : 'Nonaktif'}
                             </span>
                           </div>
@@ -581,9 +579,8 @@ export default function ApprovalFlowPage() {
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => handleToggleCond(cond)}
-                            className={`p-2 rounded-lg transition-colors ${
-                              cond.is_active ? 'text-emerald-600 hover:bg-emerald-100' : 'text-slate-400 hover:bg-slate-100'
-                            }`}
+                            className={`p-2 rounded-lg transition-colors ${cond.is_active ? 'text-emerald-600 hover:bg-emerald-100' : 'text-slate-400 hover:bg-slate-100'
+                              }`}
                             title={cond.is_active ? 'Nonaktifkan' : 'Aktifkan'}
                           >
                             {cond.is_active ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
@@ -627,9 +624,8 @@ export default function ApprovalFlowPage() {
                     return (
                       <div
                         key={si}
-                        className={`rounded-xl border p-4 ${
-                          hasExtra ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200 bg-slate-50/50'
-                        }`}
+                        className={`rounded-xl border p-4 ${hasExtra ? 'border-amber-200 bg-amber-50/20' : 'border-slate-200 bg-slate-50/50'
+                          }`}
                       >
                         <p className="font-bold text-slate-700 text-xs mb-3 flex items-center gap-2">
                           {hasExtra && <Zap size={12} className="text-amber-500" />}
@@ -641,11 +637,10 @@ export default function ApprovalFlowPage() {
                             const isInserted = !activeFlow?.steps.some(s => s.role_name === role);
                             return (
                               <React.Fragment key={ri}>
-                                <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                                  isInserted
+                                <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${isInserted
                                     ? 'bg-amber-100 text-amber-700 border border-amber-300'
                                     : 'bg-sky-50 text-sky-700 border border-sky-200'
-                                }`}>
+                                  }`}>
                                   {role}
                                 </span>
                                 {ri < scenario.roles.length - 1 && (
@@ -811,11 +806,10 @@ export default function ApprovalFlowPage() {
                       {lookups?.condition_types.map(ct => (
                         <label
                           key={ct.value}
-                          className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all text-sm font-medium ${
-                            condForm.condition_type === ct.value
+                          className={`flex-1 flex items-center gap-2 p-3 rounded-xl border-2 cursor-pointer transition-all text-sm font-medium ${condForm.condition_type === ct.value
                               ? 'border-sky-400 bg-sky-50 text-sky-700'
                               : 'border-slate-200 text-slate-500 hover:border-slate-300'
-                          }`}
+                            }`}
                         >
                           <input
                             type="radio"

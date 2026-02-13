@@ -60,7 +60,7 @@ export default function SignatureCanvas({ onSave, onClear }: SignatureCanvasProp
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+
     return {
       offsetX: (clientX - rect.left) * (canvas.width / rect.width),
       offsetY: (clientY - rect.top) * (canvas.height / rect.height),
@@ -87,17 +87,27 @@ export default function SignatureCanvas({ onSave, onClear }: SignatureCanvasProp
           onMouseMove={draw}
           onMouseUp={stopDrawing}
           onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-          className="w-full h-[200px] block"
+          onTouchStart={(e) => {
+            e.preventDefault();
+            startDrawing(e);
+          }}
+          onTouchMove={(e) => {
+            e.preventDefault();
+            draw(e);
+          }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            stopDrawing();
+          }}
+          style={{ touchAction: 'none' }}
+          className="w-full h-[200px] block touch-none"
         />
         <div className="absolute top-4 left-4 pointer-events-none">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-white/80 px-2 py-1 rounded shadow-sm">Area Tanda Tangan Digital</p>
         </div>
       </div>
-      <button 
-        type="button" 
+      <button
+        type="button"
         onClick={clear}
         className="text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors uppercase tracking-widest flex items-center gap-2"
       >

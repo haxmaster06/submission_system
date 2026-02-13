@@ -29,7 +29,7 @@ services:
       REVERB_APP_ID: ${REVERB_APP_ID}
       REVERB_APP_KEY: ${REVERB_APP_KEY}
       REVERB_APP_SECRET: ${REVERB_APP_SECRET}
-      REVERB_HOST: "0.0.0.0"
+      REVERB_HOST: "hbm-reverb"
       REVERB_PORT: 8080
       REVERB_SCHEME: http
     networks:
@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
     command: php artisan reverb:start --host="0.0.0.0" --port=8080
     ports:
-      - "8066:8080"
+      - "8066:8080" # Keeping it for direct debug if needed, but not primary
     volumes:
       - ./backend:/var/www
     networks:
@@ -110,6 +110,47 @@ services:
 
     networks:
       - hbm-network
+
+  hbm-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: hbm-backend
+    container_name: hbm-worker
+    restart: unless-stopped
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    environment:
+      APP_NAME: "HBM Budgeting"
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: "false"
+      APP_URL: http://36.92.42.135:3030
+      DB_CONNECTION: mysql
+      DB_HOST: hbm-db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BROADCAST_CONNECTION: reverb
+      QUEUE_CONNECTION: database
+      REDIS_HOST: hbm-redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REVERB_APP_ID: ${REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET}
+      REVERB_HOST: "hbm-reverb"
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
+    networks:
+      - hbm-network
+    depends_on:
+      - hbm-app
+      - hbm-db
+      - hbm-redis
 
 networks:
   hbm-network:
