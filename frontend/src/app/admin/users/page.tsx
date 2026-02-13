@@ -5,14 +5,14 @@ import Shell from '@/components/layout/Shell';
 import Tabs from '@/components/ui/Tabs';
 import Modal from '@/components/ui/Modal';
 import api from '@/lib/api';
-import { 
-  Users, 
-  Shield, 
+import {
+  Users,
+  Shield,
   FileText,
-  Plus, 
-  Edit2, 
+  Plus,
+  Edit2,
   Trash2,
-  Loader2, 
+  Loader2,
   Search,
   Briefcase,
   User,
@@ -33,12 +33,12 @@ export default function UserManagementPage() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [lookups, setLookups] = useState<any>({ divisions: [], roles: [] });
   const [search, setSearch] = useState('');
-  
+
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
-  
+
   // User form state
   const [userForm, setUserForm] = useState({
     name: '',
@@ -134,8 +134,8 @@ export default function UserManagementPage() {
     }
   };
 
-  const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -152,15 +152,15 @@ export default function UserManagementPage() {
           <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center mb-6">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input 
-                type="text" 
-                placeholder="Cari user berdasarkan nama atau email..." 
+              <input
+                type="text"
+                placeholder="Cari user berdasarkan nama atau email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all text-sm"
               />
             </div>
-            <button 
+            <button
               onClick={() => openUserModal()}
               className="bg-sky-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-600 shadow-lg shadow-sky-100 flex items-center gap-2 transition-all"
             >
@@ -201,13 +201,13 @@ export default function UserManagementPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={() => openUserModal(user)}
                       className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
                     >
                       <Edit2 size={18} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => deleteUser(user.id)}
                       className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                     >
@@ -228,7 +228,8 @@ export default function UserManagementPage() {
       badge: roles.length,
       content: (
         <div className="p-6">
-          <div className="overflow-x-auto">
+          {/* Desktop Matrix View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
@@ -241,12 +242,11 @@ export default function UserManagementPage() {
                         <Shield className="w-4 h-4 text-sky-500" />
                         <span>{translateRole(role.name)}</span>
                         <Link href={`/admin/roles/${role.id}/edit`}>
-                          <button 
-                            className={`p-1.5 rounded-lg transition-all text-xs ${
-                              role.name === 'Super Admin' 
-                                ? 'text-slate-300 cursor-not-allowed bg-slate-100' 
+                          <button
+                            className={`p-1.5 rounded-lg transition-all text-xs ${role.name === 'Super Admin'
+                                ? 'text-slate-300 cursor-not-allowed bg-slate-100'
                                 : 'text-slate-500 hover:text-sky-600 hover:bg-sky-50 border border-slate-200'
-                            }`}
+                              }`}
                             disabled={role.name === 'Super Admin'}
                             title={role.name === 'Super Admin' ? 'Super Admin tidak dapat diubah' : `Edit ${role.name}`}
                           >
@@ -282,6 +282,42 @@ export default function UserManagementPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Matrix View (Accordion-like cards) */}
+          <div className="md:hidden space-y-4">
+            {roles.map((role) => (
+              <div key={role.id} className="bg-slate-50 border border-slate-100 rounded-[24px] overflow-hidden">
+                <div className="p-4 bg-white flex items-center justify-between border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Shield size={16} className="text-sky-500" />
+                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight">{translateRole(role.name)}</span>
+                  </div>
+                  {role.name !== 'Super Admin' && (
+                    <Link href={`/admin/roles/${role.id}/edit`}>
+                      <button className="text-[10px] font-black text-sky-600 uppercase tracking-widest bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100">
+                        Edit
+                      </button>
+                    </Link>
+                  )}
+                </div>
+                <div className="p-4 grid grid-cols-1 gap-2">
+                  {permissions.map((perm) => {
+                    const hasPerm = role.permissions.some((p: any) => p.name === perm);
+                    return (
+                      <div key={perm} className="flex items-center justify-between py-1 px-2 rounded-lg bg-white/50 border border-white">
+                        <span className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{translatePermission(perm)}</span>
+                        {hasPerm ? (
+                          <CheckCircle2 size={12} className="text-emerald-500" />
+                        ) : (
+                          <XCircle size={12} className="text-slate-300" />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )
     },
@@ -310,8 +346,8 @@ export default function UserManagementPage() {
         <Tabs tabs={tabs} defaultTab="users" onChange={setActiveTab} />
 
         {/* User Form Modal */}
-        <Modal 
-          isOpen={isUserModalOpen} 
+        <Modal
+          isOpen={isUserModalOpen}
           onClose={closeUserModal}
           title={editingUser ? 'Edit User' : 'Tambah User Baru'}
           size="md"
@@ -321,11 +357,11 @@ export default function UserManagementPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Lengkap</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input 
+                <input
                   type="text"
                   required
                   value={userForm.name}
-                  onChange={(e) => setUserForm({...userForm, name: e.target.value})}
+                  onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
                   placeholder="e.g. John Doe"
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                 />
@@ -336,11 +372,11 @@ export default function UserManagementPage() {
               <label className="block text-sm font-semibold text-slate-700 mb-2">Alamat Email</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input 
+                <input
                   type="email"
                   required
                   value={userForm.email}
-                  onChange={(e) => setUserForm({...userForm, email: e.target.value})}
+                  onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
                   placeholder="e.g. john@hbm.com"
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                 />
@@ -353,11 +389,11 @@ export default function UserManagementPage() {
               </label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                <input 
+                <input
                   type="password"
                   required={!editingUser}
                   value={userForm.password}
-                  onChange={(e) => setUserForm({...userForm, password: e.target.value})}
+                  onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
                   placeholder="••••••••"
                   className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
                 />
@@ -369,9 +405,9 @@ export default function UserManagementPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi</label>
                 <div className="relative">
                   <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
-                  <select 
+                  <select
                     value={userForm.division_id}
-                    onChange={(e) => setUserForm({...userForm, division_id: e.target.value})}
+                    onChange={(e) => setUserForm({ ...userForm, division_id: e.target.value })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium appearance-none"
                   >
                     <option value="" className="text-slate-400">Tidak Ada Divisi</option>
@@ -384,10 +420,10 @@ export default function UserManagementPage() {
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Peran / Role</label>
                 <div className="relative">
                   <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-400 w-5 h-5 pointer-events-none" />
-                  <select 
+                  <select
                     required
                     value={userForm.role}
-                    onChange={(e) => setUserForm({...userForm, role: e.target.value})}
+                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
                     className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium appearance-none"
                   >
                     <option value="" className="text-slate-400">Pilih Role</option>
@@ -398,14 +434,14 @@ export default function UserManagementPage() {
             </div>
 
             <div className="flex justify-end gap-4 pt-4">
-              <button 
+              <button
                 type="button"
                 onClick={closeUserModal}
                 className="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
               >
                 Batal
               </button>
-              <button 
+              <button
                 type="submit"
                 disabled={submitting}
                 className="px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-70 transition-all"

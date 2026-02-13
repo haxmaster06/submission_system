@@ -100,45 +100,53 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-72 bg-white z-[70] shadow-2xl xl:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 w-80 bg-white z-[70] shadow-2xl xl:hidden flex flex-col"
             >
-              <div className="p-6 flex items-center justify-between border-b border-slate-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 overflow-hidden">
-                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
+              <div className="p-8 landscape:p-4 flex items-center justify-between border-b border-slate-50 bg-slate-50/30">
+                <div className="flex items-center gap-4 landscape:gap-3">
+                  <div className="w-12 h-12 landscape:w-8 landscape:h-8 bg-white rounded-2xl landscape:rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-sky-100 border border-white overflow-hidden">
+                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1.5 landscape:p-1" />
                   </div>
-                  <span className="font-bold text-slate-800">HBM Budgeting</span>
+                  <div>
+                    <span className="font-black text-slate-900 block text-lg landscape:text-sm leading-none">HBM</span>
+                    <span className="text-[10px] landscape:text-[8px] font-black text-sky-500 uppercase tracking-[0.2em]">Budgeting</span>
+                  </div>
                 </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-slate-400">
-                  <X size={20} />
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 landscape:p-1.5 bg-slate-100 text-slate-500 rounded-2xl landscape:rounded-xl hover:bg-slate-200 transition-colors">
+                  <X size={20} className="landscape:w-4 landscape:h-4" />
                 </button>
               </div>
 
-              <nav className="flex-1 px-4 space-y-6 pt-6 overflow-y-auto custom-scrollbar">
+              <nav className="flex-1 px-5 landscape:px-4 space-y-8 landscape:space-y-4 pt-8 landscape:pt-4 overflow-y-auto custom-scrollbar pb-10 landscape:pb-6">
                 {navGroups.map((group) => (
-                  <div key={group.group} className="space-y-1.5">
-                    <p className="px-3 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                  <div key={group.group} className="space-y-3 landscape:space-y-2">
+                    <p className="px-4 text-[10px] landscape:text-[8px] font-black text-slate-400 uppercase tracking-widest">
                       {group.group}
                     </p>
-                    {group.items.map((item: any) => {
-                      const isActive = pathname === item.href;
-                      return (
-                        <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                          <div className={`flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${isActive ? 'bg-sky-50 text-sky-600 shadow-sm' : 'text-slate-500'}`}>
-                            <item.icon className="w-5 h-5 shrink-0" />
-                            <span className="font-semibold text-sm">{item.name}</span>
-                          </div>
-                        </Link>
-                      );
-                    })}
+                    <div className="space-y-1 landscape:space-y-0.5">
+                      {group.items.map((item: any) => {
+                        const isActive = pathname === item.href;
+                        return (
+                          <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                            <div className={`flex items-center gap-4 landscape:gap-3 px-4 py-4 landscape:py-2.5 rounded-[20px] landscape:rounded-[12px] transition-all ${isActive ? 'bg-sky-500 text-white shadow-lg shadow-sky-100' : 'text-slate-500 active:bg-slate-50'}`}>
+                              <item.icon className={`w-5 h-5 landscape:w-4 landscape:h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                              <span className={`font-bold text-sm landscape:text-xs ${isActive ? 'text-white' : 'text-slate-700'}`}>{item.name}</span>
+                              {isActive && <motion.div layoutId="mobile-active" className="ml-auto w-1.5 h-1.5 bg-white rounded-full" />}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
                   </div>
                 ))}
               </nav>
 
-              <div className="p-4 border-t border-slate-100">
-                <button onClick={logout} className="w-full flex items-center gap-3 px-3 py-4 rounded-xl text-red-500">
-                  <LogOut className="w-5 h-5 shrink-0" />
-                  <span className="font-bold text-sm">Keluar</span>
+              <div className="p-6 landscape:p-3 border-t border-slate-100 bg-slate-50/30">
+                <button onClick={logout} className="w-full flex items-center gap-4 landscape:gap-3 px-4 py-4 landscape:py-2 rounded-[24px] landscape:rounded-[16px] text-red-500 bg-red-50/50 active:bg-red-50 transition-colors">
+                  <div className="w-10 h-10 landscape:w-8 landscape:h-8 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                    <LogOut className="w-5 h-5 landscape:w-4 landscape:h-4 shrink-0" />
+                  </div>
+                  <span className="font-black text-sm landscape:text-xs uppercase tracking-wider">Keluar</span>
                 </button>
               </div>
             </motion.aside>
@@ -196,13 +204,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 xl:px-8 shrink-0">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between px-6 xl:px-8 shrink-0 sticky top-0 z-50">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="xl:hidden p-2 hover:bg-slate-100 rounded-lg text-slate-500"
+              className="xl:hidden p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-600 transition-colors shadow-sm active:scale-95"
             >
-              <Menu size={20} />
+              <Menu size={24} />
             </button>
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -220,8 +228,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                 <p className="text-sm font-semibold text-slate-800 leading-none">{user?.name}</p>
                 <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{user?.roles[0]?.display_name || user?.roles[0]?.name || 'User'} • {user?.division?.code}</p>
               </div>
-              <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200 overflow-hidden">
-                <User size={20} className="text-slate-400" />
+              <div className="w-12 h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm overflow-hidden">
+                <User size={24} className="text-slate-400" />
               </div>
             </div>
           </div>

@@ -65,33 +65,33 @@ export default function DashboardPage() {
     <Shell>
       <div className="max-w-7xl mx-auto pb-20 px-4 sm:px-6">
         {/* Modern Header */}
-        <header className="mb-6 lg:mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-3 py-1 bg-sky-100 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5">
+        <header className="mb-10 lg:mb-14 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2 mb-3">
+              <span className="px-3 py-1 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-sky-100">
                 <Shield size={12} />
                 {roleLabels[data?.role_scope] || 'Standard Access'}
               </span>
               {data?.user_division && (
-                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                <span className="px-3 py-1 bg-white text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100 shadow-sm">
                   {data.user_division}
                 </span>
               )}
             </div>
-            <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-              Halo, {user?.name.split(' ')[0]} 👋
+            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+              Halo, <span className="text-sky-500">{user?.name.split(' ')[0]}</span> 👋
             </h1>
-            <p className="text-slate-500 font-medium">Berikut adalah analitik anggaran hari ini.</p>
+            <p className="text-slate-500 font-semibold text-lg">Berikut adalah analitik anggaran hari ini.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-4 flex-1 sm:flex-initial">
-              <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center">
-                <Clock size={20} />
+            <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center gap-4 flex-1 sm:flex-initial">
+              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-inner">
+                <Clock size={24} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Avg Approval</p>
-                <p className="text-lg font-black text-slate-900 leading-none">{data?.aging} Hari</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none mb-1.5">Avg Approval</p>
+                <p className="text-xl font-black text-slate-900 leading-none">{data?.aging} Hari</p>
               </div>
             </div>
 
@@ -100,16 +100,16 @@ export default function DashboardPage() {
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-sky-500 text-white p-4 pr-6 rounded-3xl shadow-xl shadow-sky-200 flex items-center gap-4 group"
+                  className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white p-5 pr-8 rounded-[28px] shadow-xl shadow-sky-100 flex items-center gap-4 group border-b-4 border-sky-700/30"
                 >
-                  <div className="w-10 h-10 bg-white/20 rounded-2xl flex items-center justify-center font-black text-lg">
+                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-xl backdrop-blur-sm">
                     {data.approvals_count}
                   </div>
                   <div className="text-left">
-                    <p className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none mb-1">Queue</p>
-                    <p className="font-black text-sm uppercase tracking-tight">Butuh Persetujuan</p>
+                    <p className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none mb-1.5">Persetujuan</p>
+                    <p className="font-black text-sm uppercase tracking-tight">Antrean Masuk</p>
                   </div>
-                  <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform ml-2" />
+                  <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform ml-auto" />
                 </motion.button>
               </Link>
             )}
@@ -117,30 +117,31 @@ export default function DashboardPage() {
         </header>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
           {[
-            { label: 'Total Pengajuan', val: data?.counters?.total, icon: FileText, col: 'sky', delay: 0 },
-            { label: 'Menunggu', val: data?.counters?.pending, icon: Clock, col: 'amber', delay: 0.1 },
-            { label: 'Disetujui', val: data?.counters?.approved, icon: CheckCircle, col: 'emerald', delay: 0.2 },
-            { label: 'Outstanding', val: data?.counters?.outstanding ?? 0, icon: Zap, col: 'indigo', delay: 0.3 },
-            { label: 'Ditolak', val: data?.counters?.rejected, icon: AlertCircle, col: 'rose', delay: 0.4 }
+            { label: 'Total Pengajuan', val: data?.counters?.total, icon: FileText, col: 'sky', grad: 'from-sky-500 to-sky-600', delay: 0 },
+            { label: 'Menunggu', val: data?.counters?.pending, icon: Clock, col: 'amber', grad: 'from-amber-400 to-amber-500', delay: 0.1 },
+            { label: 'Disetujui', val: data?.counters?.approved, icon: CheckCircle, col: 'emerald', grad: 'from-emerald-500 to-emerald-600', delay: 0.2 },
+            { label: 'Outstanding', val: data?.counters?.outstanding ?? 0, icon: Zap, col: 'indigo', grad: 'from-indigo-500 to-indigo-600', delay: 0.3 },
+            { label: 'Ditolak', val: data?.counters?.rejected, icon: AlertCircle, col: 'rose', grad: 'from-rose-500 to-rose-600', delay: 0.4 }
           ].map((s) => (
             <motion.div
               key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: s.delay }}
-              className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-100 transition-all group"
+              className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-center gap-5">
-                <div className={`w-14 h-14 rounded-2xl bg-${s.col}-50 text-${s.col}-500 flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}>
+              <div className="flex items-center gap-5 relative z-10">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.grad} text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0`}>
                   <s.icon size={28} />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1.5">{s.label}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{s.label}</p>
                   <p className="text-3xl font-black text-slate-900 leading-none">{s.val}</p>
                 </div>
               </div>
+              <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-${s.col}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform`} />
             </motion.div>
           ))}
         </div>

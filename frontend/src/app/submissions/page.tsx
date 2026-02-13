@@ -251,8 +251,8 @@ export default function SubmissionsListPage() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border ${showFilters || Object.values(filters).some(v => v !== '')
-                  ? 'bg-sky-50 border-sky-200 text-sky-600 shadow-sm'
-                  : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
+                ? 'bg-sky-50 border-sky-200 text-sky-600 shadow-sm'
+                : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'
                 }`}
             >
               <Filter size={18} />
@@ -378,8 +378,8 @@ export default function SubmissionsListPage() {
                         type="button"
                         onClick={() => setForm({ ...form, status_urgent: status })}
                         className={`flex-1 py-4 rounded-2xl border text-sm font-black uppercase tracking-wider transition-all shadow-sm ${form.status_urgent === status
-                            ? 'bg-sky-600 border-sky-600 text-white ring-4 ring-sky-50'
-                            : 'bg-white border-slate-200 text-slate-500 hover:border-slate-900'
+                          ? 'bg-sky-600 border-sky-600 text-white ring-4 ring-sky-50'
+                          : 'bg-white border-slate-200 text-slate-500 hover:border-slate-900'
                           }`}
                       >
                         {status === 'urgent' ? <AlertCircle className="inline w-4 h-4 mr-1.5" /> : null}
@@ -595,58 +595,75 @@ export default function SubmissionsListPage() {
 
 function SubmissionsList({ submissions, loading, getStatusColor, getStatusIcon }: any) {
   return (
-    <div className="p-6 relative">
+    <div className="p-4 sm:p-6 relative">
       {loading && (
-        <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl transition-all">
-          <div className="bg-white p-3 rounded-full shadow-lg border border-slate-100 scale-110">
-            <Loader2 className="w-6 h-6 animate-spin text-sky-500" />
+        <div className="absolute inset-0 bg-slate-50/40 backdrop-blur-sm z-10 flex items-center justify-center rounded-3xl transition-all">
+          <div className="bg-white p-4 rounded-full shadow-2xl border border-slate-100 scale-110">
+            <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
           </div>
         </div>
       )}
       {submissions.length === 0 ? (
-        <div className="text-center py-16">
-          <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-400 font-medium">Tidak ada pengajuan ditemukan</p>
+        <div className="text-center py-20 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+          <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FileText className="w-10 h-10 text-slate-200" />
+          </div>
+          <p className="text-slate-400 font-black uppercase tracking-widest text-xs">Kosong</p>
+          <p className="text-slate-300 font-medium mt-2">Belum ada pengajuan untuk saat ini</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-5">
           {submissions.map((sub: any, idx: number) => (
             <motion.div
               key={sub.id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              className="bg-white border border-slate-200 rounded-xl p-6 hover:shadow-md transition-all group"
+              className="bg-white border border-slate-100 rounded-[28px] p-6 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="font-black text-slate-900 text-lg">{sub.no_pengajuan}</span>
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-bold capitalize ${getStatusColor(sub.final_status)}`}>
-                      {getStatusIcon(sub.final_status)}
-                      {sub.final_status === 'pending'
-                        ? (sub.current_step_role ? `Menunggu ${sub.current_step_role}` : 'Menunggu')
-                        : (sub.final_status === 'approved' ? 'Disetujui' : 'Ditolak')}
+              <div className="flex flex-col gap-5">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest"># {sub.no_pengajuan}</span>
+                    </div>
+                    <h3 className="font-black text-slate-900 text-lg leading-tight group-hover:text-sky-600 transition-colors line-clamp-2 pr-4">{sub.description}</h3>
+                  </div>
+                  <Link href={`/submissions/${sub.id}`}>
+                    <button className="w-12 h-12 flex items-center justify-center bg-slate-50 text-slate-400 group-hover:bg-sky-500 group-hover:text-white rounded-2xl transition-all shadow-sm active:scale-90">
+                      <Eye size={22} />
+                    </button>
+                  </Link>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-[11px] font-black uppercase tracking-wider shadow-sm ${getStatusColor(sub.final_status)}`}>
+                    {getStatusIcon(sub.final_status)}
+                    {sub.final_status === 'pending'
+                      ? (sub.current_step_role ? `Menunggu ${sub.current_step_role}` : 'Menunggu')
+                      : (sub.final_status === 'approved' ? 'Disetujui' : 'Ditolak')}
+                  </div>
+                  {sub.status_urgent === 'urgent' && (
+                    <div className="bg-rose-50 text-rose-500 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 flex items-center gap-1.5">
+                      <AlertCircle size={12} /> URGEN
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-5 border-t border-slate-50">
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tanggal</span>
+                      <span className="text-sm font-bold text-slate-600">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </div>
-                  <p className="text-slate-600 font-medium mb-3">{sub.description}</p>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar size={14} className="text-slate-400" />
-                      <span className="text-slate-500">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <TrendingUp size={14} className="text-slate-400" />
-                      <span className="font-bold text-slate-900">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</span>
-                    </div>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total Estimasi</p>
+                    <p className="text-xl font-black text-slate-900 tracking-tight">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
                   </div>
                 </div>
-                <Link href={`/submissions/${sub.id}`}>
-                  <button className="p-2.5 text-slate-400 group-hover:text-sky-500 group-hover:bg-sky-50 rounded-lg transition-all">
-                    <Eye size={20} />
-                  </button>
-                </Link>
               </div>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:scale-150 transition-transform" />
             </motion.div>
           ))}
         </div>

@@ -139,20 +139,25 @@ export default function MasterDataPage() {
   return (
     <Shell>
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
-              <Database className="text-sky-500" />
-              Master Data Manajemen
+        <header className="mb-10 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-3 py-1 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-sky-100">
+                <Database size={12} />
+                Administrator
+              </span>
+            </div>
+            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+              Master Data <span className="text-sky-500">Manajemen</span>
             </h1>
-            <p className="text-slate-500 text-sm mt-1">Kelola data dasar sistem budgeting HBM</p>
+            <p className="text-slate-500 font-semibold text-lg">Kelola data dasar sistem budgeting HBM</p>
           </div>
           <button
             onClick={handleCreate}
-            className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
+            className="w-full lg:w-auto bg-gradient-to-r from-sky-500 to-sky-600 hover:to-sky-700 text-white px-8 py-4 rounded-[28px] font-black text-sm uppercase tracking-wider transition-all shadow-xl shadow-sky-100 flex items-center justify-center gap-3 active:scale-95 border-b-4 border-sky-700/30"
           >
-            <Plus size={18} />
-            Tambah Data
+            <Plus size={22} strokeWidth={3} />
+            Tambah Data Baru
           </button>
         </header>
 
@@ -165,15 +170,15 @@ export default function MasterDataPage() {
             />
           </div>
 
-          <div className="p-4 border-b border-slate-100 bg-slate-50/50">
-            <div className="relative max-w-sm">
-              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <div className="p-6 border-b border-slate-100 bg-slate-50/30">
+            <div className="relative max-w-md">
+              <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input
                 type="text"
-                placeholder="Cari data..."
+                placeholder="Cari data berdasarkan nama atau kode..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-sky-500 outline-none text-sm font-medium"
+                className="w-full pl-12 pr-4 py-3.5 rounded-2xl border border-slate-200 focus:ring-4 focus:ring-sky-50 focus:border-sky-500 outline-none text-sm font-bold text-slate-900 transition-all placeholder:text-slate-400 shadow-sm"
               />
             </div>
           </div>
@@ -182,120 +187,141 @@ export default function MasterDataPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <Loader2 className="animate-spin text-sky-500" size={32} />
-                <p className="text-slate-400 font-medium text-sm">Memuat data...</p>
+                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Memuat data...</p>
               </div>
             ) : filteredData.length === 0 ? (
               <div className="text-center py-20">
-                <Search className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                <p className="text-slate-400 font-medium">Data tidak ditemukan</p>
+                <Search className="w-12 h-12 text-slate-100 mx-auto mb-4" />
+                <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">Data tidak ditemukan</p>
               </div>
             ) : (
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-slate-50 text-slate-600 text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
-                    {isSuperAdmin && <th className="px-6 py-4">ID</th>}
-                    {activeTab === 'urgency' && <th className="px-6 py-4 w-10"></th>}
-                    <th className="px-6 py-4">Nama</th>
-                    {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && <th className="px-6 py-4">Kode</th>}
-                    {activeTab === 'divisions' && <th className="px-6 py-4 text-right">Budget Limit</th>}
-                    {(activeTab === 'types' && isSuperAdmin) && <th className="px-6 py-4">Travel?</th>}
-                    {activeTab === 'urgency' && <th className="px-6 py-4">Level</th>}
-                    {(activeTab === 'types' && isSuperAdmin) && <th className="px-6 py-4">Schema JSON</th>}
-                    <th className="px-6 py-4 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                {activeTab === 'urgency' ? (
-                  <Reorder.Group as="tbody" axis="y" values={filteredData} onReorder={handleReorder} className="divide-y divide-slate-50">
-                    {filteredData.map((item) => (
-                      <Reorder.Item
-                        as="tr"
-                        key={item.id}
-                        value={item}
-                        className="hover:bg-slate-50/50 transition-colors bg-white cursor-move group"
-                      >
-                        {isSuperAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-500">#{item.id}</td>}
-                        <td className="px-6 py-4">
-                          <GripVertical className="text-slate-300 group-hover:text-slate-500 transition-colors" size={16} />
-                        </td>
-                        <td className="px-6 py-4 text-sm font-bold text-slate-700">
-                          <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                            {item.name}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-slate-700 font-mono">{item.code}</td>
-                        <td className="px-6 py-4 text-sm text-slate-700">{item.level}</td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleEdit(item)}
-                              className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </Reorder.Item>
-                    ))}
-                  </Reorder.Group>
-                ) : (
-                  <tbody className="divide-y divide-slate-50">
-                    {filteredData.map((item) => (
-                      <motion.tr
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        key={item.id}
-                        className="hover:bg-slate-50/50 transition-colors"
-                      >
-                        {isSuperAdmin && <td className="px-6 py-4 text-sm font-bold text-slate-400">#{item.id}</td>}
-                        <td className="px-6 py-4 text-sm font-bold text-slate-700">{item.name}</td>
-                        {(activeTab === 'divisions' || activeTab === 'uoms') && (
-                          <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.code}</td>
-                        )}
-                        {activeTab === 'divisions' && (
-                          <td className="px-6 py-4 text-sm text-slate-700 text-right font-mono">
-                            {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.budget_limit || 0)}
-                          </td>
-                        )}
-                        {activeTab === 'types' && isSuperAdmin && (
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-2 py-1 rounded-md font-bold text-[10px] uppercase ${item.requires_travel_type ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-400'}`}>
-                              {item.requires_travel_type ? 'Yes' : 'No'}
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                        {isSuperAdmin && <th className="px-6 py-4">ID</th>}
+                        {activeTab === 'urgency' && <th className="px-6 py-4 w-10"></th>}
+                        <th className="px-6 py-4">Nama</th>
+                        {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && <th className="px-6 py-4">Kode</th>}
+                        {activeTab === 'divisions' && <th className="px-6 py-4 text-right">Budget Limit</th>}
+                        {(activeTab === 'types' && isSuperAdmin) && <th className="px-6 py-4 text-center">Travel?</th>}
+                        {activeTab === 'urgency' && <th className="px-6 py-4">Level</th>}
+                        <th className="px-6 py-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    {activeTab === 'urgency' ? (
+                      <Reorder.Group as="tbody" axis="y" values={filteredData} onReorder={handleReorder} className="divide-y divide-slate-50">
+                        {filteredData.map((item) => (
+                          <Reorder.Item
+                            as="tr"
+                            key={item.id}
+                            value={item}
+                            className="hover:bg-slate-50/50 transition-colors bg-white cursor-move group"
+                          >
+                            {isSuperAdmin && <td className="px-6 py-4 text-xs font-bold text-slate-400">#{item.id}</td>}
+                            <td className="px-6 py-4">
+                              <GripVertical className="text-slate-300 group-hover:text-slate-500 transition-colors" size={16} />
+                            </td>
+                            <td className="px-6 py-4 text-sm font-bold text-slate-700">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                                {item.name}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.code}</td>
+                            <td className="px-6 py-4 text-sm text-slate-700">{item.level}</td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all">
+                                  <Edit2 size={16} />
+                                </button>
+                                <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </Reorder.Item>
+                        ))}
+                      </Reorder.Group>
+                    ) : (
+                      <tbody className="divide-y divide-slate-50">
+                        {filteredData.map((item) => (
+                          <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                            {isSuperAdmin && <td className="px-6 py-4 text-xs font-bold text-slate-400">#{item.id}</td>}
+                            <td className="px-6 py-4 text-sm font-bold text-slate-700">{item.name}</td>
+                            {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
+                              <td className="px-6 py-4 text-sm text-slate-600 font-mono">{item.code}</td>
+                            )}
+                            {activeTab === 'divisions' && (
+                              <td className="px-6 py-4 text-sm text-slate-700 text-right font-mono">
+                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(item.budget_limit || 0)}
+                              </td>
+                            )}
+                            {activeTab === 'types' && isSuperAdmin && (
+                              <td className="px-6 py-4 text-center">
+                                <span className={`px-2 py-0.5 rounded-md font-black text-[9px] uppercase ${item.requires_travel_type ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+                                  {item.requires_travel_type ? 'PELANCONG' : 'TIDAK'}
+                                </span>
+                              </td>
+                            )}
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button onClick={() => handleEdit(item)} className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all">
+                                  <Edit2 size={16} />
+                                </button>
+                                <button onClick={() => handleDelete(item.id)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    )}
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                  {filteredData.map((item) => (
+                    <div key={item.id} className="p-5 flex items-center justify-between gap-4 active:bg-slate-50 transition-colors">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          {activeTab === 'urgency' && <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />}
+                          <h4 className="font-black text-slate-900 text-sm truncate uppercase tracking-tight">{item.name}</h4>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          {isSuperAdmin && <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID: {item.id}</span>}
+                          {(activeTab === 'divisions' || activeTab === 'uoms' || activeTab === 'urgency') && (
+                            <span className="text-[10px] font-black text-sky-500 font-mono tracking-tighter bg-sky-50 px-1.5 py-0.5 rounded leading-none">{item.code}</span>
+                          )}
+                          {activeTab === 'divisions' && (
+                            <span className="text-[10px] font-black text-emerald-600 font-mono">
+                              Lim: {new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(item.budget_limit || 0)}
                             </span>
-                          </td>
-                        )}
-                        {activeTab === 'types' && isSuperAdmin && (
-                          <td className="px-6 py-4 text-sm text-slate-500 truncate max-w-[200px]">
-                            {JSON.stringify(item.form_schema_json)}
-                          </td>
-                        )}
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => handleEdit(item)}
-                              className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.id)}
-                              className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    ))}
-                  </tbody>
-                )}
-              </table>
+                          )}
+                          {activeTab === 'types' && (
+                            <span className={`text-[9px] font-black px-1.5 py-0.5 rounded uppercase leading-none ${item.requires_travel_type ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>
+                              {item.requires_travel_type ? 'TRAVEL' : 'REGULAR'}
+                            </span>
+                          )}
+                          {activeTab === 'urgency' && <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LV: {item.level}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleEdit(item)} className="w-10 h-10 flex items-center justify-center text-slate-400 active:bg-sky-50 active:text-sky-500 rounded-xl transition-all">
+                          <Edit2 size={18} />
+                        </button>
+                        <button onClick={() => handleDelete(item.id)} className="w-10 h-10 flex items-center justify-center text-slate-400 active:bg-red-50 active:text-red-500 rounded-xl transition-all">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -30,26 +30,24 @@ export default function Tabs({ tabs, defaultTab, onChange }: TabsProps) {
   return (
     <div className="w-full">
       {/* Tab Headers */}
-      <div className="border-b border-slate-200 bg-white rounded-t-2xl">
-        <div className="flex gap-1 p-2">
+      <div className="border-b border-slate-200 bg-white rounded-t-2xl overflow-hidden">
+        <div className="flex gap-1 p-2 overflow-x-auto scrollbar-hide flex-nowrap min-w-full">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 onClick={() => handleTabChange(tab.id)}
-                className={`relative px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 ${
-                  isActive
-                    ? 'text-sky-600 bg-sky-50'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
+                className={`relative px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2 shrink-0 whitespace-nowrap text-sm ${isActive
+                    ? 'text-sky-600 bg-sky-50 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
               >
                 {tab.icon && <span className="w-5 h-5">{tab.icon}</span>}
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    isActive ? 'bg-sky-500 text-white' : 'bg-slate-200 text-slate-600'
-                  }`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-sky-500 text-white' : 'bg-slate-200 text-slate-600'
+                    }`}>
                     {tab.badge}
                   </span>
                 )}

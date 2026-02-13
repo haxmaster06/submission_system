@@ -256,8 +256,9 @@ export default function ReportingPage() {
         </div>
 
         {/* Results Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white border border-slate-200 rounded-[32px] shadow-sm overflow-hidden">
+          {/* Desktop View */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
@@ -295,8 +296,8 @@ export default function ReportingPage() {
                       <td className="px-6 py-4 text-sm font-black text-sky-600 text-right">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                            sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
-                              'bg-amber-50 text-amber-600'
+                          sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
+                            'bg-amber-50 text-amber-600'
                           }`}>
                           {sub.final_status}
                         </span>
@@ -315,6 +316,46 @@ export default function ReportingPage() {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {loading ? (
+              <div className="p-10 text-center">
+                <Loader2 className="animate-spin text-sky-500 mx-auto mb-2" size={24} />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memuat...</p>
+              </div>
+            ) : submissions.length === 0 ? (
+              <div className="p-10 text-center">
+                <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kosong</p>
+              </div>
+            ) : (
+              submissions.map((sub) => (
+                <div key={sub.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors" onClick={() => handleView(sub.id)}>
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-sky-600 uppercase tracking-tight leading-none">{sub.no_pengajuan}</p>
+                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                      sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
+                        'bg-amber-50 text-amber-600'
+                      }`}>
+                      {sub.final_status}
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Divisi: <span className="text-slate-900">{sub.division.name}</span></p>
+                    <p className="text-[11px] font-bold text-slate-600 line-clamp-1">{sub.description}</p>
+                  </div>
+                  <div className="flex justify-between items-end border-t border-slate-50 pt-3">
+                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">TOTAL</p>
+                    <p className="text-lg font-black text-sky-600 leading-none">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

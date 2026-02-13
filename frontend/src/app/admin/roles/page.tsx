@@ -14,7 +14,7 @@ export default function RolesPermissionsPage() {
   const [roles, setRoles] = useState<any[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Permission Editor Modal states
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
@@ -63,7 +63,7 @@ export default function RolesPermissionsPage() {
 
   const handlePermissionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (selectedPermissions.length === 0) {
       alert('Minimal harus ada 1 permission untuk role ini.');
       return;
@@ -78,7 +78,7 @@ export default function RolesPermissionsPage() {
       await api.put(`/roles/${editingRole.id}/permissions`, {
         permissions: selectedPermissions
       });
-      
+
       // Refresh data
       await fetchRolesAndPermissions();
       alert('Permission berhasil diperbarui!');
@@ -108,7 +108,7 @@ export default function RolesPermissionsPage() {
         <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-            <input 
+            <input
               type="text"
               placeholder="Cari permission..."
               value={searchQuery}
@@ -124,8 +124,9 @@ export default function RolesPermissionsPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
+          {/* Desktop Table Matrix */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-md bg-white/80">
@@ -139,13 +140,12 @@ export default function RolesPermissionsPage() {
                           <Shield className="w-5 h-5" />
                         </div>
                         <span className="text-slate-900">{translateRole(role.name)}</span>
-                        <button 
+                        <button
                           onClick={() => openPermissionModal(role)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-wider ${
-                            role.name === 'Super Admin' 
-                              ? 'text-slate-300 cursor-not-allowed bg-slate-50' 
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-wider ${role.name === 'Super Admin'
+                              ? 'text-slate-300 cursor-not-allowed bg-slate-50'
                               : 'text-sky-600 bg-white border border-sky-100 hover:bg-sky-500 hover:text-white hover:border-sky-500 shadow-sm'
-                          }`}
+                            }`}
                           disabled={role.name === 'Super Admin'}
                         >
                           <Edit2 size={12} />
@@ -158,8 +158,8 @@ export default function RolesPermissionsPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {Object.entries(groupPermissions(permissions)).map(([group, groupPerms]: [string, any]) => {
-                  const filteredGroupPerms = groupPerms.filter((p: string) => 
-                    p.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                  const filteredGroupPerms = groupPerms.filter((p: string) =>
+                    p.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     translatePermission(p).toLowerCase().includes(searchQuery.toLowerCase())
                   );
 
@@ -180,7 +180,7 @@ export default function RolesPermissionsPage() {
                         </td>
                       </tr>
                       {filteredGroupPerms.map((permission: string, idx: number) => (
-                        <motion.tr 
+                        <motion.tr
                           key={permission}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -218,6 +218,54 @@ export default function RolesPermissionsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Card-Based Matrix */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {roles.map((role) => (
+              <div key={role.id} className="bg-white">
+                <div className="p-5 flex items-center justify-between bg-slate-50/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-sky-100 text-sky-600 rounded-xl flex items-center justify-center shadow-sm">
+                      <Shield size={16} />
+                    </div>
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{translateRole(role.name)}</h3>
+                  </div>
+                  {role.name !== 'Super Admin' && (
+                    <button
+                      onClick={() => openPermissionModal(role)}
+                      className="text-[10px] font-black text-sky-600 uppercase tracking-widest bg-white px-3 py-1.5 rounded-lg border border-sky-100 shadow-sm"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                <div className="p-4 space-y-6">
+                  {Object.entries(groupPermissions(permissions)).map(([group, groupPerms]: [string, any]) => (
+                    <div key={group} className="space-y-3">
+                      <div className="flex items-center gap-2 border-l-4 border-sky-400 pl-2">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{group}</span>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2">
+                        {groupPerms.map((perm: string) => {
+                          const hasP = role.permissions.some((p: any) => p.name === perm);
+                          return (
+                            <div key={perm} className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50 border border-slate-100 border-dashed">
+                              <span className="text-[10px] font-bold text-slate-700 leading-tight">{translatePermission(perm)}</span>
+                              {hasP ? (
+                                <CheckCircle2 size={14} className="text-emerald-500 shadow-sm" />
+                              ) : (
+                                <Circle size={10} className="text-slate-200" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -251,8 +299,8 @@ export default function RolesPermissionsPage() {
       </div>
 
       {/* Permission Editor Modal */}
-      <Modal 
-        isOpen={isPermissionModalOpen} 
+      <Modal
+        isOpen={isPermissionModalOpen}
         onClose={closePermissionModal}
         title={`Edit Hak Akses: ${editingRole?.name || ''}`}
         size="lg"
@@ -271,77 +319,76 @@ export default function RolesPermissionsPage() {
           </div>
 
           <div className="space-y-10 max-h-[550px] overflow-y-auto pr-6 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-sky-300 transition-colors">
-              {Object.entries(groupPermissions(permissions)).map(([group, groupPerms]: [string, any]) => {
-                const filteredGroupPerms = groupPerms.filter((p: string) => 
-                  p.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                  translatePermission(p).toLowerCase().includes(searchQuery.toLowerCase())
-                );
+            {Object.entries(groupPermissions(permissions)).map(([group, groupPerms]: [string, any]) => {
+              const filteredGroupPerms = groupPerms.filter((p: string) =>
+                p.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                translatePermission(p).toLowerCase().includes(searchQuery.toLowerCase())
+              );
 
-                if (filteredGroupPerms.length === 0) return null;
+              if (filteredGroupPerms.length === 0) return null;
 
-                return (
-                  <div key={group} className="relative">
-                    <div className="flex items-center gap-3 mb-5 sticky top-0 bg-white py-2 z-10 border-b border-slate-100">
-                      <div className="p-2 bg-sky-50 rounded-xl text-sky-600 shadow-sm">
-                        {getGroupIcon(group)}
-                      </div>
-                      <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">{group}</h4>
+              return (
+                <div key={group} className="relative">
+                  <div className="flex items-center gap-3 mb-5 sticky top-0 bg-white py-2 z-10 border-b border-slate-100">
+                    <div className="p-2 bg-sky-50 rounded-xl text-sky-600 shadow-sm">
+                      {getGroupIcon(group)}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredGroupPerms.map((permission: string) => {
-                        const isSelected = selectedPermissions.includes(permission);
-                        return (
-                          <motion.div
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            key={permission}
-                            onClick={() => togglePermission(permission)}
-                            className={`flex items-start gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer group shadow-sm ${
-                              isSelected 
-                                ? 'border-sky-500 bg-sky-50/50 ring-4 ring-sky-500/5' 
-                                : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-md'
-                            }`}
-                          >
-                            <div className="mt-0.5 shrink-0">
-                              {isSelected ? (
-                                <div className="w-7 h-7 rounded-xl bg-sky-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/30 transition-all group-hover:rotate-12">
-                                  <CheckCircle2 size={18} />
-                                </div>
-                              ) : (
-                                <div className="w-7 h-7 rounded-xl border-2 border-slate-100 bg-slate-50 group-hover:border-slate-300 group-hover:bg-white transition-all" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className={`font-black text-[15px] leading-tight mb-1.5 ${isSelected ? 'text-sky-900' : 'text-slate-800'}`}>
-                                {translatePermission(permission)}
-                              </p>
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[9px] text-slate-600 font-mono font-bold tracking-tight uppercase border border-slate-200 group-hover:bg-slate-200 transition-colors">
-                                  {permission}
-                                </span>
-                              </div>
-                              <p className={`text-xs leading-relaxed transition-colors ${isSelected ? 'text-sky-700/80' : 'text-slate-500 font-medium'}`}>
-                                {getPermissionDescription(permission)}
-                              </p>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                    <h4 className="text-xs font-black text-slate-600 uppercase tracking-widest">{group}</h4>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredGroupPerms.map((permission: string) => {
+                      const isSelected = selectedPermissions.includes(permission);
+                      return (
+                        <motion.div
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          key={permission}
+                          onClick={() => togglePermission(permission)}
+                          className={`flex items-start gap-4 p-5 rounded-2xl border-2 transition-all cursor-pointer group shadow-sm ${isSelected
+                              ? 'border-sky-500 bg-sky-50/50 ring-4 ring-sky-500/5'
+                              : 'border-slate-100 bg-white hover:border-slate-200 hover:shadow-md'
+                            }`}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {isSelected ? (
+                              <div className="w-7 h-7 rounded-xl bg-sky-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/30 transition-all group-hover:rotate-12">
+                                <CheckCircle2 size={18} />
+                              </div>
+                            ) : (
+                              <div className="w-7 h-7 rounded-xl border-2 border-slate-100 bg-slate-50 group-hover:border-slate-300 group-hover:bg-white transition-all" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className={`font-black text-[15px] leading-tight mb-1.5 ${isSelected ? 'text-sky-900' : 'text-slate-800'}`}>
+                              {translatePermission(permission)}
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 text-[9px] text-slate-600 font-mono font-bold tracking-tight uppercase border border-slate-200 group-hover:bg-slate-200 transition-colors">
+                                {permission}
+                              </span>
+                            </div>
+                            <p className={`text-xs leading-relaxed transition-colors ${isSelected ? 'text-sky-700/80' : 'text-slate-500 font-medium'}`}>
+                              {getPermissionDescription(permission)}
+                            </p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
           <div className="flex justify-end gap-4 pt-4 border-t border-slate-200">
-            <button 
+            <button
               type="button"
               onClick={closePermissionModal}
               className="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
             >
               Batal
             </button>
-            <button 
+            <button
               type="submit"
               disabled={submitting || selectedPermissions.length === 0}
               className="px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-50 transition-all"
@@ -359,13 +406,13 @@ export default function RolesPermissionsPage() {
 function groupPermissions(permissions: string[]) {
   const groups: Record<string, string[]> = {
     'Pengajuan (Submissions)': [
-      'create submissions', 
-      'view submissions', 
-      'delete submissions', 
+      'create submissions',
+      'view submissions',
+      'delete submissions',
       'complete submissions'
     ],
     'Persetujuan (Approvals)': [
-      'approve submissions', 
+      'approve submissions',
       'reject submissions'
     ],
     'Keuangan & Realisasi (Finance)': [
