@@ -25,7 +25,7 @@ Aplikasi ini dibangun menggunakan **Laravel 11 (Backend)** dan **Next.js 14 (Fro
 
 ```bash
 git clone <repository-url>
-cd hbm_budgeting_system
+cd submission_system
 ```
 
 ### 2. Backend Setup (Laravel)
@@ -57,6 +57,25 @@ npm run dev
 ```
 
 Aplikasi dapat diakses di `http://localhost:3000`.
+
+### 4. Running with Docker (Recommended)
+
+Pastikan Docker Desktop sudah terinstall.
+
+```bash
+# Build dan Jalankan Container
+docker-compose up -d --build
+
+# Setup Database di dalam Container
+docker-compose exec app php artisan migrate --seed
+docker-compose exec app php artisan key:generate
+```
+
+Akses Aplikasi:
+
+- Frontend: `http://localhost:3030`
+- Backend API: `http://localhost:8065`
+- Reverb WebSocket: `ws://localhost:8066`
 
 ## Testing
 

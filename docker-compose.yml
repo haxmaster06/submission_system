@@ -1,0 +1,122 @@
+version: "3.7"
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: hbm-backend
+    container_name: hbm-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+    environment:
+      APP_NAME: "HBM Budgeting"
+      APP_ENV: local
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: true
+      APP_URL: http://localhost:8065
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BROADCAST_CONNECTION: reverb
+      QUEUE_CONNECTION: database
+      REDIS_HOST: redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REVERB_APP_ID: ${REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET}
+      REVERB_HOST: "0.0.0.0"
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
+    networks:
+      - hbm-network
+
+  webserver:
+    image: nginx:alpine
+    container_name: hbm-nginx
+    restart: unless-stopped
+    ports:
+      - "8065:80"
+    volumes:
+      - ./backend:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - hbm-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: hbm-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3309:3306"
+    networks:
+      - hbm-network
+
+  redis:
+    image: redis:alpine
+    container_name: hbm-redis
+    restart: unless-stopped
+    ports:
+      - "6381:6379"
+    networks:
+      - hbm-network
+
+  reverb:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: hbm-reverb
+    container_name: hbm-reverb
+    restart: unless-stopped
+    command: php artisan reverb:start --host="0.0.0.0" --port=8080
+    ports:
+      - "8066:8080"
+    volumes:
+      - ./backend:/var/www
+    networks:
+      - hbm-network
+    depends_on:
+      - app
+      - redis
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8065/api
+        NEXT_PUBLIC_REVERB_APP_KEY: ${REVERB_APP_KEY}
+        NEXT_PUBLIC_REVERB_HOST: localhost
+        NEXT_PUBLIC_REVERB_PORT: 8066
+        NEXT_PUBLIC_REVERB_SCHEME: http
+    image: hbm-frontend
+    container_name: hbm-frontend
+    restart: unless-stopped
+    ports:
+      - "3030:3000"
+    networks:
+      - hbm-network
+
+networks:
+  hbm-network:
+    driver: bridge
+
+volumes:
+  dbdata:
+    driver: local

@@ -111,9 +111,59 @@ autorestart=true
 user=www-data
 ```
 
+[program:hbm-reverb]
+command=php /path/to/backend/artisan reverb:start
+autostart=true
+autorestart=true
+user=www-data
+
+````
+
 ---
 
-## 5. Troubleshooting Umum
+## 5. Deployment dengan Docker (Alternative)
+
+Jika menggunakan Docker, proses deployment jauh lebih sederhana.
+
+### Struktur Container
+- **App**: PHP 8.2 FPM (Backend Logic)
+- **Webserver**: Nginx (Reverse Proxy & Static Files)
+- **DB**: MySQL 8.0
+- **Reverb**: WebSocket Server
+- **Frontend**: Next.js (Standalone Build)
+
+### Langkah Deployment
+
+1. **Persiapan Server**
+   Pastikan Docker dan Docker Compose terinstall.
+
+2. **Konfigurasi**
+   Salin `.env.example` ke `.env` di folder backend dan atur kredensial database (DB_HOST=db).
+
+   **Catatan Port (Mencegah Konflik):**
+   - Frontend: **3030**
+   - Backend/API: **8065**
+   - Reverb: **8066**
+   - Database (Host): **3309**
+
+   Pastikan port tersebut tidak digunakan oleh service lain di server.
+
+3. **Jalankan Aplikasi**
+   ```bash
+   docker-compose up -d --build
+````
+
+4. **Initial Setup (Pertama Kali)**
+   ```bash
+   docker-compose exec app composer install
+   docker-compose exec app php artisan migrate --seed
+   docker-compose exec app php artisan key:generate
+   docker-compose exec app php artisan storage:link
+   ```
+
+---
+
+## 6. Troubleshooting Umum
 
 ### WebSocket Gagal Terhubung
 
