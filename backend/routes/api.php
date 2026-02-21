@@ -27,6 +27,7 @@ Route::get('/preview/submissions/{submission}/print', [SubmissionController::cla
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::put('/me/password', [AuthController::class, 'updatePassword']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
     // Dashboard

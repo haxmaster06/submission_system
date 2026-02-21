@@ -339,6 +339,7 @@ export default function DashboardPage() {
               </div>
 
               {/* Helpful Widgets / Reminders */}
+              {user?.roles?.some((r: any) => ['Super Admin', 'Director', 'GM', 'Finance'].includes(r.name)) && (
               <div className="bg-sky-600 rounded-[40px] p-8 text-white flex flex-col justify-between">
                 <div>
                   <Calendar size={40} className="mb-4 text-white/40" />
@@ -351,6 +352,7 @@ export default function DashboardPage() {
                   </button>
                 </Link>
               </div>
+              )}
             </div>
           </div>
 
@@ -382,7 +384,7 @@ export default function DashboardPage() {
                         submission <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{act.no_pengajuan}</span>
                       </p>
                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                        <Clock size={10} /> {new Date(act.updated_at).toLocaleString('id-ID', { hour: '2-digit', minute: '2-digit' })} • Today
+                        <Clock size={10} /> {new Date(act.updated_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>

@@ -139,16 +139,27 @@ class SubmissionController extends Controller
         return response()->json($attachment, 201);
     }
 
-    private function generatePdf(Submission $submission)
+    private function generatePdf(Submission $submission, $isPdf = true)
     {
-        $this->authorize('view', $submission);
         $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
-        $isPdf = true;
         
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.submission', compact('submission', 'isPdf'))
-            ->setPaper('a4', 'portrait');
+        // Embed Requestor Signature
+        $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
 
-        return $pdf;
+        // Embed Approver Signatures
+        foreach($submission->approvals as $approval) {
+            if($approval->signature_used) {
+                $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
+            }
+        }
+
+        if ($isPdf) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.submission', compact('submission', 'isPdf'))
+                ->setPaper('a4', 'portrait');
+            return $pdf;
+        }
+
+        return view('pdf.submission', compact('submission', 'isPdf'));
     }
 
     public function downloadPdf(Submission $submission)
@@ -197,19 +208,7 @@ class SubmissionController extends Controller
     public function previewPdf(Submission $submission)
     {
         try {
-            $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
-            
-            // Embed Requestor Signature
-            $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
-
-            // Embed Approver Signatures
-            foreach($submission->approvals as $approval) {
-                if($approval->signature_used) {
-                    $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
-                }
-            }
-
-            $pdf = $this->generatePdf($submission); 
+            $pdf = $this->generatePdf($submission, true); 
             
             return response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
@@ -226,20 +225,9 @@ class SubmissionController extends Controller
     public function printHtml(Submission $submission)
     {
         try {
-            $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
-            $isPdf = false;
-            
-            // Embed Requestor Signature
-            $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
+            $view = $this->generatePdf($submission, false);
 
-            // Embed Approver Signatures
-            foreach($submission->approvals as $approval) {
-                if($approval->signature_used) {
-                    $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
-                }
-            }
-
-            return response()->view('pdf.submission', compact('submission', 'isPdf'))
+            return response($view)
                 ->header('Content-Type', 'text/html')
                 ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
                 ->header('Pragma', 'no-cache');

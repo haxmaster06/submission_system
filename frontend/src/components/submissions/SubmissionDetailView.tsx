@@ -216,7 +216,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
       {activeTab === 'detail' ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
+          {/* Upper Section: Info & Timeline */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-10">
               <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-6">
@@ -230,14 +230,23 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 py-6 border-y border-slate-50">
+              <div className="grid grid-cols-3 gap-4 py-6 border-y border-slate-50">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm border border-white">
                     <User className="text-slate-400 w-4 h-4" />
                   </div>
                   <div>
                     <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Pengaju</p>
-                    <p className="text-[11px] font-black text-slate-900 line-clamp-1">{submission.user?.name.split(' ')[0]}</p>
+                    <p className="text-[11px] font-black text-slate-900 line-clamp-1">{submission.user?.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm border border-white">
+                    <CreditCard className="text-slate-400 w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Divisi</p>
+                    <p className="text-[11px] font-black text-slate-900 line-clamp-1">{submission.division?.name || '-'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -246,68 +255,102 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                   </div>
                   <div>
                     <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Tanggal</p>
-                    <p className="text-[11px] font-black text-slate-900">{new Date(submission.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
+                    <p className="text-[11px] font-black text-slate-900">{new Date(submission.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
               </div>
 
               <div className="mt-8 space-y-3">
-                <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Deskripsi Utama</h3>
+                <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Judul Pengajuan</h3>
                 <div className="bg-slate-50/50 p-5 rounded-[24px] text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-50 shadow-inner">
                   {submission.description}
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Budget Items Breakdown */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 md:p-8">
-              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
-                <CreditCard size={14} className="text-sky-500" />
-                Budget Items Breakdown
-              </h3>
+          <div className="space-y-6">
+            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-8 h-fit">
+              <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-8 ml-1">Approval Timeline</h3>
+              <div className="space-y-6 relative">
+                <div className="absolute left-[9px] top-1.5 bottom-1.5 w-0.5 bg-slate-50" />
+                {submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
+                  const isCurrent = submission.current_approval_step === approval.step_order && submission.final_status === 'pending';
+                  const isDone = approval.status !== 'pending';
+                  return (
+                    <div key={approval.id} className="relative flex gap-4">
+                      <div className="bg-white relative z-10 p-0.5 scale-75 -ml-1">
+                        {getStepStatusIcon(approval.status, isCurrent)}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-[11px] font-black uppercase tracking-tight ${isCurrent ? 'text-amber-600' : 'text-slate-900'}`}>{approval.role_name}</p>
+                          {approval.approved_at && (
+                            <p className="text-[8px] text-slate-300 font-black uppercase tracking-widest">
+                              {new Date(approval.approved_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">{isDone ? `By ${approval.approver?.name.split(' ')[0]}` : 'Waiting...'}</p>
+                        {approval.notes && (
+                          <div className="mt-2 text-[10px] text-slate-500 font-bold bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 italic">"{approval.notes}"</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Budget Items Breakdown - Full Width Area */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-10">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-sky-50 rounded-xl flex items-center justify-center border border-sky-100 text-sky-600"><CreditCard size={20} /></div>
+                    Budget Items Breakdown
+                  </h3>
+                  <p className="text-slate-400 text-xs mt-1 ml-13">Perincian item anggaran yang diajukan.</p>
+                </div>
+              </div>
 
               {submission.items && submission.items.length > 0 ? (
-                <div className="border border-slate-100 rounded-[24px] overflow-hidden">
-                  {/* Desktop Table View */}
-                  <div className="hidden md:block">
+                <div className="border border-slate-100 rounded-[24px] overflow-hidden bg-white shadow-inner">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
-                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
-                          <th className="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">UoM</th>
-                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Unit Price</th>
-                          <th className="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-60">Total</th>
+                          <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[300px]">Description</th>
+                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
+                          <th className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">UoM</th>
+                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-48">Unit Price</th>
+                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-56">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {submission.items.map((item: any) => (
                           <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-4 text-sm font-bold text-slate-700">{item.description}</td>
-                            <td className="px-6 py-4 text-right font-black text-slate-900 text-sm">{parseFloat(item.qty).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-4 text-center text-slate-500 font-bold text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
-                            <td className="px-6 py-4 text-right font-bold text-slate-900 text-sm whitespace-nowrap">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-4 text-right font-black text-sky-600 text-sm whitespace-nowrap">Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-5 text-[14px] font-bold text-slate-700 leading-relaxed">{item.description}</td>
+                            <td className="px-6 py-5 text-right font-black text-slate-900 text-[14px]">{parseFloat(item.qty).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-5 text-center text-slate-500 font-bold text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
+                            <td className="px-6 py-5 text-right font-bold text-slate-900 text-[14px] whitespace-nowrap">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-5 text-right font-black text-sky-600 text-[15px] whitespace-nowrap">Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="bg-sky-50/50 border-t-2 border-sky-100">
+                      <tfoot className="bg-sky-50 border-t-2 border-sky-100">
                         <tr>
-                          <td colSpan={4} className="px-6 py-6 text-right font-black text-slate-400 uppercase text-[10px] tracking-widest whitespace-nowrap">
-                            Grand Total:
-                          </td>
-                          <td className="px-6 py-6 text-right font-black text-sky-600 text-2xl tracking-normal whitespace-nowrap" style={{ minWidth: '220px' }}>
-                            Rp {parseFloat(submission.total).toLocaleString('id-ID')}
-                          </td>
+                          <td colSpan={4} className="px-8 py-8 text-right font-black text-slate-400 uppercase text-[11px] tracking-widest whitespace-nowrap">Grand Total:</td>
+                          <td className="px-8 py-8 text-right font-black text-sky-600 text-3xl tracking-tight whitespace-nowrap">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
-
-                  {/* Mobile Card List View */}
                   <div className="md:hidden divide-y divide-slate-100">
                     {submission.items.map((item: any) => (
-                      <div key={item.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors">
+                      <div key={item.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors bg-white">
                         <h4 className="font-black text-slate-900 text-sm leading-tight uppercase tracking-tight line-clamp-2">{item.description}</h4>
                         <div className="flex items-end justify-between gap-4">
                           <div className="space-y-1">
@@ -333,69 +376,37 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                   </div>
                 </div>
               ) : (
-                /* Legacy single item display for old submissions */
-                <>
-                  <div className="flex items-center justify-between py-4 border-b border-slate-50">
-                    <span className="text-slate-500 font-medium">Quantity ({submission.uom?.code})</span>
-                    <span className="text-slate-900 font-black">{parseFloat(submission.qty).toLocaleString('id-ID')}</span>
+                <div className="max-w-xl">
+                  <div className="flex items-center justify-between py-5 border-b border-slate-100">
+                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Quantity ({submission.uom?.code})</span>
+                    <span className="text-slate-900 font-black text-lg">{parseFloat(submission.qty).toLocaleString('id-ID')}</span>
                   </div>
-                  <div className="flex items-center justify-between py-4 border-b border-slate-50">
-                    <span className="text-slate-500 font-medium">Nominal per unit</span>
-                    <span className="text-slate-900 font-black text-lg">Rp {parseFloat(submission.nominal).toLocaleString('id-ID')}</span>
+                  <div className="flex items-center justify-between py-5 border-b border-slate-100">
+                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Nominal per unit</span>
+                    <span className="text-slate-900 font-black text-xl">Rp {parseFloat(submission.nominal).toLocaleString('id-ID')}</span>
                   </div>
-                  <div className="flex items-center justify-between py-4 pt-6">
-                    <span className="text-sky-600 font-black uppercase text-sm tracking-widest">Total Grand</span>
-                    <span className="text-sky-600 font-black text-2xl">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
+                  <div className="flex items-center justify-between py-8">
+                    <span className="text-sky-600 font-black uppercase text-xs tracking-[0.3em]">Total Grand</span>
+                    <span className="text-sky-600 font-black text-3xl">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
                   </div>
-                </>
+                </div>
+              )}
+
+              {submission.notes && (
+                <div className="mt-8 pt-6 md:pt-8 border-t border-slate-100 space-y-3">
+                  <h3 className="text-[9px] font-black text-amber-600 uppercase tracking-[0.3em] ml-1 flex items-center gap-1.5">
+                    <AlertCircle size={14} />
+                    Catatan
+                  </h3>
+                  <div className="bg-amber-50/50 p-6 md:p-8 rounded-[32px] text-sm font-bold text-amber-900 leading-relaxed whitespace-pre-wrap border border-amber-200 shadow-inner border-l-4 border-l-amber-500">
+                    {submission.notes}
+                  </div>
+                </div>
               )}
             </div>
           </div>
-
-          {/* Stepper / Timeline */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-8 h-fit">
-              <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-8 ml-1">Approval Timeline</h3>
-              <div className="space-y-6 relative">
-                {/* Vertical Line */}
-                <div className="absolute left-[9px] top-1.5 bottom-1.5 w-0.5 bg-slate-50" />
-
-                {submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
-                  const isCurrent = submission.current_approval_step === approval.step_order && submission.final_status === 'pending';
-                  const isDone = approval.status !== 'pending';
-
-                  return (
-                    <div key={approval.id} className="relative flex gap-4">
-                      <div className="bg-white relative z-10 p-0.5 scale-75 -ml-1">
-                        {getStepStatusIcon(approval.status, isCurrent)}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={`text-[11px] font-black uppercase tracking-tight ${isCurrent ? 'text-amber-600' : 'text-slate-900'}`}>
-                            {approval.role_name}
-                          </p>
-                          {approval.approved_at && (
-                            <p className="text-[8px] text-slate-300 font-black uppercase tracking-widest">
-                              {new Date(approval.approved_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                            </p>
-                          )}
-                        </div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">
-                          {isDone ? `By ${approval.approver?.name.split(' ')[0]}` : 'Waiting...'}
-                        </p>
-                        {approval.notes && (
-                          <div className="mt-2 text-[10px] text-slate-500 font-bold bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 italic">
-                            "{approval.notes}"
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
         </div>
+
       ) : activeTab === 'realization' ? (
         /* Realization Tab Content */
         <div className="space-y-6">
@@ -442,7 +453,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-800">
-                          Realisasi Tgl {new Date(r.realization_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          Realisasi Tgl {new Date(r.realization_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                         <p className="text-xs text-slate-400">{r.notes || 'Tidak ada catatan'}</p>
                       </div>
@@ -568,7 +579,8 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </div>
           )}
         </div>
-      )}
+      )
+      }
 
       <iframe
         ref={printIframeRef}
@@ -689,6 +701,6 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
           />
         )}
       </AnimatePresence>
-    </div>
+    </div >
   );
 }

@@ -1,202 +1,308 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pengajuan Anggaran</title>
     <style>
+        /* DomPDF TIDAK mendukung: CSS Variables, @import Google Fonts, @media queries.
+           Semua warna HARUS hardcoded agar PDF & Print konsisten. */
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            font-size: 11px;
-            color: #333;
-            line-height: 1.45;
-            background: #fff;
+        @page {
+            margin: 0;
+            size: A4;
         }
 
-        /* ── HEADER ── */
-        .o-header {
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10px;
+            color: #444;
+            line-height: 1.4;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        .page-wrapper {
+            position: relative;
+            padding: 15mm 18mm;
+        }
+
+        /* ══ KOP SURAT ══ */
+        .kop-outer {
+            margin-bottom: 12px;
+        }
+
+        .kop-accent-bar {
+            height: 5px;
+            background-color: #2a7ba5;
+            border-radius: 3px 3px 0 0;
+            margin-bottom: 5px;
+        }
+
+        .kop-body {
+            padding: 10px 16px;
             display: table;
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 24px;
+            background: #fff;
         }
 
-        .o-header-left,
-        .o-header-right {
+        .kop-left {
             display: table-cell;
-            vertical-align: top;
+            vertical-align: middle;
+            width: 52%;
         }
 
-        .o-header-right {
+        .kop-right {
+            display: table-cell;
+            vertical-align: middle;
             text-align: right;
+            width: 48%;
         }
 
-        .o-company-name {
-            font-size: 20px;
+        .kop-logo-group {
+            display: table;
+            border-collapse: collapse;
+        }
+
+        .kop-logo-group td {
+            vertical-align: middle;
+        }
+
+        .kop-logo img {
+            height: 60px;
+            width: auto;
+            display: block;
+        }
+
+        .kop-company-info {
+            padding-left: 12px;
+            border-left: 2px solid #2a7ba5;
+        }
+
+        .kop-company-name {
+            font-size: 13px;
             font-weight: 700;
-            color: #4a90b8;
-            line-height: 1.2;
+            color: #1a1a1a;
+            letter-spacing: 0.3px;
+            line-height: 1.15;
         }
 
-        .o-company-tag {
-            font-size: 10px;
-            color: #888;
-            margin-top: 2px;
+        .kop-company-tagline {
+            font-size: 8px;
+            color: #999;
+            margin-top: 1px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        .o-doc-title {
-            font-size: 22px;
+        .kop-doc-title {
+            font-size: 15px;
             font-weight: 700;
-            color: #333;
+            color: #2a7ba5;
+            letter-spacing: 0.5px;
             line-height: 1.1;
         }
 
-        .o-doc-ref {
-            font-size: 10.5px;
-            color: #4a90b8;
-            font-weight: 600;
-            margin-top: 4px;
+        .kop-doc-ref {
+            font-size: 9px;
+            color: #666;
+            font-weight: 500;
+            margin-top: 3px;
+            letter-spacing: 0.4px;
+            font-family: 'Courier New', monospace;
         }
 
-        .o-status-pill {
+        .kop-doc-status {
+            margin-top: 5px;
+        }
+
+        .badge {
             display: inline-block;
-            margin-top: 6px;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 8px;
             font-weight: 700;
-            letter-spacing: 0.3px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
+        }
+
+        .badge-approved {
             background: #d4edda;
-            color: #155724;
+            color: #28a745;
+            border: 1px solid #b8dfc4;
         }
 
-        /* ── DIVIDER ── */
-        .o-divider {
-            border: none;
-            border-top: 1px solid #dee2e6;
-            margin: 0 0 18px;
+        .badge-rejected {
+            background: #fdecea;
+            color: #dc3545;
+            border: 1px solid #f5c6cb;
         }
 
-        /* ── INFO GRID ── */
-        .o-info-table {
+        .badge-pending {
+            background: #fef5ec;
+            color: #e67e22;
+            border: 1px solid #fad3ab;
+        }
+
+        .badge-draft {
+            background: #f0f0f0;
+            color: #666;
+            border: 1px solid #d5d5d5;
+        }
+
+        .kop-bottom-bar {
+            height: 2px;
+            background-color: #2a7ba5;
+            margin-top: 5px;
+            border-radius: 0 0 3px 3px;
+        }
+
+        /* ══ META INFO ══ */
+        .meta-section {
+            margin-bottom: 10px;
+        }
+
+        .meta-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            font-size: 11px;
+            font-size: 9.5px;
         }
 
-        .o-info-table td {
-            padding: 3px 0;
+        .meta-table td {
+            padding: 2.5px 0;
             vertical-align: top;
         }
 
-        .o-info-label {
-            width: 110px;
-            color: #888;
-            font-size: 10.5px;
+        .meta-label {
+            width: 70px;
+            color: #999;
+            font-weight: 400;
         }
 
-        .o-info-value {
-            color: #333;
+        .meta-sep {
+            width: 8px;
+            color: #bbb;
+        }
+
+        .meta-value {
+            color: #1a1a1a;
             font-weight: 500;
+            padding-right: 16px;
         }
 
-        .o-info-value strong {
+        .meta-value.urgent-high {
+            color: #dc3545;
             font-weight: 700;
-            color: #111;
         }
 
-        /* ── SECTION HEADING ── */
-        .o-section-title {
-            font-size: 11px;
+        .meta-value.urgent-low {
+            color: #28a745;
+            font-weight: 600;
+        }
+
+        /* ══ SECTION HEADER ══ */
+        .section-header {
+            margin-bottom: 4px;
+        }
+
+        .section-title {
+            font-size: 9.5px;
             font-weight: 700;
-            color: #4a90b8;
+            color: #2a7ba5;
             text-transform: uppercase;
-            letter-spacing: 0.6px;
-            margin-bottom: 6px;
-            padding-bottom: 4px;
-            border-bottom: 2px solid #4a90b8;
+            letter-spacing: 0.7px;
+            padding-bottom: 3px;
+            border-bottom: 2px solid #2a7ba5;
             display: inline-block;
         }
 
-        .o-section-wrap {
-            margin-bottom: 20px;
+        /* ══ DESCRIPTION BOX ══ */
+        .desc-wrap {
+            margin-bottom: 10px;
         }
 
-        /* ── DESCRIPTION BOX ── */
-        .o-desc-box {
-            padding: 10px 12px;
+        .desc-content {
+            padding: 6px 10px;
             background: #f8f9fa;
             border: 1px solid #dee2e6;
-            border-radius: 4px;
-            font-size: 11px;
-            color: #555;
-            line-height: 1.6;
-            margin-top: 6px;
+            border-left: 3px solid #2a7ba5;
+            border-radius: 0 3px 3px 0;
+            font-size: 10px;
+            color: #444;
+            line-height: 1.5;
         }
 
-        /* ── ITEMS TABLE ── */
+        /* ══ ITEMS TABLE ══ */
+        .items-wrap {
+            margin-bottom: 14px;
+        }
+
         .o-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
-            margin-top: 6px;
+            font-size: 9.5px;
         }
 
         .o-table thead tr {
-            background: #4a90b8;
+            background: #2a7ba5;
         }
 
         .o-table thead th {
-            padding: 8px 10px;
+            padding: 5px 8px;
             color: #fff;
-            font-size: 10px;
-            font-weight: 700;
+            font-size: 8.5px;
+            font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             text-align: left;
             border: none;
         }
 
-        .o-table tbody tr {
-            border-bottom: 1px solid #e9ecef;
+        .o-table thead th.td-right {
+            text-align: right;
         }
 
-        .o-table tbody tr:last-child {
-            border-bottom: none;
+        .o-table thead th.td-center {
+            text-align: center;
+        }
+
+        .o-table tbody tr {
+            border-bottom: 1px solid #ececec;
+        }
+
+        .o-table tbody tr:nth-child(odd) {
+            background: #fff;
         }
 
         .o-table tbody tr:nth-child(even) {
-            background: #f8f9fa;
+            background: #fafafa;
         }
 
         .o-table tbody td {
-            padding: 8px 10px;
+            padding: 5px 8px;
             color: #444;
             vertical-align: middle;
         }
 
-        .o-table tfoot tr {
-            border-top: 2px solid #dee2e6;
-        }
-
-        .o-table tfoot td {
-            padding: 9px 10px;
-            font-size: 11px;
-        }
-
-        .o-total-row td {
-            background: #eef4f9;
+        .o-table tfoot tr.total-row td {
+            padding: 6px 8px;
+            background: #e9f3f8;
+            border-top: 2px solid #2a7ba5;
             font-weight: 700;
-            font-size: 12px;
-            color: #4a90b8;
-            border-top: 2px solid #4a90b8 !important;
+            font-size: 10.5px;
+            color: #1b5f82;
         }
 
         .td-right {
@@ -208,392 +314,480 @@
         }
 
         .td-mono {
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 10.5px;
+            font-family: 'Courier New', monospace;
+            font-size: 9px;
         }
 
         .td-bold {
             font-weight: 700;
-            color: #333;
+            color: #1a1a1a;
         }
 
-        /* ── APPROVALS ── */
+        .td-muted {
+            color: #999;
+        }
+
+        /* ══ APPROVAL SECTION ══ */
+        .approval-section {
+            margin-bottom: 0;
+        }
+
         .approval-grid {
             width: 100%;
+            display: table;
+            table-layout: fixed;
+            border-collapse: separate;
+            border-spacing: 5px 0;
         }
 
         .approval-box {
-            float: left;
-            width: 18%;
-            margin-right: 2%;
-            margin-top: 5%;
-            text-align: center;
-            page-break-inside: avoid;
+            display: table-cell;
+            vertical-align: top;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            overflow: hidden;
             background: #fff;
+            page-break-inside: avoid;
         }
 
-        .approval-box:last-child {
-            margin-right: 0;
+        .appr-head {
+            background: #2a7ba5;
+            padding: 3px 4px;
+            text-align: center;
         }
 
-        .approval-box-header {
+        .appr-head-text {
+            color: #fff;
+            font-size: 7px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .appr-sig-area {
+            height: 50px;
             display: table;
             width: 100%;
-            min-height: 28px;
-            /* background: #eef4f9; */
-            /* border-bottom: 1px solid #cde3ef; */
-            padding: 5px 4px;
+            text-align: center;
+            padding: 4px;
+            background: #fdfdfd;
+            border-bottom: 1px solid #ececec;
         }
 
-        .approval-box-header-inner {
+        .appr-sig-inner {
             display: table-cell;
             vertical-align: middle;
             text-align: center;
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #313030ff;
         }
 
-        .approval-signature {
-            height: 60px;
-            padding: 8px 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .approval-signature img {
-            max-height: 44px;
+        .appr-sig-inner img {
+            max-height: 38px;
             max-width: 100%;
-            width: auto;
-            height: auto;
             display: block;
             margin: 0 auto;
         }
 
-        .approval-box-footer {
-            border-top: 1px solid #e9ecef;
-            padding: 6px 6px 7px;
-            background: #fff;
+        .sig-placeholder {
+            color: #bbb;
+            font-size: 7.5px;
+            font-style: italic;
         }
 
-        /* ── FOOTER ── */
-        .o-footer {
+        .sig-rejected {
+            display: inline-block;
+            border: 1.5px solid #dc3545;
+            color: #dc3545;
+            font-weight: 800;
+            font-size: 8px;
+            padding: 2px 5px;
+            letter-spacing: 1px;
+            transform: rotate(-8deg);
+        }
+
+        .appr-footer {
+            padding: 3px 6px 4px;
+            background: #f8f9fa;
+        }
+
+        .appr-name {
+            font-size: 8px;
+            font-weight: 700;
+            color: #1a1a1a;
+            line-height: 1.2;
+        }
+
+        .appr-date {
+            font-size: 7px;
+            color: #999;
+            margin-top: 1px;
+        }
+
+        /* ══ FOOTER ══ */
+        .page-footer {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            border-top: 1px solid #dee2e6;
-            padding-top: 5px;
-            display: table;
-            width: 100%;
-            font-size: 8.5px;
-            color: #aaa;
+            padding: 0 0 0 15mm;
+            margin-bottom: 20px;
         }
 
-        .o-footer-left {
-            display: table-cell;
-            text-align: left;
+        .footer-contact {
+            padding: 0 0 22px 0;
         }
 
-        .o-footer-right {
-            display: table-cell;
-            text-align: right;
+        .footer-contact-line {
+            font-size: 10px;
+            color: #555;
+            line-height: 1.6;
         }
 
-        @page {
-            margin: 1.2cm 1.5cm 1.6cm;
-            size: A4;
+        .footer-contact-line .fc-icon {
+            display: inline;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .fc-icon img {
+            height: 11px;
+            width: 11px;
+            vertical-align: middle;
+        }
+
+        .footer-accent-bar {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            height: 25px;
+            width: 98%;
+            background-color: #1b5f82;
+            border-top-left-radius: 150px;
         }
     </style>
 
     @if (!$isPdf)
-        <style>
+    <style>
+        /* Web Preview Only — tidak masuk ke DomPDF */
+        body {
+            background: #e8e8e8;
+            padding: 20px 0;
+        }
+
+        .page-wrapper {
+            max-width: 870px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 24px 28px 36px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        .page-footer {
+            position: relative;
+            margin-top: 24px;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
             body {
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                background: #fff;
+                padding: 0;
             }
 
-            .approval-grid {
-                display: flex;
-                gap: 10px;
+            .page-wrapper {
+                max-width: none;
+                padding: 15mm 18mm;
+                box-shadow: none;
+                border-radius: 0;
             }
 
-            .approval-box {
-                float: none;
-                width: auto;
-                flex: 1;
-                margin-right: 0;
+            .page-footer {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                margin-top: 0;
             }
-
-            .approval-signature {
-                display: flex;
-            }
-        </style>
+        }
+    </style>
     @endif
 </head>
 
 <body>
+    <div class="page-wrapper">
 
-    {{-- ══ HEADER (KOP DOKUMEN) ══ --}}
-
-    <table style="width:100%; border-collapse:collapse; margin-bottom:0;">
-        <tr>
-            {{-- LEFT: Logo + Company --}}
-            <td style="vertical-align:middle; width:55%;">
-                <table style="border-collapse:collapse;">
-                    <tr>
-                        <td style="vertical-align:middle; padding-right:14px;">
-                            @if ($isPdf)
-                                <img src="{{ public_path('logo.png') }}" alt="Logo" style="width:150px; height:100px;">
-                            @else
-                                <img src="{{ asset('logo.png') }}" alt="Logo" style="width:150px; height:100px;">
-                            @endif
-                        </td>
-                        <td style="vertical-align:middle;">
-                            {{-- <div
-                                style="font-size:20px; font-weight:800; color:#1a1a1a; line-height:1.2; letter-spacing:0.3px; white-space: nowrap;">
-                                CV HASIL BAROKAH MANDIRI</div> --}}
-                            {{-- <div style="font-size:9.5px; color:#666; margin-top:3px; letter-spacing:0.3px;">General
-                                Supplier &amp; Contractor</div> --}}
-                        </td>
-                    </tr>
-                </table>
-            </td>
-
-            {{-- RIGHT: Document Title + Ref + Status --}}
-            <td style="text-align:right; vertical-align:middle; width:45%;">
-                <div style="font-size:14px; font-weight:800; color:#2a7ba5; line-height:1.15; letter-spacing:0.2px;">
-                    PENGAJUAN ANGGARAN</div>
-                <div style="font-size:10px; color:#555; font-weight:600; margin-top:5px; letter-spacing:0.5px;">
-                    {{ $submission->no_pengajuan }}</div>
-                <div style="margin-top:7px;">
-                    <span
-                        style="display:inline-block; padding:3px 14px; border-radius:3px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; background:#2a7ba5; color:#fff;">
-                        {{ strtoupper($submission->final_status) }}
-                    </span>
-                </div>
-            </td>
-        </tr>
-    </table>
-
-    {{-- Bottom border --}}
-    <div style="margin-top:5px; border-top:2px solid #2a7ba5;"></div>
-    <div style="height:16px;"></div>
-
-    {{-- ══ META INFO ══ --}}
-    <table style="width:100%; border-collapse:collapse; margin-bottom:20px; font-size:11px;">
-        <tr>
-            <td style="width:110px; padding:3px 0; color:#888; font-size:10.5px; vertical-align:top;">Tanggal</td>
-            <td style="padding:3px 12px 3px 0; color:#333; font-weight:500; vertical-align:top;">:
-                {{ $submission->tanggal_pengajuan->format('d F Y') }}</td>
-            <td style="width:110px; padding:3px 0; color:#888; font-size:10.5px; vertical-align:top;">Divisi</td>
-            <td style="padding:3px 0; color:#333; font-weight:500; vertical-align:top;">:
-                {{ $submission->division->name }}</td>
-        </tr>
-        <tr>
-            <td style="padding:3px 0; color:#888; font-size:10.5px; vertical-align:top;">Pemohon</td>
-            <td style="padding:3px 12px 3px 0; color:#333; font-weight:500; vertical-align:top;">:
-                {{ $submission->user->name }}</td>
-            <td style="padding:3px 0; color:#888; font-size:10.5px; vertical-align:top;">Urgency</td>
-            <td style="padding:3px 0; color:#333; font-weight:500; vertical-align:top;">:
-                {{ strtoupper($submission->status_urgent) }}</td>
-        </tr>
-    </table>
-
-    {{-- ══ DESCRIPTION ══ --}}
-    <div style="margin-bottom:22px;">
-        <div
-            style="font-size:11px; font-weight:700; color:#2a7ba5; text-transform:uppercase; letter-spacing:0.6px; padding-bottom:4px; border-bottom:2px solid #2a7ba5; display:inline-block; margin-bottom:8px;">
-            Judul Pengajuan
-        </div>
-        <div
-            style="padding:10px 12px; border-bottom:1px solid #dee2e6; font-size:11px; color:#555; line-height:1.6;">
-            {{ $submission->description }}
-        </div>
-    </div>
-
-    {{-- ══ ITEMS TABLE ══ --}}
-    <div style="margin-bottom:28px;">
-        <div
-            style="font-size:11px; font-weight:700; color:#2a7ba5; text-transform:uppercase; letter-spacing:0.6px; padding-bottom:4px; border-bottom:2px solid #2a7ba5; display:inline-block; margin-bottom:8px;">
-            Rincian Anggaran
-        </div>
-
-        <table style="width:100%; border-collapse:collapse; font-size:11px;">
-            <thead>
-                <tr style="background:#2a7ba5;">
-                    <th
-                        style="padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:left; border:none;">
-                        Deskripsi Item</th>
-                    <th
-                        style="padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:right; width:70px; border:none;">
-                        Qty</th>
-                    <th
-                        style="padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:center; width:70px; border:none;">
-                        UoM</th>
-                    <th
-                        style="padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:right; width:120px; border:none;">
-                        Harga Satuan</th>
-                    <th
-                        style="padding:8px 10px; color:#fff; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; text-align:right; width:120px; border:none;">
-                        Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if ($submission->items && $submission->items->count() > 0)
-                    @foreach ($submission->items as $item)
-                        <tr
-                            style="{{ $loop->even ? 'background:#f8f9fa;' : 'background:#fff;' }} border-bottom:1px solid #e9ecef;">
-                            <td style="padding:8px 10px; color:#444; border-bottom:1px solid #e9ecef;">
-                                {{ $item->description }}</td>
-                            <td
-                                style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; color:#444; border-bottom:1px solid #e9ecef;">
-                                {{ number_format($item->qty, 0, ',', '.') }}</td>
-                            <td
-                                style="padding:8px 10px; text-align:center; color:#666; border-bottom:1px solid #e9ecef;">
-                                {{ optional($item->uom)->code ?? (optional($item->uom)->name ?? '-') }}</td>
-                            <td
-                                style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; color:#444; border-bottom:1px solid #e9ecef;">
-                                Rp {{ number_format($item->nominal, 0, ',', '.') }}</td>
-                            <td
-                                style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; font-weight:700; color:#333; border-bottom:1px solid #e9ecef;">
-                                Rp {{ number_format($item->total, 0, ',', '.') }}</td>
-                        </tr>
-                    @endforeach
-                @else
-                    {{-- Legacy Support --}}
-                    <tr>
-                        <td style="padding:8px 10px; color:#444; border-bottom:1px solid #e9ecef;">
-                            {{ $submission->description }}</td>
-                        <td
-                            style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; color:#444; border-bottom:1px solid #e9ecef;">
-                            {{ number_format($submission->qty ?? 0, 0, ',', '.') }}</td>
-                        <td style="padding:8px 10px; text-align:center; color:#666; border-bottom:1px solid #e9ecef;">
-                            {{ optional($submission->uom)->code ?? (optional($submission->uom)->name ?? '-') }}</td>
-                        <td
-                            style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; color:#444; border-bottom:1px solid #e9ecef;">
-                            Rp {{ number_format($submission->nominal ?? 0, 0, ',', '.') }}</td>
-                        <td
-                            style="padding:8px 10px; text-align:right; font-family:'Courier New',monospace; font-size:10.5px; font-weight:700; color:#333; border-bottom:1px solid #e9ecef;">
-                            Rp {{ number_format($submission->total, 0, ',', '.') }}</td>
-                    </tr>
-                @endif
-            </tbody>
-            <tfoot>
+        <!-- ══════════════════ KOP SURAT ══════════════════ -->
+        <div class="kop-outer">
+            <div class="kop-accent-bar"></div>
+            <table class="kop-body">
                 <tr>
-                    <td colspan="4"
-                        style="padding:9px 10px; background:#eef4f9; font-weight:700; font-size:11px; color:#2a7ba5; text-align:right; border-top:2px solid #2a7ba5; letter-spacing:0.3px;">
-                        Total Estimasi</td>
-                    <td
-                        style="padding:9px 10px; background:#eef4f9; font-weight:700; font-size:13px; color:#2a7ba5; text-align:right; font-family:'Courier New',monospace; border-top:2px solid #2a7ba5;">
-                        Rp {{ number_format($submission->total, 0, ',', '.') }}</td>
+                    <!-- LEFT: Logo + Company -->
+                    <td class="kop-left">
+                        <table class="kop-logo-group">
+                            <tr>
+                                <td class="kop-logo">
+                                    @if ($isPdf)
+                                    <img src="{{ public_path('logo.png') }}" alt="Logo">
+                                    @else
+                                    <img src="{{ asset('logo.png') }}" alt="Logo">
+                                    @endif
+                                </td>
+                                <td class="kop-company-info">
+                                    <!-- <div class="kop-company-name">CV HASIL BAROKAH MANDIRI</div>
+                                    <div class="kop-company-tagline">General Supplier &amp; Contractor</div> -->
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+
+                    <!-- RIGHT: Document Title + Ref + Status -->
+                    <td class="kop-right">
+                        <div class="kop-doc-title">PENGAJUAN ANGGARAN</div>
+                        <div class="kop-doc-ref">{{ $submission->no_pengajuan }}</div>
+                        <div class="kop-doc-status">
+                            @php
+                            $fs = strtolower($submission->final_status);
+                            $badgeClass = match(true) {
+                            str_contains($fs,'approved') || str_contains($fs,'disetujui') => 'badge-approved',
+                            str_contains($fs,'rejected') || str_contains($fs,'ditolak') => 'badge-rejected',
+                            str_contains($fs,'pending') || str_contains($fs,'menunggu') => 'badge-pending',
+                            default => 'badge-draft'
+                            };
+                            @endphp
+                            <span class="badge {{ $badgeClass }}">{{ strtoupper($submission->final_status) }}</span>
+                        </div>
+                    </td>
                 </tr>
-            </tfoot>
-        </table>
-    </div>
+            </table>
+            <div class="kop-bottom-bar"></div>
+        </div>
 
-    {{-- ══ APPROVALS ══ --}}
-    <div style="page-break-inside:avoid;">
-        {{-- <div style="font-size:11px; font-weight:700; color:#4a90b8; text-transform:uppercase; letter-spacing:0.6px; padding-bottom:4px; border-bottom:2px solid #4a90b8; display:inline-block; margin-bottom:10px;">
-            Persetujuan
-        </div> --}}
+        <!-- ══════════════════ META INFO ══════════════════ -->
+        <div class="meta-section">
+            <table class="meta-table">
+                <tr>
+                    <td class="meta-label">Tanggal</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-value">{{ $submission->tanggal_pengajuan->format('d F Y') }}</td>
+                    <td class="meta-label">Divisi</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-value">{{ $submission->division->name }}</td>
+                </tr>
+                <tr>
+                    <td class="meta-label">Pemohon</td>
+                    <td class="meta-sep">:</td>
+                    <td class="meta-value">{{ $submission->user->name }}</td>
+                    <td class="meta-label">Urgency</td>
+                    <td class="meta-sep">:</td>
+                    @php
+                    $urgencyClass = strtolower($submission->status_urgent) === 'high'
+                    ? 'meta-value urgent-high' : (strtolower($submission->status_urgent) === 'low' ? 'meta-value
+                    urgent-low' : 'meta-value');
+                    @endphp
+                    <td class="{{ $urgencyClass }}">{{ strtoupper($submission->status_urgent) }}</td>
+                </tr>
+            </table>
+        </div>
 
-        <div class="approval-grid">
-            {{-- Requestor Box --}}
-            <div class="approval-box">
-                <div class="approval-box-header">
-                    <div class="approval-box-header-inner">PEMOHON</div>
-                </div>
+        <!-- Divider -->
+        <div style="border-top:1px solid #dee2e6; margin-bottom:10px;"></div>
 
-                <div class="approval-signature">
-                    @if ($submission->requestor_signature_base64)
-                        <img src="{{ $submission->requestor_signature_base64 }}" alt="Signed">
-                    @elseif ($submission->user->signature_path)
-                         @if ($isPdf)
-                            <img src="{{ public_path('logo.png') }}" alt="Signed">
-                        @else
-                            <img src="{{ asset($submission->user->signature_path) }}" alt="Signed">
-                        @endif
-                    @else
-                        <div style="color:#bbb; font-size:9px; font-style:italic;">(Draft)</div>
-                    @endif
-                </div>
+        <!-- ══════════════════ DESKRIPSI ══════════════════ -->
+        <div class="desc-wrap">
+            <div class="section-header">
+                <span class="section-title">Judul Pengajuan</span>
+            </div>
+            <div class="desc-content">{{ $submission->description }}</div>
+        </div>
 
-                <div class="approval-box-footer">
-                    <div style="font-size:9.5px; font-weight:700; color:#333;">
-                        {{ $submission->user->name }}
-                    </div>
-                    <div style="font-size:8px; color:#aaa; margin-top:2px;">
-                        {{ $submission->tanggal_pengajuan->format('d/m/Y') }}
-                    </div>
-                </div>
+        <!-- ══════════════════ RINCIAN ANGGARAN ══════════════════ -->
+        <div class="items-wrap">
+            <div class="section-header">
+                <span class="section-title">Rincian Anggaran</span>
             </div>
 
-            @foreach ($submission->approvals->sortBy('step_order') as $approval)
-                <div class="approval-box">
+            <table class="o-table">
+                <thead>
+                    <tr>
+                        <th style="width:auto;">Deskripsi Item</th>
+                        <th class="td-right" style="width:60px;">Qty</th>
+                        <th class="td-center" style="width:50px;">UoM</th>
+                        <th class="td-right" style="width:110px;">Harga Satuan</th>
+                        <th class="td-right" style="width:110px;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if ($submission->items && $submission->items->count() > 0)
+                    @foreach ($submission->items as $item)
+                    <tr>
+                        <td class="td-bold">{{ $item->description }}</td>
+                        <td class="td-right td-mono">{{ number_format($item->qty, 0, ',', '.') }}</td>
+                        <td class="td-center td-muted">{{ optional($item->uom)->code ?? optional($item->uom)->name ??
+                            '-' }}</td>
+                        <td class="td-right td-mono">Rp {{ number_format($item->nominal, 0, ',', '.') }}</td>
+                        <td class="td-right td-mono td-bold">Rp {{ number_format($item->total, 0, ',', '.') }}</td>
+                    </tr>
+                    @endforeach
+                    @else
+                    {{-- Legacy fallback --}}
+                    <tr>
+                        <td class="td-bold">{{ $submission->description }}</td>
+                        <td class="td-right td-mono">{{ number_format($submission->qty ?? 0, 0, ',', '.') }}</td>
+                        <td class="td-center td-muted">{{ optional($submission->uom)->code ??
+                            optional($submission->uom)->name ?? '-' }}</td>
+                        <td class="td-right td-mono">Rp {{ number_format($submission->nominal ?? 0, 0, ',', '.') }}</td>
+                        <td class="td-right td-mono td-bold">Rp {{ number_format($submission->total, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                    @endif
+                </tbody>
+                <tfoot>
+                    <tr class="total-row">
+                        <td colspan="4" class="td-right" style="letter-spacing:0.3px;">Total Estimasi</td>
+                        <td class="td-right td-mono" style="font-size:11px;">
+                            Rp {{ number_format($submission->total, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
 
-                    <div class="approval-box-header">
-                        <div class="approval-box-header-inner">{{ $approval->role_name }}</div>
-                    </div>
+        @if($submission->notes)
+        <!-- ══════════════════ CATATAN ══════════════════ -->
+        <div class="desc-wrap" style="margin-bottom: 20px;">
+            <div class="section-header">
+                <span class="section-title" style="color: #d97706; border-bottom-color: #d97706;">Catatan</span>
+            </div>
+            <div class="desc-content"
+                style="background: #fffbeb; border-color: #fef3c7; border-left: 3px solid #f59e0b; color: #451a03;">
+                {{ $submission->notes }}
+            </div>
+        </div>
+        @endif
 
-                    <div class="approval-signature">
-                        @if ($approval->status === 'approved')
-                            @if ($approval->signature_base64)
-                                <img src="{{ $approval->signature_base64 }}" alt="Signed">
-                            @elseif ($approval->signature_used)
+        <!-- ══════════════════ APPROVALS ══════════════════ -->
+        <div class="approval-section" style="page-break-inside:avoid;">
+
+            <table class="approval-grid">
+                <tr>
+                    <!-- PEMOHON -->
+                    <td class="approval-box">
+                        <div class="appr-head">
+                            <div class="appr-head-text">Pemohon</div>
+                        </div>
+                        <div class="appr-sig-area">
+                            <div class="appr-sig-inner">
+                                @if ($submission->requestor_signature_base64)
+                                <img src="{{ $submission->requestor_signature_base64 }}" alt="TTD">
+                                @elseif ($submission->user->signature_path)
                                 @if ($isPdf)
-                                    <img src="{{ public_path('logo.png') }}" alt="Signed">
+                                <img src="{{ public_path($submission->user->signature_path) }}" alt="TTD">
                                 @else
-                                    <img src="{{ asset($approval->signature_used) }}" alt="Signed">
+                                <img src="{{ asset($submission->user->signature_path) }}" alt="TTD">
                                 @endif
-                            @endif
-                        @elseif ($approval->status === 'rejected')
-                            <div
-                                style="display:inline-block; border:2px solid #dc3545; color:#dc3545; font-weight:800; font-size:10px; padding:4px 8px; letter-spacing:1.5px; transform:rotate(-8deg);">
-                                DITOLAK</div>
-                        @else
-                            <div style="color:#bbb; font-size:9px; font-style:italic;">(Pending)</div>
-                        @endif
-                    </div>
-
-                    <div class="approval-box-footer">
-                        <div style="font-size:9.5px; font-weight:700; color:#333;">
-                            {{ $approval->approver ? $approval->approver->name : '-' }}
+                                @else
+                                <span class="sig-placeholder">— Draft —</span>
+                                @endif
+                            </div>
                         </div>
-                        <div style="font-size:8px; color:#aaa; margin-top:2px;">
-                            {{ $approval->approved_at ? $approval->approved_at->format('d/m/Y H:i') : '&nbsp;' }}
+                        <div class="appr-footer">
+                            <div class="appr-name">{{ $submission->user->name }}</div>
+                            <div class="appr-date">{{ $submission->tanggal_pengajuan->format('d/m/Y') }}</div>
                         </div>
-                    </div>
+                    </td>
 
+                    @foreach ($submission->approvals->sortBy('step_order') as $approval)
+                    <td class="approval-box">
+                        <div class="appr-head">
+                            <div class="appr-head-text">{{ $approval->role_name }}</div>
+                        </div>
+                        <div class="appr-sig-area">
+                            <div class="appr-sig-inner">
+                                @if ($approval->status === 'approved')
+                                @if ($approval->signature_base64)
+                                <img src="{{ $approval->signature_base64 }}" alt="TTD">
+                                @elseif ($approval->signature_used)
+                                @if ($isPdf)
+                                <img src="{{ public_path($approval->signature_used) }}" alt="TTD">
+                                @else
+                                <img src="{{ asset($approval->signature_used) }}" alt="TTD">
+                                @endif
+                                @else
+                                <span class="sig-placeholder">✓ Disetujui</span>
+                                @endif
+                                @elseif ($approval->status === 'rejected')
+                                <span class="sig-rejected">DITOLAK</span>
+                                @else
+                                <span class="sig-placeholder"></span>
+                                @endif
+                            </div>
+                        </div>
+                        <div class="appr-footer">
+                            <div class="appr-name">{{ $approval->approver ? $approval->approver->name : '—' }}</div>
+                            <div class="appr-date">
+                                {!! $approval->approved_at ? $approval->approved_at->format('d/m/Y H:i') : '&nbsp;' !!}
+                            </div>
+                        </div>
+                    </td>
+                    @endforeach
+                </tr>
+            </table>
+        </div>
+
+        @php
+        $iconColor = '%23e9b10a';
+        $svgLoc = 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24
+        24%22 fill=%22'.$iconColor.'%22%3E%3Cpath d=%22M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75
+        7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z%22/%3E%3C/svg%3E';
+        $svgMail = 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24
+        24%22 fill=%22'.$iconColor.'%22%3E%3Cpath d=%22M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9
+        2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z%22/%3E%3C/svg%3E';
+        $svgTel = 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24
+        24%22 fill=%22'.$iconColor.'%22%3E%3Cpath d=%22M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2c.27-.27.67-.36
+        1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.61 21 3 13.39 3 4c0-.55.45-1 1-1h3.5c.55 0
+        1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z%22/%3E%3C/svg%3E';
+        $svgWeb = 'data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24
+        24%22 fill=%22'.$iconColor.'%22%3E%3Cpath d=%22M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12
+        2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2
+        2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9
+        2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z%22/%3E%3C/svg%3E';
+        @endphp
+        <!-- ══════════════════ FOOTER ══════════════════ -->
+        <div class="page-footer">
+            <div class="footer-contact">
+                <div class="footer-contact-line">
+                    <span class="fc-icon"><img src="{{ $svgLoc }}" alt="loc"></span>
+                    Desa Gondosari RT. 02 RW. 06, Kec. Gebog, Kab. Kudus,<br> Jawa Tengah, Indonesia
                 </div>
-            @endforeach
-            <div style="clear:both;"></div>
+                <div class="footer-contact-line">
+                    <span class="fc-icon"><img src="{{ $svgMail }}" alt="mail"></span>
+                    admin@hbmcorp.co.id
+                </div>
+                <div class="footer-contact-line">
+                    <span class="fc-icon"><img src="{{ $svgTel }}" alt="tel"></span>
+                    +62 291 2912748
+                </div>
+                <div class="footer-contact-line">
+                    <span class="fc-icon"><img src="{{ $svgWeb }}" alt="web"></span>
+                    www.hbmcorp.co.id
+                </div>
+            </div>
         </div>
-    </div>
+        <div class="footer-accent-bar"></div>
 
-    {{-- ══ FOOTER ══ --}}
-    <div
-        style="position:fixed; bottom:0; left:0; right:0; border-top:1px solid #dee2e6; padding-top:5px; display:table; width:100%; font-size:8.5px; color:#aaa;">
-        {{-- <div style="display:table-cell; text-align:left;">Dicetak otomatis oleh Sistem pada {{ now()->format('d/m/Y H:i') }}</div> --}}
-        <div style="display:table-cell; text-align:right;">
-            @if ($isPdf)
-                Halaman
-                <script type="text/php">echo $PAGE_NUM;</script>
-            @endif
-        </div>
-    </div>
-
-    @if (!$isPdf)
+        @if (!$isPdf)
         <script>
-            window.onload = function() {
-                window.print();
-            }
+            window.onload = function () { window.print(); };
         </script>
-    @endif
+        @endif
 
+    </div>
 </body>
 
 </html>
