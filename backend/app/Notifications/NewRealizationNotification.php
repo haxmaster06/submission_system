@@ -30,7 +30,7 @@ class NewRealizationNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $code = $this->realization->submission->code ?? 'Unknown';
+        $code = $this->realization->submission->no_pengajuan ?? 'Unknown';
         return (new MailMessage)
             ->subject('Realisasi Baru: ' . $code)
             ->line('Ada laporan realisasi baru untuk pengajuan #' . $code)
@@ -39,9 +39,9 @@ class NewRealizationNotification extends Notification implements ShouldQueue
 
     public function toArray(object $notifiable): array
     {
-        $code = $this->realization->submission->code ?? 'Unknown';
-        $title = $this->realization->submission->title ?? 'Unknown';
-        
+        $code = $this->realization->submission->no_pengajuan ?? 'Unknown';
+        $title = $this->realization->submission->description ?? 'Unknown';
+
         return [
             'submission_id' => $this->realization->submission_id,
             'realization_id' => $this->realization->id,
@@ -55,8 +55,8 @@ class NewRealizationNotification extends Notification implements ShouldQueue
 
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
-        $code = $this->realization->submission->code ?? 'Unknown';
-        $title = $this->realization->submission->title ?? 'Unknown';
+        $code = $this->realization->submission->no_pengajuan ?? 'Unknown';
+        $title = $this->realization->submission->description ?? 'Unknown';
 
         return new BroadcastMessage([
             'submission_id' => $this->realization->submission_id,

@@ -43,7 +43,7 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $statusIndo = $this->status === 'approved' ? 'Disetujui' : 'Ditolak';
-        
+
         return (new MailMessage)
             ->subject('Update Status Pengajuan: ' . $this->submission->code)
             ->line("Pengajuan Anda telah $statusIndo oleh $this->approverName")
@@ -61,7 +61,7 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
         return [
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => $this->submission->title,
+            'title' => $this->submission->description,
             'status' => $this->status,
             'approver_name' => $this->approverName,
             'message' => "Pengajuan {$this->submission->code} telah " . ($this->status === 'approved' ? 'disetujui' : 'ditolak'),
@@ -69,13 +69,13 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
             'link' => '/submissions/' . $this->submission->id
         ];
     }
-    
+
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => $this->submission->title,
+            'title' => $this->submission->description,
             'status' => $this->status,
             'approver_name' => $this->approverName,
             'message' => "Pengajuan {$this->submission->code} telah " . ($this->status === 'approved' ? 'disetujui' : 'ditolak'),

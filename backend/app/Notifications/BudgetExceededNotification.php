@@ -50,7 +50,7 @@ class BudgetExceededNotification extends Notification implements ShouldQueue
         return [
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => 'Budget Alert: ' . $this->submission->title,
+            'title' => 'Budget Alert: ' . $this->submission->description,
             'message' => "Pengajuan melebihi budget divisi! (Limit: " . number_format($this->budgetLimit) . ")",
             'type' => 'budget_exceeded',
             'link' => '/submissions/' . $this->submission->id,
@@ -63,7 +63,7 @@ class BudgetExceededNotification extends Notification implements ShouldQueue
         return new BroadcastMessage([
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => 'Budget Alert: ' . $this->submission->title,
+            'title' => 'Budget Alert: ' . $this->submission->description,
             'message' => "Pengajuan melebihi budget divisi! (Limit: " . number_format($this->budgetLimit) . ")",
             'type' => 'budget_exceeded',
             'link' => '/submissions/' . $this->submission->id,

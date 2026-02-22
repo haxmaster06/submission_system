@@ -55,7 +55,7 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
         return [
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => $this->submission->title,
+            'title' => $this->submission->description,
             'requester_name' => $this->submission->user->name,
             'amount' => $this->submission->total_amount,
             'message' => 'Pengajuan baru dari ' . $this->submission->user->name,
@@ -63,13 +63,13 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
             'link' => '/submissions/' . $this->submission->id
         ];
     }
-    
+
     public function toBroadcast(object $notifiable): BroadcastMessage
     {
         return new BroadcastMessage([
             'submission_id' => $this->submission->id,
             'code' => $this->submission->code,
-            'title' => $this->submission->title,
+            'title' => $this->submission->description,
             'requester_name' => $this->submission->user->name,
             'amount' => $this->submission->total_amount,
             'message' => 'Pengajuan baru dari ' . $this->submission->user->name,
