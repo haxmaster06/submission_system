@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -107,6 +107,14 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
       const { url } = response.data;
 
       if (printIframeRef.current) {
+        printIframeRef.current.onload = function() {
+          setTimeout(() => {
+            if (printIframeRef.current?.contentWindow) {
+              printIframeRef.current.contentWindow.focus();
+              printIframeRef.current.contentWindow.print();
+            }
+          }, 500);
+        };
         printIframeRef.current.src = url;
       }
     } catch (err) {
@@ -292,6 +300,19 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                           )}
                         </div>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">{isDone ? `By ${approval.approver?.name.split(' ')[0]}` : 'Waiting...'}</p>
+                        {approval.is_director_proxy && approval.signed_proof_path && (
+                          <div className="mt-2">
+                            <a 
+                              href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${approval.signed_proof_path.replace('public/', '')}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-100 transition-colors border border-indigo-100"
+                            >
+                              <FileText size={12} />
+                              Bukti TTD (Proxy)
+                            </a>
+                          </div>
+                        )}
                         {approval.notes && (
                           <div className="mt-2 text-[10px] text-slate-500 font-bold bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 italic">"{approval.notes}"</div>
                         )}
@@ -316,7 +337,79 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 </div>
               </div>
 
-              {submission.items && submission.items.length > 0 ? (
+              {submission.payload && submission.payload.employees ? (
+                <div className="border border-indigo-100 rounded-[24px] overflow-hidden bg-white shadow-inner">
+                   <div className="overflow-x-auto custom-scrollbar">
+                       <table className="w-full min-w-max text-left border-b border-indigo-100">
+                          <thead className="bg-indigo-50/50">
+                             <tr>
+                                <th className="sticky left-0 z-10 bg-indigo-50/90 backdrop-blur-sm border-r border-indigo-100 px-6 py-4 w-64 min-w-[250px] shadow-[4px_0_12px_rgba(0,0,0,0.03)] border-b text-[10px] font-black uppercase text-indigo-800 tracking-widest">
+                                    Nama Karyawan
+                                </th>
+                                {submission.payload.employees[0]?.daily_records.map((d: any) => {
+                                    const dObj = new Date(d.date);
+                                    return (
+                                    <th key={d.date} className="px-3 py-4 border-l border-b border-indigo-100 bg-slate-50/50 text-center min-w-[60px]">
+                                        <div className="flex flex-col items-center gap-1.5">
+                                           <span className="text-[10px] font-black uppercase text-indigo-500 tracking-wider">
+                                               {dObj.toLocaleDateString('id-ID', { weekday: 'short' })}
+                                           </span>
+                                           <span className="text-xs font-bold text-slate-700 bg-white px-1.5 py-0.5 rounded shadow-sm border border-slate-150">
+                                               {dObj.getDate()}
+                                           </span>
+                                        </div>
+                                    </th>
+                                )})}
+                                <th className="px-6 py-4 border-l border-b border-indigo-100 bg-indigo-100 text-right w-48 text-[10px] font-black uppercase tracking-widest text-indigo-900">
+                                    Subtotal
+                                </th>
+                             </tr>
+                          </thead>
+                          <tbody className="divide-y divide-indigo-50">
+                              {submission.payload.employees.map((emp: any) => (
+                                 <tr key={emp.employee_id} className="hover:bg-indigo-50/30 transition-colors">
+                                     <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50/90 border-r border-indigo-50 px-6 py-4 shadow-[4px_0_12px_rgba(0,0,0,0.03)] transition-colors">
+                                        <p className="font-bold text-sm text-slate-800 truncate block whitespace-nowrap overflow-hidden max-w-[200px]">{emp.employee_name}</p>
+                                         <p className="text-[10px] font-black tracking-widest text-slate-400 font-mono uppercase truncate block whitespace-nowrap overflow-hidden">
+                                            {emp.department} • <span className="text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(parseFloat(emp.base_salary))}</span>/Bulan
+                                         </p>
+                                     </td>
+                                     {emp.daily_records.map((d: any) => (
+                                         <td key={d.date} className="px-2 py-4 border-l border-indigo-50 text-center">
+                                             {d.nominal > 0 ? (
+                                                 <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 inline-block shadow-sm">
+                                                    Rp {new Intl.NumberFormat('id-ID').format(d.nominal)}
+                                                 </div>
+                                             ) : (
+                                                 <div className="text-slate-300 text-[10px] font-black">-</div>
+                                             )}
+                                         </td>
+                                     ))}
+                                     <td className="px-6 py-4 border-l border-indigo-50 text-right bg-slate-50/50">
+                                        <div className="flex flex-col items-end">
+                                            <span className="font-bold text-sm text-indigo-900">
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(emp.total_salary)}
+                                            </span>
+                                            <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">{emp.total_days} Hari</span>
+                                        </div>
+                                     </td>
+                                 </tr>
+                              ))}
+                          </tbody>
+                          <tfoot className="bg-indigo-50 border-t border-indigo-200">
+                              <tr>
+                                  <td colSpan={submission.payload.employees[0]?.daily_records.length + 1} className="px-8 py-6 text-right font-black text-indigo-800 uppercase text-[11px] tracking-widest whitespace-nowrap border-r border-indigo-200">
+                                      Grand Total Pengajuan:
+                                  </td>
+                                  <td className="px-8 py-6 text-right font-black text-indigo-600 text-3xl tracking-tight whitespace-nowrap">
+                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(submission.payload.total_amount || submission.total)}
+                                  </td>
+                              </tr>
+                          </tfoot>
+                       </table>
+                   </div>
+                </div>
+              ) : submission.items && submission.items.length > 0 ? (
                 <div className="border border-slate-100 rounded-[24px] overflow-hidden bg-white shadow-inner">
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
@@ -426,6 +519,58 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             )}
           </div>
 
+          {!loadingRealizations && submission.final_status === 'approved' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"
+            >
+              {/* Card Pengajuan (Budget) */}
+              <div className="bg-gradient-to-br from-indigo-50 to-white rounded-[24px] p-6 border border-indigo-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="relative z-10">
+                  <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                    <CreditCard size={14} className="text-indigo-500" />
+                    Total Budgeting (Pengajuan)
+                  </p>
+                  <p className="text-3xl lg:text-4xl font-black text-indigo-700 font-mono tracking-tighter">
+                    Rp {new Intl.NumberFormat('id-ID').format(submission.payload?.total_amount || submission.total)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Card Realisasi */}
+              <div className="bg-gradient-to-br from-emerald-50 to-white rounded-[24px] p-6 border border-emerald-100 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div className="relative z-10">
+                  <p className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                    <Receipt size={14} className="text-emerald-500" />
+                    Total Realisasi Aktual
+                  </p>
+                  <p className="text-3xl lg:text-4xl font-black text-emerald-700 font-mono tracking-tighter">
+                    Rp {new Intl.NumberFormat('id-ID').format(realizations.reduce((acc, r) => acc + r.details.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0), 0))}
+                  </p>
+                  
+                  {/* Selisih Indicator */}
+                  {(() => {
+                    const totalBudget = parseFloat(submission.payload?.total_amount || submission.total);
+                    const totalReal = realizations.reduce((acc, r) => acc + r.details.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0), 0);
+                    const selisih = totalBudget - totalReal;
+                    
+                    return (
+                      <div className="mt-4 pt-4 border-t border-emerald-100/50 flex items-center justify-between">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sisa Anggaran</span>
+                        <span className={`text-sm font-black tracking-tight ${selisih < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                          {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID').format(Math.abs(selisih))}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {loadingRealizations ? (
             <div className="flex items-center justify-center py-12 text-slate-400">
               <Loader2 className="animate-spin mr-2" /> Memuat data...
@@ -444,6 +589,55 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </div>
           ) : (
             <div className="space-y-4">
+              {/* PER-ITEM COMPARISON TABLE */}
+              <div className="bg-white rounded-[24px] border border-slate-200 shadow-sm overflow-hidden mb-8">
+                <div className="p-5 border-b border-slate-100 flex items-center gap-3 bg-slate-50/50">
+                  <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center text-sky-600">
+                    <Receipt size={16} />
+                  </div>
+                  <h3 className="font-bold text-slate-800 text-sm uppercase tracking-tight">Rincian Perbandingan (Budget vs Aktual)</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-[10px] text-slate-400 font-bold uppercase tracking-widest border-b border-slate-100">
+                      <tr>
+                        <th className="px-6 py-4">Nama Item / Karyawan</th>
+                        <th className="px-6 py-4 text-right">Budget (Pengajuan)</th>
+                        <th className="px-6 py-4 text-right">Aktual (Realisasi)</th>
+                        <th className="px-6 py-4 text-right">Selisih</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {(() => {
+                        const budgetedItems = submission.payload && submission.payload.employees
+                          ? submission.payload.employees.map((emp: any) => ({ name: emp.employee_name, budget: parseFloat(emp.total_salary) }))
+                          : (submission.items || []).map((item: any) => ({ name: item.description, budget: parseFloat(item.total) }));
+
+                        return budgetedItems.map((bItem: any, idx: number) => {
+                          const realizedAmount = realizations.reduce((acc: number, r: any) => 
+                            acc + r.details.filter((d: any) => d.item_name === bItem.name).reduce((sum: number, d: any) => sum + parseFloat(d.total), 0)
+                          , 0);
+                          const selisih = bItem.budget - realizedAmount;
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-slate-700">{bItem.name}</td>
+                              <td className="px-6 py-4 text-right font-mono text-indigo-600 font-bold">Rp {new Intl.NumberFormat('id-ID').format(bItem.budget)}</td>
+                              <td className="px-6 py-4 text-right font-mono text-emerald-600 font-bold">Rp {new Intl.NumberFormat('id-ID').format(realizedAmount)}</td>
+                              <td className={`px-6 py-4 text-right font-mono font-black ${selisih < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID').format(Math.abs(selisih))}
+                              </td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* LIST KARTU REALISASI PER TANGGAL */}
+              <h3 className="font-black text-slate-900 text-sm uppercase tracking-tight mb-4 ml-1">Histori Kartu Realisasi</h3>
               {realizations.map((r) => (
                 <div key={r.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
@@ -453,9 +647,13 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       </div>
                       <div>
                         <p className="text-sm font-bold text-slate-800">
-                          Realisasi Tgl {new Date(r.realization_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          Realisasi Tgl {new Date(r.realization_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                         </p>
-                        <p className="text-xs text-slate-400">{r.notes || 'Tidak ada catatan'}</p>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5 mb-1.5 flex items-center gap-1">
+                          <Clock size={12} />
+                          {new Date(r.created_at || r.realization_date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB
+                        </p>
+                        <p className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded inline-block border border-slate-100">{r.notes || 'Tidak ada catatan'}</p>
                       </div>
                     </div>
                     <div className="text-right">

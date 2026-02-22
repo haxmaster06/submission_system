@@ -621,51 +621,58 @@
             $employees = $payload['employees'] ?? [];
             $dates = count($employees) > 0 ? array_column($employees[0]['daily_records'], 'date') : [];
             @endphp
-            <div style="overflow-x: auto;">
-                <table class="o-table" style="font-size: 8px;">
+            <div class="salary-details">
+                <table class="o-table" style="font-size: 8px; margin-bottom: 20px;">
                     <thead>
                         <tr>
                             <th style="width:120px; white-space: nowrap;">Nama Karyawan</th>
                             @foreach($dates as $date)
                             @php $dObj = \Carbon\Carbon::parse($date); @endphp
-                            <th class="td-center" style="width:25px; padding: 4px;">
-                                <div style="font-size: 7px; color: #64748b;">{{ $dObj->translatedFormat('D') }}</div>
-                                <div style="font-weight: bold;">{{ $dObj->format('d') }}</div>
+                            <th class="td-center" style="width:25px; padding: 4px; line-height: 1.1;">
+                                <div style="font-weight: bold; font-size: 7.5px;">{{ $dObj->format('d/n/Y') }}</div>
                             </th>
                             @endforeach
-                            <th class="td-right" style="width:80px;">Subtotal</th>
+                            <th class="td-right" style="width:70px;">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($employees as $emp)
                         <tr>
-                            <td class="td-bold" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            <td class="td-bold"
+                                style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding: 4px 6px;">
                                 {{ $emp['employee_name'] }}
                                 <div style="font-size: 7px; color: #64748b; font-weight: normal; margin-top:2px;">
-                                    {{ $emp['department'] }} - Rp {{ number_format($emp['base_salary'], 0, ',', '.')
-                                    }}/Ref
+                                    {{ $emp['department'] }}<br>
+                                    Rp {{ number_format($emp['base_salary'], 0, ',', '.') }} / Bulan
                                 </div>
                             </td>
                             @foreach($emp['daily_records'] as $record)
-                            <td class="td-center">
+                            <td class="td-center" style="padding: 4px;">
                                 @if(isset($record['nominal']) && $record['nominal'] > 0)
-                                <span style="color: #10b981; font-weight: bold; font-size: 8px;">{{
-                                    number_format($record['nominal'] / 1000, 0) }}k</span>
+                                <span style="color: #10b981; font-weight: bold; font-size: 8px;">Rp {{
+                                    number_format($record['nominal'], 0, ',', '.') }}</span>
                                 @else
                                 <span style="color: #cbd5e1;">-</span>
                                 @endif
                             </td>
                             @endforeach
-                            <td class="td-right td-mono td-bold">Rp {{ number_format($emp['total_salary'], 0, ',', '.')
-                                }}</td>
+                            <td class="td-right td-mono td-bold" style="padding: 4px 6px; color: #2a7ba5;">
+                                Rp {{ number_format($emp['total_salary'], 0, ',', '.') }}
+                                <div
+                                    style="font-size: 6px; color: #64748b; font-weight: normal; margin-top:2px; letter-spacing: 0.2px;">
+                                    ({{ $emp['total_days'] }} HARI)
+                                </div>
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
                     <tfoot>
                         <tr class="total-row">
-                            <td colspan="{{ count($dates) + 1 }}" class="td-right" style="letter-spacing:0.3px;">Grand
-                                Total Pengajuan</td>
-                            <td class="td-right td-mono" style="font-size:11px;">
+                            <td colspan="{{ count($dates) + 1 }}" class="td-right"
+                                style="letter-spacing:0.3px; padding: 6px;">
+                                GRAND TOTAL PENGAJUAN GAJI
+                            </td>
+                            <td class="td-right td-mono" style="font-size:11px; padding: 6px; color: #d97706;">
                                 Rp {{ number_format($payload['total_amount'] ?? $submission->total, 0, ',', '.') }}
                             </td>
                         </tr>

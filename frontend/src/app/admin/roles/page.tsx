@@ -422,6 +422,7 @@ function groupPermissions(permissions: string[]) {
     ],
     'Master Data & Sistem (Admin)': [
       'manage master data',
+      'manage employees',
       'manage users',
       'manage signatures'
     ]
@@ -486,6 +487,7 @@ function translatePermission(permission: string): string {
     'view reports': 'Lihat Laporan',
     'proxy director signature': 'Proxy Tanda Tangan Direktur',
     'manage master data': 'Kelola Data Master',
+    'manage employees': 'Kelola Data Karyawan',
     'manage realizations': 'Kelola Realisasi',
     'complete submissions': 'Selesaikan Pengajuan',
     'delete submissions': 'Hapus Pengajuan'
@@ -504,6 +506,7 @@ function getPermissionDescription(permission: string): string {
     'view reports': 'Melihat laporan dan export PDF',
     'proxy director signature': 'Menggunakan tanda tangan Director sebagai proxy (khusus Finance)',
     'manage master data': 'Mengelola Data Master (Divisi, Jenis, UOM, dll)',
+    'manage employees': 'Mengelola Data Karyawan',
     'manage realizations': 'Mencatat dan mengelola realisasi anggaran hasil pengajuan',
     'complete submissions': 'Menandai pengajuan selesai secara manual',
     'delete submissions': 'Menghapus data pengajuan (Super Admin Only)'

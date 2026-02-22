@@ -29,7 +29,7 @@ class SubmissionController extends Controller
         // Only Super Admin, Finance, GM, Director can see all submissions
         // Only Super Admin or users with 'view reports' permission can see all submissions
         $canSeeAll = $user->hasRole('Super Admin') || $user->can('view reports');
-        
+
         if (!$canSeeAll) {
             $query->where('user_id', $user->id);
         }
@@ -37,9 +37,9 @@ class SubmissionController extends Controller
         // Filtering Logic
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('no_pengajuan', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 
@@ -93,18 +93,31 @@ class SubmissionController extends Controller
             'status_urgent' => 'required|exists:urgency_statuses,code',
             'description' => 'required|string',
             'notes' => 'nullable|string',
-            // Items validation (max 20 items)
-            'items' => 'required|array|min:1|max:20',
-            'items.*.description' => 'required|string|max:500',
-            'items.*.qty' => 'required|numeric|min:0.01',
-            'items.*.uom_id' => 'required|exists:uoms,id',
-            'items.*.nominal' => 'required|numeric|min:0',
+            'payload' => 'nullable|array',
+            'total' => 'nullable|numeric',
+
+            // Items validation (conditional)
+            'items' => 'nullable|array|max:20',
+            'items.*.description' => 'required_with:items|string|max:500',
+            'items.*.qty' => 'required_with:items|numeric|min:0.01',
+            'items.*.uom_id' => 'required_with:items|exists:uoms,id',
+            'items.*.nominal' => 'required_with:items|numeric|min:0',
         ]);
 
         $data = $request->except('items');
         $data['user_id'] = Auth::id();
 
-        $submission = $this->submissionService->createSubmissionWithItems($data, $request->items);
+        if ($request->has('payload') && !empty($request->payload)) {
+            $submission = $this->submissionService->createSubmission($data); // uses data['total']
+        }
+        else {
+            // Validate items explicitly if no payload is present
+            if (!$request->has('items') || empty($request->items)) {
+                return response()->json(['message' => 'The items field is required when no payload is provided.'], 422);
+            }
+            $submission = $this->submissionService->createSubmissionWithItems($data, $request->items);
+        }
+
         $this->approvalService->initializeApprovals($submission);
 
         AuditTrailService::log('CREATED', 'Submission', $submission->id, null, $submission->toArray());
@@ -142,32 +155,36 @@ class SubmissionController extends Controller
     private function generatePdf(Submission $submission, $isPdf = true)
     {
         $submission->load(['user', 'division', 'jenisPengajuan', 'approvals.approver', 'uom', 'items.uom']);
-        
+
         // Embed Requestor Signature
         $submission->requestor_signature_base64 = $this->getBase64Signature($submission->user->signature_path);
 
         // Embed Approver Signatures
-        foreach($submission->approvals as $approval) {
-            if($approval->signature_used) {
+        foreach ($submission->approvals as $approval) {
+            if ($approval->signature_used) {
                 $approval->signature_base64 = $this->getBase64Signature($approval->signature_used);
             }
         }
 
+        $isSalary = $submission->payload && isset($submission->payload['employees']);
+        $viewName = $isSalary ? 'pdf.submission-salary' : 'pdf.submission';
+
         if ($isPdf) {
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.submission', compact('submission', 'isPdf'))
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView($viewName, compact('submission', 'isPdf'))
                 ->setPaper('a4', 'portrait');
             return $pdf;
         }
 
-        return view('pdf.submission', compact('submission', 'isPdf'));
+        return view($viewName, compact('submission', 'isPdf'));
     }
 
     public function downloadPdf(Submission $submission)
     {
         try {
             $pdf = $this->generatePdf($submission);
-            return $pdf->download('Submission-'.$submission->no_pengajuan.'.pdf');
-        } catch (\Exception $e) {
+            return $pdf->download('Submission-' . $submission->no_pengajuan . '.pdf');
+        }
+        catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('PDF Export Error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate PDF'], 500);
         }
@@ -175,7 +192,8 @@ class SubmissionController extends Controller
 
     private function getBase64Signature($path)
     {
-        if (!$path) return null;
+        if (!$path)
+            return null;
 
         // If stored as URL, try to parse path
         if (filter_var($path, FILTER_VALIDATE_URL)) {
@@ -197,9 +215,9 @@ class SubmissionController extends Controller
 
         // Check with signatures prefix if missing
         if (!str_starts_with($path, 'signatures/') && \Illuminate\Support\Facades\Storage::disk('public')->exists('signatures/' . $path)) {
-             $content = \Illuminate\Support\Facades\Storage::disk('public')->get('signatures/' . $path);
-             $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType('signatures/' . $path);
-             return 'data:' . $mime . ';base64,' . base64_encode($content);
+            $content = \Illuminate\Support\Facades\Storage::disk('public')->get('signatures/' . $path);
+            $mime = \Illuminate\Support\Facades\Storage::disk('public')->mimeType('signatures/' . $path);
+            return 'data:' . $mime . ';base64,' . base64_encode($content);
         }
 
         return null;
@@ -208,15 +226,16 @@ class SubmissionController extends Controller
     public function previewPdf(Submission $submission)
     {
         try {
-            $pdf = $this->generatePdf($submission, true); 
-            
+            $pdf = $this->generatePdf($submission, true);
+
             return response($pdf->output(), 200, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="Submission-'.$submission->no_pengajuan.'.pdf"',
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0', 
+                'Content-Disposition' => 'inline; filename="Submission-' . $submission->no_pengajuan . '.pdf"',
+                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
                 'Pragma' => 'no-cache',
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('PDF Preview Error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate PDF'], 500);
         }
@@ -231,7 +250,8 @@ class SubmissionController extends Controller
                 ->header('Content-Type', 'text/html')
                 ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
                 ->header('Pragma', 'no-cache');
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('HTML Print Error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate print view'], 500);
         }
@@ -242,15 +262,15 @@ class SubmissionController extends Controller
         $user = Auth::user();
         // Basic authorization check
         $canView = $user->hasAnyRole(['Super Admin', 'Finance', 'GM', 'Director']) || $submission->user_id === $user->id;
-        
+
         if (!$canView) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'api.submissions.preview', 
-            now()->addMinutes(30), 
-            ['submission' => $submission->id]
+            'api.submissions.preview',
+            now()->addMinutes(30),
+        ['submission' => $submission->id]
         );
 
         return response()->json(['url' => $url]);
@@ -260,15 +280,15 @@ class SubmissionController extends Controller
     {
         $user = Auth::user();
         $canView = $user->hasAnyRole(['Super Admin', 'Finance', 'GM', 'Director']) || $submission->user_id === $user->id;
-        
+
         if (!$canView) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
         $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'api.submissions.print', 
-            now()->addMinutes(30), 
-            ['submission' => $submission->id]
+            'api.submissions.print',
+            now()->addMinutes(30),
+        ['submission' => $submission->id]
         );
 
         return response()->json(['url' => $url]);
@@ -295,9 +315,9 @@ class SubmissionController extends Controller
         $submission->items()->delete();
         $submission->approvals()->delete();
         $submission->attachments()->delete();
-        
+
         AuditTrailService::log('DELETED', 'Submission', $submission->id, $submission->toArray(), null);
-        
+
         $submission->delete();
 
         return response()->json(['message' => 'Pengajuan berhasil dihapus.']);
@@ -356,9 +376,9 @@ class SubmissionController extends Controller
             $submission->items()->delete();
             $submission->approvals()->delete();
             $submission->attachments()->delete();
-            
+
             \App\Services\AuditTrailService::log('BULK_DELETED', 'Submission', $submission->id, $submission->toArray(), null);
-            
+
             $submission->delete();
             $count++;
         }

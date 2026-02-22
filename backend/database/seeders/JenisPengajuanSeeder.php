@@ -14,6 +14,7 @@ class JenisPengajuanSeeder extends Seeder
             ['name' => 'Pelatihan'],
             ['name' => 'Perjalanan'],
             ['name' => 'Lain-lain'],
+            ['name' => 'Gaji Karyawan Harian Produksi & Gudang'],
         ];
 
         foreach ($types as $type) {

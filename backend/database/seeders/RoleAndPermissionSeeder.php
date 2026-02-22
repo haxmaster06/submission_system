@@ -24,6 +24,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view reports',
             'proxy director signature',
             'manage master data',
+            'manage employees',
             'manage realizations',
             'complete submissions',
             'delete submissions',
@@ -35,8 +36,8 @@ class RoleAndPermissionSeeder extends Seeder
 
         // Create roles and assign permissions
         Role::findOrCreate('Staff', 'web')->givePermissionTo(['create submissions', 'view submissions', 'manage signatures']);
-        Role::findOrCreate('HRD', 'web')->givePermissionTo(['create submissions', 'view submissions', 'approve submissions', 'reject submissions', 'manage signatures']);
-        Role::findOrCreate('GA Legal', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions']);
+        Role::findOrCreate('HRD', 'web')->givePermissionTo(['create submissions', 'view submissions', 'approve submissions', 'reject submissions', 'manage signatures', 'manage employees']);
+        Role::findOrCreate('GA Legal', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'manage employees']);
         Role::findOrCreate('Finance', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'proxy director signature', 'view reports']);
         Role::findOrCreate('GM', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions']);
         Role::findOrCreate('Director', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'view reports']);

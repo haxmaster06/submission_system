@@ -34,9 +34,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isApprover = user?.permissions.some(p => p.name === 'view submissions') ||
     user?.roles.some(r => ['HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(r.name));
 
-  const isPrivileged = user?.roles.some(r => ['Super Admin', 'Director', 'Finance', 'GM'].includes(r.name));
-
   const isSuperAdmin = user?.roles.some(r => r.name === 'Super Admin');
+
+  const isMasterDataAdmin = user?.permissions.some(p => p.name === 'manage master data') || isSuperAdmin;
+  const isEmployeeAdmin = user?.permissions.some(p => p.name === 'manage employees') || isSuperAdmin;
+  const showManajemenData = isMasterDataAdmin || isEmployeeAdmin;
 
   const navGroups = [
     {
@@ -50,6 +52,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       group: 'PENGANGGARAN',
       items: [
         user?.permissions.some(p => p.name === 'create submissions') && { name: 'Buat Pengajuan Baru', href: '/submissions/new', icon: PlusCircle },
+        (isEmployeeAdmin && { name: 'Pengajuan Gaji', href: '/submissions/salary/new', icon: Users }),
         { name: 'Pengajuan Saya', href: '/submissions', icon: FileText },
       ].filter(Boolean)
     },
@@ -59,15 +62,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         { name: 'Persetujuan', href: '/approvals', icon: CheckSquare },
       ]
     },
-    isPrivileged && {
+    showManajemenData && {
       group: 'MANAJEMEN DATA',
       items: [
-        { name: 'Master Data', href: '/admin/master', icon: Database },
-        { name: 'Alur Persetujuan', href: '/admin/approval-flow', icon: GitBranch },
-        { name: 'Monitoring Realisasi', href: '/realizations', icon: Receipt },
-      ]
+        (isMasterDataAdmin && { name: 'Master Data', href: '/admin/master', icon: Database }),
+        (isEmployeeAdmin && { name: 'Data Karyawan', href: '/admin/employees', icon: Users }),
+        (isMasterDataAdmin && { name: 'Alur Persetujuan', href: '/admin/approval-flow', icon: GitBranch }),
+        (isMasterDataAdmin && { name: 'Monitoring Realisasi', href: '/realizations', icon: Receipt }),
+      ].filter(Boolean)
     },
-    isPrivileged && {
+    isMasterDataAdmin && {
       group: 'LAPORAN',
       items: [
         { name: 'Reporting', href: '/reporting', icon: BarChart3 },

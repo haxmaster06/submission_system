@@ -27,6 +27,7 @@ class Submission extends Model
         'current_approval_step',
         'final_status',
         'is_completed',
+        'payload',
     ];
 
     protected $appends = ['current_step_role'];
@@ -50,6 +51,7 @@ class Submission extends Model
         'nominal' => 'decimal:2',
         'total' => 'decimal:2',
         'is_completed' => 'boolean',
+        'payload' => 'array',
     ];
 
     public function user(): BelongsTo

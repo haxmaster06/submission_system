@@ -14,6 +14,7 @@ export default function NewSubmissionPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
   const [lookups, setLookups] = useState<any>({
     divisions: [],
     jenis_pengajuan: [],
@@ -22,7 +23,6 @@ export default function NewSubmissionPage() {
     urgency_statuses: []
   });
 
-  // Check if user is Super Admin
   const isSuperAdmin = user?.roles?.some(role => role.name === 'Super Admin');
 
   const [form, setForm] = useState({
@@ -42,35 +42,32 @@ export default function NewSubmissionPage() {
     nominal: 0
   }]);
 
-  // Calculate grand total from all items
-  const grandTotal = items.reduce((sum, item) => sum + (item.qty * item.nominal), 0);
-
   useEffect(() => {
-    api.get('/lookups').then(res => {
-      setLookups(res.data);
+    Promise.all([
+      api.get('/lookups'),
+    ]).then(([lookupsRes]) => {
+      setLookups(lookupsRes.data);
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
       setLoading(false);
     });
   }, []);
 
-  // Auto-set division_id for non-Super Admin users
   useEffect(() => {
     if (user && !isSuperAdmin && user.division?.id) {
       setForm(prev => ({ ...prev, division_id: String(user.division?.id) }));
     }
   }, [user, isSuperAdmin]);
 
+  const selectedType = lookups.jenis_pengajuan.find((j: any) => j.id == form.jenis_pengajuan_id);
+
   const addItem = () => {
     if (items.length >= 20) {
       alert('Maximum 20 items per submission');
       return;
     }
-    setItems([...items, {
-      id: Date.now(),
-      description: '',
-      qty: 0,
-      uom_id: '',
-      nominal: 0
-    }]);
+    setItems([...items, { id: Date.now(), description: '', qty: 0, uom_id: '', nominal: 0 }]);
   };
 
   const removeItem = (id: number) => {
@@ -82,29 +79,35 @@ export default function NewSubmissionPage() {
   };
 
   const updateItem = (id: number, field: string, value: any) => {
-    setItems(items.map(item =>
-      item.id === id ? { ...item, [field]: value } : item
-    ));
+    setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
+
+  const standardTotal = items.reduce((sum, item) => sum + (item.qty * item.nominal), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (items.length === 1 && (!items[0].description || items[0].nominal === 0)) {
+        alert('Mohon isi minimal 1 item anggaran.');
+        return;
+    }
+
     setSubmitting(true);
     try {
-      const payload = {
-        ...form,
-        items: items.map(({ id, ...item }) => item) // Remove temporary id
-      };
+      let payload: any = { ...form };
+      payload.items = items.map(({ id, ...item }) => item);
+      payload.total = standardTotal;
+
       await api.post('/submissions', payload);
       router.push('/submissions');
-    } catch (err) {
-      alert('Failed to submit. Please check your input.');
+    } catch (err: any) {
+        console.error(err);
+        alert(err.response?.data?.message || 'Gagal mengirim pengajuan. Silakan periksa kembali.');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <Shell><div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin text-sky-500" /></div></Shell>;
+  if(loading) return <Shell><div className="flex justify-center py-20"><Loader2 className="animate-spin text-sky-500" size={32} /></div></Shell>;
 
   return (
     <Shell>
@@ -115,7 +118,7 @@ export default function NewSubmissionPage() {
             <p className="text-slate-500 mt-2 text-sm sm:text-base">Isi detail pengajuan dan item anggaran dengan lengkap</p>
           </div>
           <Link href="/submissions">
-            <button className="text-slate-500 font-bold hover:text-slate-800 transition-all flex items-center gap-2 text-sm">
+            <button className="text-slate-500 font-bold hover:text-slate-800 transition-all flex items-center gap-2 text-sm bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
               Batal & Kembali
             </button>
           </Link>
@@ -129,7 +132,6 @@ export default function NewSubmissionPage() {
               <h2 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Informasi Umum</h2>
             </div>
             <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Division - Only show dropdown for Super Admin */}
               {isSuperAdmin ? (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi</label>
@@ -140,13 +142,13 @@ export default function NewSubmissionPage() {
                     required
                   >
                     <option value="" className="text-slate-400">Pilih Divisi</option>
-                    {lookups.divisions.map((d: any) => <option key={d.id} value={d.id} className="text-slate-900">{d.name} ({d.code})</option>)}
+                    {lookups.divisions.map((d: any) => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
                   </select>
                 </div>
               ) : (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi</label>
-                  <div className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-900 font-medium">
+                  <div className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 font-bold">
                     {user?.division?.name} ({user?.division?.code})
                   </div>
                 </div>
@@ -175,20 +177,22 @@ export default function NewSubmissionPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Jenis Pengajuan</label>
-                <select
-                  value={form.jenis_pengajuan_id}
-                  onChange={(e) => setForm({ ...form, jenis_pengajuan_id: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
-                  required
-                >
-                  <option value="" className="text-slate-400">Pilih Jenis</option>
-                  {lookups.jenis_pengajuan.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900">{j.name}</option>)}
-                </select>
+              <div className="flex flex-col gap-2">
+                  <label className="block text-sm font-semibold text-slate-700">Jenis Pengajuan</label>
+                  <select
+                    value={form.jenis_pengajuan_id}
+                    onChange={(e) => setForm({ ...form, jenis_pengajuan_id: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium"
+                    required
+                  >
+                    <option value="" className="text-slate-400">Pilih Jenis</option>
+                    {lookups.jenis_pengajuan
+                        .filter((j: any) => !j.name?.toLowerCase().includes('gaji karyawan harian'))
+                        .map((j: any) => <option key={j.id} value={j.id}>{j.name}</option>)}
+                  </select>
               </div>
 
-              {lookups.jenis_pengajuan.find((j: any) => j.id == form.jenis_pengajuan_id)?.requires_travel_type && (
+              {selectedType?.requires_travel_type && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Kategori Perjalanan</label>
                   <select
@@ -198,32 +202,35 @@ export default function NewSubmissionPage() {
                     required
                   >
                     <option value="" className="text-slate-400">Pilih Kategori</option>
-                    {lookups.jenis_perjalanan.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900">{j.name}</option>)}
+                    {lookups.jenis_perjalanan.map((j: any) => <option key={j.id} value={j.id}>{j.name}</option>)}
                   </select>
                 </motion.div>
               )}
             </div>
           </div>
 
-          {/* Budget Details */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center gap-2 bg-slate-50/50">
-              <FileText className="w-4 h-4 text-sky-500" />
-              <h2 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Rincian Anggaran</h2>
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-6 border-b flex items-center gap-2 bg-slate-50/50 border-slate-100">
+              <FileText className="w-5 h-5 text-sky-500" />
+              <h2 className="font-bold text-sm uppercase tracking-wider text-slate-800">
+                  Rincian Anggaran
+              </h2>
             </div>
-            <div className="p-8 space-y-6">
+            
+            <div className="p-4 sm:p-6 lg:p-8 space-y-8 flex-1">
               <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Judul Pengajuan</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Judul Pengajuan / Keterangan
+                </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium h-32"
-                  placeholder="cth: Pengadaan Peralatan Kantor Divisi IT Q1 2024"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium h-24"
+                  placeholder="cth: Pengadaan Peralatan Kantor..."
                   required
                 />
               </div>
 
-              {/* Dynamic Items Table */}
               <div className="border border-slate-200 rounded-xl overflow-hidden">
                 <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
                   <h3 className="font-bold text-slate-700 text-sm">Item Anggaran ({items.length}/20)</h3>
@@ -251,7 +258,7 @@ export default function NewSubmissionPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {items.map((item, index) => (
+                      {items.map((item) => (
                         <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3">
                             <input
@@ -269,9 +276,7 @@ export default function NewSubmissionPage() {
                               value={item.qty || ''}
                               onChange={(e) => updateItem(item.id, 'qty', parseFloat(e.target.value) || 0)}
                               className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-                              required
-                              min="0.01"
-                              step="0.01"
+                              required min="0.01" step="0.01"
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -291,9 +296,7 @@ export default function NewSubmissionPage() {
                               value={item.nominal || ''}
                               onChange={(e) => updateItem(item.id, 'nominal', parseFloat(e.target.value) || 0)}
                               className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-                              required
-                              min="0"
-                              step="0.01"
+                              required min="0" step="0.01"
                             />
                           </td>
                           <td className="px-4 py-3 text-right font-bold text-slate-900 text-sm">
@@ -305,7 +308,6 @@ export default function NewSubmissionPage() {
                               onClick={() => removeItem(item.id)}
                               disabled={items.length === 1}
                               className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                              title="Hapus item"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -319,7 +321,7 @@ export default function NewSubmissionPage() {
                           Grand Total:
                         </td>
                         <td className="px-4 py-4 text-right font-black text-sky-600 text-lg">
-                          Rp {grandTotal.toLocaleString('id-ID')}
+                          Rp {standardTotal.toLocaleString('id-ID')}
                         </td>
                         <td></td>
                       </tr>
@@ -328,6 +330,7 @@ export default function NewSubmissionPage() {
                 </div>
               </div>
 
+              {/* General Notes for Both */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">Catatan (Opsional)</label>
                 <textarea

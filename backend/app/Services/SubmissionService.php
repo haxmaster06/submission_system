@@ -20,7 +20,8 @@ class SubmissionService
         return DB::transaction(function () use ($data) {
             $division = Division::findOrFail($data['division_id']);
             $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
-            $data['total'] = $data['qty'] * $data['nominal'];
+            // Use provided total (e.g., from payload calculations), or fallback to legacy calculation
+            $data['total'] = $data['total'] ?? ($data['qty'] ?? 0) * ($data['nominal'] ?? 0);
             $data['tanggal_pengajuan'] = now();
 
             $submission = Submission::create($data);
@@ -38,7 +39,7 @@ class SubmissionService
                     ->whereYear('tanggal_pengajuan', now()->year)
                     ->where('id', '!=', $submission->id)
                     ->sum('total');
-                
+
                 $totalUsage = $currentUsage + $submission->total;
 
                 if ($totalUsage > $division->budget_limit) {
@@ -56,7 +57,7 @@ class SubmissionService
             $division = Division::findOrFail($data['division_id']);
             $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
             $data['tanggal_pengajuan'] = now();
-            
+
             // Calculate grand total from items
             $grandTotal = 0;
             foreach ($items as $item) {
@@ -89,7 +90,7 @@ class SubmissionService
                     ->whereYear('tanggal_pengajuan', now()->year)
                     ->where('id', '!=', $submission->id)
                     ->sum('total');
-                
+
                 $totalUsage = $currentUsage + $submission->total;
 
                 if ($totalUsage > $division->budget_limit) {
@@ -106,9 +107,9 @@ class SubmissionService
         $now = Carbon::now();
         $month = $now->format('n'); // Month as 1-12
         $year = $now->format('y'); // Year as 2 digits
-        
+
         $prefix = "AJU.HBM-{$divisionCode}-{$month}-{$year}-";
-        
+
         $lastSubmission = Submission::where('no_pengajuan', 'like', "{$prefix}%")
             ->orderBy('no_pengajuan', 'desc')
             ->first();
@@ -117,7 +118,7 @@ class SubmissionService
         if ($lastSubmission) {
             $lastNo = $lastSubmission->no_pengajuan;
             $parts = explode('-', $lastNo);
-            $lastSequence = (int) end($parts);
+            $lastSequence = (int)end($parts);
             $sequence = $lastSequence + 1;
         }
 
