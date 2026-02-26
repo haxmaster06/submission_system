@@ -88,6 +88,29 @@ services:
       - "8066:8080" # Keeping it for direct debug if needed, but not primary
     volumes:
       - ./backend:/var/www
+    environment:
+      APP_NAME: "HBM Budgeting"
+      APP_ENV: production
+      APP_KEY: ${APP_KEY}
+      APP_DEBUG: "false"
+      APP_URL: http://36.92.42.135:3030
+      DB_CONNECTION: mysql
+      DB_HOST: hbm-db
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BROADCAST_CONNECTION: reverb
+      QUEUE_CONNECTION: database
+      REDIS_HOST: hbm-redis
+      REDIS_PASSWORD: null
+      REDIS_PORT: 6379
+      REVERB_APP_ID: ${REVERB_APP_ID}
+      REVERB_APP_KEY: ${REVERB_APP_KEY}
+      REVERB_APP_SECRET: ${REVERB_APP_SECRET}
+      REVERB_HOST: "hbm-reverb"
+      REVERB_PORT: 8080
+      REVERB_SCHEME: http
     networks:
       - hbm-network
     depends_on:
@@ -99,11 +122,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://36.92.42.135:3030/api
+        NEXT_PUBLIC_API_URL: https://budgeting.hbmnet.co.id/api
         NEXT_PUBLIC_REVERB_APP_KEY: ${REVERB_APP_KEY}
-        NEXT_PUBLIC_REVERB_HOST: 36.92.42.135
-        NEXT_PUBLIC_REVERB_PORT: 3030
-        NEXT_PUBLIC_REVERB_SCHEME: http
+        NEXT_PUBLIC_REVERB_HOST: budgeting.hbmnet.co.id
+        NEXT_PUBLIC_REVERB_PORT: 443
+        NEXT_PUBLIC_REVERB_SCHEME: https
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
     image: hbm-frontend
     container_name: hbm-frontend
     restart: unless-stopped

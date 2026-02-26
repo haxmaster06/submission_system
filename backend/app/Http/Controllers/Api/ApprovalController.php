@@ -23,24 +23,64 @@ class ApprovalController extends Controller
     public function pending(Request $request)
     {
         $user = Auth::user();
-        
-        $query = SubmissionApproval::with(['submission.user', 'submission.division', 'submission.uom', 'submission.items.uom'])
+
+        $query = SubmissionApproval::with([
+            'submission.user',
+            'submission.division',
+            'submission.uom',
+            'submission.items.uom',
+            'submission.approvals.approver' // Load timeline data
+        ])
             ->where('status', 'pending')
-            ->whereHas('submission', function($q) {
-                $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
-            });
+            ->whereHas('submission', function ($q) {
+            $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
+        });
 
         // If user is a proxy for director, include director-level approvals
         if ($user->hasPermissionTo('proxy director signature')) {
-            $query->where(function($q) use ($user) {
+            $query->where(function ($q) use ($user) {
                 $q->where('approver_id', $user->id)
-                  ->orWhere('role_name', 'Director');
+                    ->orWhere('role_name', 'Director');
             });
-        } else {
+        }
+        else {
             $query->where('approver_id', $user->id);
         }
 
         $approvals = $query->latest()
+            ->paginate(10);
+
+        return response()->json($approvals);
+    }
+
+    /**
+     * List submissions that have already been handled (approved/rejected) by the current user.
+     */
+    public function history(Request $request)
+    {
+        $user = Auth::user();
+
+        $query = SubmissionApproval::with([
+            'submission.user',
+            'submission.division',
+            'submission.uom',
+            'submission.items.uom',
+            'submission.approvals.approver' // Load timeline data
+        ])
+            ->where('status', '!=', 'pending');
+
+        // Check proxy logic for history
+        if ($user->hasPermissionTo('proxy director signature')) {
+            $query->where(function ($q) use ($user) {
+                $q->where('approver_id', $user->id)
+                    ->orWhere('role_name', 'Director');
+            });
+        }
+        else {
+            $query->where('approver_id', $user->id);
+        }
+
+        $approvals = $query->latest('updated_at')
             ->paginate(10);
 
         return response()->json($approvals);
@@ -85,7 +125,7 @@ class ApprovalController extends Controller
     public function checkDirectorSignature()
     {
         $director = \App\Models\User::role('Director')->first();
-        
+
         return response()->json([
             'has_signature' => $director && !empty($director->signature_path),
             'director_name' => $director ? $director->name : null

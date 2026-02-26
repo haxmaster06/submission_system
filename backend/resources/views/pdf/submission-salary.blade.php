@@ -755,10 +755,12 @@
                                 @if ($submission->requestor_signature_base64)
                                 <img src="{{ $submission->requestor_signature_base64 }}" alt="TTD">
                                 @elseif ($submission->user->signature_path)
-                                @if ($isPdf)
+                                @if ($isPdf && file_exists(public_path($submission->user->signature_path)))
                                 <img src="{{ public_path($submission->user->signature_path) }}" alt="TTD">
-                                @else
+                                @elseif (!$isPdf && file_exists(public_path($submission->user->signature_path)))
                                 <img src="{{ asset($submission->user->signature_path) }}" alt="TTD">
+                                @else
+                                <span class="sig-placeholder">Tertanda</span>
                                 @endif
                                 @else
                                 <span class="sig-placeholder">— Draft —</span>
@@ -782,10 +784,12 @@
                                 @if ($approval->signature_base64)
                                 <img src="{{ $approval->signature_base64 }}" alt="TTD">
                                 @elseif ($approval->signature_used)
-                                @if ($isPdf)
+                                @if ($isPdf && file_exists(public_path($approval->signature_used)))
                                 <img src="{{ public_path($approval->signature_used) }}" alt="TTD">
-                                @else
+                                @elseif (!$isPdf && file_exists(public_path($approval->signature_used)))
                                 <img src="{{ asset($approval->signature_used) }}" alt="TTD">
+                                @else
+                                <span class="sig-placeholder">✓ Disetujui</span>
                                 @endif
                                 @else
                                 <span class="sig-placeholder">✓ Disetujui</span>

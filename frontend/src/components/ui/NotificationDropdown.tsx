@@ -33,11 +33,11 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
 
     // Setup Realtime Listener
     if (userId) {
-      console.log(`Listening to App.Models.User.${userId}`);
+
       const channel = echo.private(`App.Models.User.${userId}`);
 
       channel.notification((notification: any) => {
-        console.log('New Notification Event:', notification);
+
 
         // Reverb/Pusher notification payload structure might vary
         // Local fallback if data is nested
@@ -59,7 +59,7 @@ export default function NotificationDropdown({ userId }: { userId: number }) {
         setUnreadCount(prev => prev + 1);
 
         // Haptic/Visual cue instead of sound if missing
-        console.log('Real-time notification added to UI');
+
       });
 
       return () => {

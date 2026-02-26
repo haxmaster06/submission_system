@@ -43,9 +43,7 @@ class SubmissionController extends Controller
             });
         }
 
-        if ($request->filled('status') && $request->status !== 'all') {
-            $query->where('final_status', $request->status);
-        }
+
 
         if ($request->filled('division_id')) {
             $query->where('division_id', $request->division_id);

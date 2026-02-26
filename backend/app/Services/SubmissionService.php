@@ -32,8 +32,8 @@ class SubmissionService
             $approvers = User::role('HRD')->get();
             Notification::send($approvers, new NewSubmissionNotification($submission));
 
-            // Budget Check
-            if ($division->budget_limit > 0) {
+            // Budget Check (Bypass for Directors)
+            if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
                 $currentUsage = Submission::where('division_id', $division->id)
                     ->whereMonth('tanggal_pengajuan', now()->month)
                     ->whereYear('tanggal_pengajuan', now()->year)
@@ -83,8 +83,8 @@ class SubmissionService
             $approvers = User::role('HRD')->get();
             Notification::send($approvers, new NewSubmissionNotification($submission));
 
-            // Budget Check
-            if ($division->budget_limit > 0) {
+            // Budget Check (Bypass for Directors)
+            if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
                 $currentUsage = Submission::where('division_id', $division->id)
                     ->whereMonth('tanggal_pengajuan', now()->month)
                     ->whereYear('tanggal_pengajuan', now()->year)

@@ -30,7 +30,7 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast'];
+        return ['database', 'broadcast', \App\Broadcasting\WebPushChannel::class];
     }
 
     /**
@@ -77,5 +77,14 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
             'link' => '/submissions/' . $this->submission->id,
             'created_at' => now()->toISOString()
         ]);
+    }
+
+    public function toWebPush($notifiable): array
+    {
+        return [
+            'title' => 'Pengajuan Baru (' . $this->submission->code . ')',
+            'body' => $this->submission->user->name . ' mengajukan: ' . str($this->submission->description)->limit(40),
+            'url' => '/approvals', // Front-end path for approvers
+        ];
     }
 }

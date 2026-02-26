@@ -63,9 +63,9 @@ export default function DashboardPage() {
 
   return (
     <Shell>
-      <div className="max-w-7xl mx-auto pb-20 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto pb-12 2xl:pb-20 px-4 sm:px-6">
         {/* Modern Header */}
-        <header className="mb-10 lg:mb-14 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+        <header className="mb-6 xl:mb-8 2xl:mb-14 flex flex-col lg:flex-row lg:items-end justify-between gap-4 xl:gap-6 2xl:gap-8">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="px-3 py-1 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-sky-100">
@@ -78,29 +78,21 @@ export default function DashboardPage() {
                 </span>
               )}
             </div>
-            <h1 className="text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-3xl xl:text-3xl 2xl:text-5xl font-black text-slate-900 tracking-tight leading-tight">
               Halo, <span className="text-sky-500">{user?.name.split(' ')[0]}</span> 👋
             </h1>
-            <p className="text-slate-500 font-semibold text-lg">Berikut adalah analitik anggaran hari ini.</p>
+            <p className="text-slate-500 font-semibold text-sm xl:text-sm 2xl:text-lg">Berikut adalah analitik anggaran hari ini.</p>
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <div className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center gap-4 flex-1 sm:flex-initial">
-              <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-inner">
-                <Clock size={24} />
-              </div>
-              <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em] leading-none mb-1.5">Avg Approval</p>
-                <p className="text-xl font-black text-slate-900 leading-none">{data?.aging} Hari</p>
-              </div>
-            </div>
+
 
             {data?.approvals_count > 0 && (
               <Link href="/approvals" className="flex-1 sm:flex-initial">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white p-5 pr-8 rounded-[28px] shadow-xl shadow-sky-100 flex items-center gap-4 group border-b-4 border-sky-700/30"
+                  className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white p-3 xl:p-3 2xl:p-5 pr-6 2xl:pr-8 rounded-[20px] 2xl:rounded-[28px] shadow-xl shadow-sky-100 flex items-center gap-3 2xl:gap-4 group border-b-4 border-sky-700/30"
                 >
                   <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-xl backdrop-blur-sm">
                     {data.approvals_count}
@@ -117,7 +109,7 @@ export default function DashboardPage() {
         </header>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4 xl:gap-4 2xl:gap-6 mb-8 2xl:mb-12">
           {[
             { label: 'Total Pengajuan', val: data?.counters?.total, icon: FileText, col: 'sky', grad: 'from-sky-500 to-sky-600', delay: 0 },
             { label: 'Menunggu', val: data?.counters?.pending, icon: Clock, col: 'amber', grad: 'from-amber-400 to-amber-500', delay: 0.1 },
@@ -130,15 +122,15 @@ export default function DashboardPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: s.delay }}
-              className="bg-white p-6 rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
+              className="bg-white p-4 2xl:p-6 rounded-[20px] 2xl:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
             >
-              <div className="flex items-center gap-5 relative z-10">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${s.grad} text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0`}>
-                  <s.icon size={28} />
+              <div className="flex items-center gap-3 2xl:gap-5 relative z-10">
+                <div className={`w-11 h-11 2xl:w-14 2xl:h-14 rounded-xl 2xl:rounded-2xl bg-gradient-to-br ${s.grad} text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0`}>
+                  <s.icon className="w-5 h-5 2xl:w-7 2xl:h-7" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{s.label}</p>
-                  <p className="text-3xl font-black text-slate-900 leading-none">{s.val}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 2xl:mb-2">{s.label}</p>
+                  <p className="text-2xl 2xl:text-3xl font-black text-slate-900 leading-none">{s.val}</p>
                 </div>
               </div>
               <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-${s.col}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform`} />
@@ -147,14 +139,14 @@ export default function DashboardPage() {
         </div>
 
         {/* Main Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 2xl:gap-8 mb-6 2xl:mb-10">
 
           {/* Trend Chart (Budget vs Realization) */}
-          <div className="lg:col-span-2 bg-white rounded-[40px] border border-slate-100 shadow-sm p-8 flex flex-col">
-            <div className="flex justify-between items-start mb-8">
+          <div className="lg:col-span-2 bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col">
+            <div className="flex justify-between items-start mb-4 2xl:mb-8">
               <div>
-                <h2 className="text-xl font-black text-slate-900 leading-tight">Tren Anggaran & Realisasi</h2>
-                <p className="text-slate-400 text-sm font-medium">Histori pengajuan vs aktual (6 bulan terakhir)</p>
+                <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Tren Anggaran & Realisasi</h2>
+                <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Histori pengajuan vs aktual (6 bulan terakhir)</p>
               </div>
               <div className="flex gap-4 items-center">
                 <div className="flex items-center gap-2">
@@ -168,7 +160,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="h-[250px] sm:h-[300px] w-full min-w-0">
+            <div className="h-[200px] xl:h-[200px] 2xl:h-[300px] w-full min-w-0">
               {data?.trends && (
                 <ResponsiveContainer width="99%" height="100%">
                   <AreaChart data={data.trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -223,13 +215,13 @@ export default function DashboardPage() {
           </div>
 
           {/* Category Breakdown (Pie Chart) */}
-          <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-8 flex flex-col items-center">
-            <div className="w-full text-left mb-6">
-              <h2 className="text-xl font-black text-slate-900 leading-tight">Analisis Kategori</h2>
-              <p className="text-slate-400 text-sm font-medium">Distribusi berdasarkan tipe pengajuan.</p>
+          <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col items-center">
+            <div className="w-full text-left mb-4 2xl:mb-6">
+              <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Analisis Kategori</h2>
+              <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Distribusi berdasarkan tipe pengajuan.</p>
             </div>
 
-            <div className="h-[240px] w-full min-w-0">
+            <div className="h-[180px] 2xl:h-[240px] w-full min-w-0">
               {data?.categories && (
                 <ResponsiveContainer width="99%" height="100%">
                   <PieChart>
@@ -268,16 +260,16 @@ export default function DashboardPage() {
         </div>
 
         {/* Bottom Section: Ranking & Activity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 2xl:gap-8">
 
           {/* Ranking Divisi / Urgency Insights */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-5 2xl:space-y-8">
             {data?.role_scope === 'management' && (
-              <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm p-8">
-                <div className="flex justify-between items-center mb-8">
+              <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8">
+                <div className="flex justify-between items-center mb-4 2xl:mb-8">
                   <div>
-                    <h2 className="text-xl font-black text-slate-900 leading-tight">Ranking Pengeluaran Divisi</h2>
-                    <p className="text-slate-400 text-sm font-medium">Total budget disetujui per divisi.</p>
+                    <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Ranking Pengeluaran Divisi</h2>
+                    <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Total budget disetujui per divisi.</p>
                   </div>
                   <Link href="/reporting">
                     <button className="text-sky-500 text-xs font-black uppercase tracking-widest hover:underline flex items-center gap-1">
@@ -286,7 +278,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
 
-                <div className="h-[250px] w-full">
+                <div className="h-[180px] 2xl:h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data?.division_ranking} layout="vertical" margin={{ left: 40, right: 40 }}>
                       <XAxis type="number" hide />
@@ -315,10 +307,10 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 2xl:gap-8">
               {/* Urgency Summary */}
-              <div className="bg-slate-900 rounded-[40px] p-8 text-white relative overflow-hidden">
-                <h2 className="text-xl font-black mb-6 relative z-10 text-white">Indikator Urgensi</h2>
+              <div className="bg-slate-900 rounded-[24px] 2xl:rounded-[40px] p-5 2xl:p-8 text-white relative overflow-hidden">
+                <h2 className="text-base 2xl:text-xl font-black mb-4 2xl:mb-6 relative z-10 text-white">Indikator Urgensi</h2>
                 <div className="space-y-4 relative z-10">
                   {[
                     { label: 'Darurat', val: data?.urgency['urgent'] || 0, col: 'bg-rose-500' },
@@ -340,10 +332,10 @@ export default function DashboardPage() {
 
               {/* Helpful Widgets / Reminders */}
               {user?.roles?.some((r: any) => ['Super Admin', 'Director', 'GM', 'Finance'].includes(r.name)) && (
-              <div className="bg-sky-600 rounded-[40px] p-8 text-white flex flex-col justify-between">
+              <div className="bg-sky-600 rounded-[24px] 2xl:rounded-[40px] p-5 2xl:p-8 text-white flex flex-col justify-between">
                 <div>
                   <Calendar size={40} className="mb-4 text-white/40" />
-                  <h3 className="text-2xl font-black leading-tight mb-2 text-white">Tertib Administrasi<br />Adalah Kunci</h3>
+                  <h3 className="text-xl 2xl:text-2xl font-black leading-tight mb-2 text-white">Tertib Administrasi<br />Adalah Kunci</h3>
                   <p className="text-sky-50 text-sm font-medium">Jangan lupa lampirkan seluruh bukti kuitansi di menu Monitoring Realisasi untuk setiap pengajuan yang sudah diselesaikan.</p>
                 </div>
                 <Link href="/realizations" className="mt-6">
@@ -357,16 +349,16 @@ export default function DashboardPage() {
           </div>
 
           {/* Activity Feed */}
-          <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden">
-            <div className="p-8 pb-4">
+          <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm flex flex-col h-full overflow-hidden">
+            <div className="p-5 2xl:p-8 pb-3 2xl:pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                <h2 className="font-black text-slate-900 text-xl tracking-tight leading-none uppercase">Live Activity</h2>
+                <h2 className="font-black text-slate-900 text-base 2xl:text-xl tracking-tight leading-none uppercase">Live Activity</h2>
               </div>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Real-time Updates</p>
             </div>
 
-            <div className="flex-1 p-8 pt-4 overflow-y-auto space-y-8 scrollbar-hide">
+            <div className="flex-1 p-5 2xl:p-8 pt-3 2xl:pt-4 overflow-y-auto space-y-5 2xl:space-y-8 scrollbar-hide">
               {data?.activities?.length > 0 ? (
                 data.activities.map((act: any, idx: number) => (
                   <div key={idx} className="flex gap-4 group relative">
@@ -400,7 +392,7 @@ export default function DashboardPage() {
             </div>
 
             <Link href="/submissions">
-              <div className="p-6 bg-slate-50 text-center border-t border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
+              <div className="p-4 2xl:p-6 bg-slate-50 text-center border-t border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lihat Semua Riwayat</span>
               </div>
             </Link>

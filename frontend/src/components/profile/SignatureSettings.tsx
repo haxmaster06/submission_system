@@ -60,8 +60,9 @@ export default function SignatureSettings() {
       await fetchSignature();
       setTempSignature('');
       alert('Tanda tangan berhasil disimpan!');
-    } catch (err) {
-      alert('Gagal menyimpan tanda tangan');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Terjadi kesalahan sistem';
+      alert(`Gagal menyimpan tanda tangan: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -70,6 +71,24 @@ export default function SignatureSettings() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validation: File Type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      alert('Format file tidak valid. Silakan unggah gambar dengan format PNG atau JPG.');
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Validation: File Size (max 2MB)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      alert('Ukuran file terlalu besar. Maksimal ukuran gambar adalah 2 MB.');
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
 
     const formData = new FormData();
     formData.append('signature', file);
@@ -82,8 +101,9 @@ export default function SignatureSettings() {
       });
       await fetchSignature();
       alert('Gambar tanda tangan berhasil diunggah!');
-    } catch (err) {
-      alert('Gagal mengunggah gambar');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Terjadi kesalahan sistem';
+      alert(`Gagal mengunggah gambar: ${msg}`);
     } finally {
       setSaving(false);
     }
@@ -240,12 +260,18 @@ export default function SignatureSettings() {
                 />
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                <div className="p-1 bg-amber-100 rounded text-amber-600 shrink-0">
+                <div className="p-1 bg-amber-100 rounded text-amber-600 shrink-0 mt-1">
                    <Upload size={14} />
                 </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  <strong>Tips:</strong> Gunakan gambar tanda tangan dengan latar belakang transparan (PNG) untuk hasil terbaik pada dokumen PDF.
-                </p>
+                <div className="text-[11px] text-amber-800 leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-900 border-b border-amber-200/50 pb-1 mb-1">Kriteria Upload Tanda Tangan:</p>
+                  <ul className="list-disc pl-3 space-y-1">
+                    <li>Format file harus <strong>PNG</strong> atau <strong>JPG/JPEG</strong>.</li>
+                    <li>Ukuran file maksimal <strong>2 MB</strong>.</li>
+                    <li>Sangat disarankan menggunakan <strong>latar belakang transparan (PNG)</strong> agar menyatu dengan dokumen PDF.</li>
+                    <li>Pastikan gambar sudah <strong>di-crop (potong) presisi</strong> pada bagian tanda tangannya saja, tanpa ada area kosong berlebih di sekitarnya.</li>
+                  </ul>
+                </div>
               </div>
             </div>
           )}

@@ -452,7 +452,7 @@ export default function NewSalarySubmissionPage() {
                                             <div>
                                                <p className="font-bold text-sm text-slate-800 truncate block whitespace-nowrap overflow-hidden max-w-[150px]">{emp.name}</p>
                                                <p className="text-[10px] font-black tracking-widest text-slate-400 font-mono uppercase truncate block whitespace-nowrap overflow-hidden max-w-[180px]">
-                                                  {emp.department} • <span className="text-emerald-600">{new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(parseFloat(emp.base_salary))}</span>/Ref
+                                                  {emp.department} • <span className="text-emerald-600">{new Intl.NumberFormat('id-ID', { notation: 'compact' }).format(parseFloat(emp.base_salary))}</span>/Bln
                                                </p>
                                             </div>
                                             <div className="flex flex-col gap-1.5 ml-2">

@@ -17,6 +17,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -27,19 +28,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
+      const storedToken = window.localStorage.getItem('auth_token');
+      if (storedToken) {
+        setToken(storedToken);
         try {
           const res = await api.get('/me');
           setUser(res.data);
         } catch (err) {
-          localStorage.removeItem('auth_token');
+          window.localStorage.removeItem('auth_token');
           setUser(null);
+          setToken(null);
         }
       }
       setLoading(false);
@@ -50,21 +54,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     const res = await api.post('/login', { email, password });
     const { access_token, user } = res.data;
-    localStorage.setItem('auth_token', access_token);
+    window.localStorage.setItem('auth_token', access_token);
+    setToken(access_token);
     setUser(user);
     router.push('/dashboard');
   };
 
   const logout = () => {
     api.post('/logout').finally(() => {
-      localStorage.removeItem('auth_token');
+      window.localStorage.removeItem('auth_token');
       setUser(null);
+      setToken(null);
       router.push('/login');
     });
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, isAuthenticated: !!user }}>
       {children}
     </AuthContext.Provider>
   );

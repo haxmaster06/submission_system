@@ -37,6 +37,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/me/password', [AuthController::class , 'updatePassword']);
     Route::post('/logout', [AuthController::class , 'logout']);
 
+    // Web Push Subscriptions
+    Route::post('/web-push/check', [\App\Http\Controllers\Api\PushNotificationController::class , 'check']);
+    Route::post('/web-push/subscribe', [\App\Http\Controllers\Api\PushNotificationController::class , 'subscribe']);
+    Route::post('/web-push/unsubscribe', [\App\Http\Controllers\Api\PushNotificationController::class , 'unsubscribe']);
+
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class , 'stats']);
 
@@ -54,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('realizations', RealizationController::class)->except(['index']);
 
     // Approvals
+    Route::get('approvals/history', [ApprovalController::class , 'history']);
     Route::get('/approvals/pending', [ApprovalController::class , 'pending']);
     Route::post('/approvals/{approval}/approve', [ApprovalController::class , 'approve']);
     Route::post('/approvals/{approval}/reject', [ApprovalController::class , 'reject']);
