@@ -31,7 +31,7 @@ class BudgetExceededNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast', \App\Broadcasting\WebPushChannel::class];
+        return ['database', 'broadcast', \App\Broadcasting\FcmChannel::class];
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -72,12 +72,13 @@ class BudgetExceededNotification extends Notification implements ShouldQueue
         ]);
     }
 
-    public function toWebPush($notifiable): array
+    public function toFcm($notifiable): array
     {
         return [
             'title' => '⚠️ Budget Terlampaui!',
             'body' => "Pengajuan {$this->submission->code} melebihi limit Divisi. (Limit: Rp " . number_format($this->budgetLimit, 0, ',', '.') . ")",
             'url' => '/approvals',
+            'type' => 'budget_exceeded',
         ];
     }
 }

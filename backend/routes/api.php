@@ -25,22 +25,32 @@ Route::get('/preview/submissions/{submission}/print', [SubmissionController::cla
     ->name('api.submissions.print')
     ->middleware('signed');
 
+Route::get('/preview/reports/submissions/print', [\App\Http\Controllers\Api\ReportingController::class , 'printHtml'])
+    ->name('api.reports.print')
+    ->middleware('signed');
+
 // Lookups (Public for frontend caching/SSR)
 Route::get('/lookups', [LookupController::class , 'all']);
 Route::get('/lookups/divisions', [LookupController::class , 'divisions']);
 Route::get('/lookups/jenis-pengajuan', [LookupController::class , 'jenisPengajuan']);
 Route::get('/lookups/jenis-perjalanan', [LookupController::class , 'jenisPerjalanan']);
 Route::get('/lookups/uoms', [LookupController::class , 'uoms']);
+// Maintenance Status (public — frontend checks this)
+Route::get('/maintenance-status', function () {
+    return response()->json([
+    'maintenance' => \App\Models\Setting::isMaintenanceMode(),
+    ]);
+});
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::get('/me', [AuthController::class , 'me']);
     Route::put('/me/password', [AuthController::class , 'updatePassword']);
     Route::post('/logout', [AuthController::class , 'logout']);
 
-    // Web Push Subscriptions
-    Route::post('/web-push/check', [\App\Http\Controllers\Api\PushNotificationController::class , 'check']);
-    Route::post('/web-push/subscribe', [\App\Http\Controllers\Api\PushNotificationController::class , 'subscribe']);
-    Route::post('/web-push/unsubscribe', [\App\Http\Controllers\Api\PushNotificationController::class , 'unsubscribe']);
+    // Firebase Cloud Messaging Token Management
+    Route::post('/fcm/register', [\App\Http\Controllers\Api\FcmTokenController::class , 'register']);
+    Route::post('/fcm/unregister', [\App\Http\Controllers\Api\FcmTokenController::class , 'unregister']);
+    Route::post('/fcm/check', [\App\Http\Controllers\Api\FcmTokenController::class , 'check']);
 
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class , 'stats']);
@@ -79,7 +89,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class , 'index']);
     Route::put('/notifications/{id}/read', [\App\Http\Controllers\Api\NotificationController::class , 'markAsRead']);
     Route::put('/notifications/read-all', [\App\Http\Controllers\Api\NotificationController::class , 'markAllRead']);
-
+    Route::delete('/notifications/batch', [\App\Http\Controllers\Api\NotificationController::class , 'batchDelete']);
+    Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationController::class , 'destroy']);
 
     // Approval Flow Management (Finance & Master Data Managers)
     Route::middleware('permission:approve submissions|manage master data')->group(function () {
@@ -148,11 +159,37 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::middleware('permission:view reports|manage master data')->group(function () {
             Route::get('/reports/submissions', [\App\Http\Controllers\Api\ReportingController::class , 'index']);
             Route::get('/reports/submissions/export', [\App\Http\Controllers\Api\ReportingController::class , 'exportPdf']);
+            Route::get('/reports/submissions/print-url', [\App\Http\Controllers\Api\ReportingController::class , 'getPrintUrl']);
         }
         );
 
-        // Debug route
-        Route::get('/test-approvals', function () {
+        // Super Admin Only
+        Route::middleware('role:Super Admin')->group(function () {
+            Route::get('/admin/audit-logs', [\App\Http\Controllers\Api\AuditTrailController::class , 'all']);
+            Route::get('/admin/users-with-signatures', function () {
+                    return response()->json(
+                    \App\Models\User::whereNotNull('signature_path')
+                    ->where('signature_path', '!=', '')
+                    ->select('id', 'name', 'signature_path')
+                    ->with('roles:id,name')
+                    ->get()
+                    );
+                }
+                );
+                Route::post('/admin/maintenance', function (\Illuminate\Http\Request $request) {
+                    $request->validate(['enabled' => 'required|boolean']);
+                    \App\Models\Setting::set('maintenance_mode', $request->enabled ? 'true' : 'false');
+                    return response()->json([
+                    'maintenance' => \App\Models\Setting::isMaintenanceMode(),
+                    'message' => $request->enabled ? 'Mode maintenance diaktifkan.' : 'Mode maintenance dinonaktifkan.'
+                    ]);
+                }
+                );
+                Route::get('/admin/dashboard-stats', [DashboardController::class , 'adminStats']);
+            }
+            );
+            // Debug route
+            Route::get('/test-approvals', function () {
             $financeUser = \App\Models\User::role('Finance')->first();
             $output = [
                 'finance_user' => $financeUser ? ['id' => $financeUser->id, 'name' => $financeUser->name] : null,

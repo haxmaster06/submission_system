@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Shell from '@/components/layout/Shell';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
-import { Save, Send, Loader2, Info, FileText, Plus, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Save, Send, Loader2, Info, FileText, Plus, Trash2, Copy, UploadCloud, File, X } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 
-export default function NewSubmissionPage() {
+function NewSubmissionContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const duplicateId = searchParams.get('duplicate');
 
   const [lookups, setLookups] = useState<any>({
     divisions: [],
@@ -45,20 +48,40 @@ export default function NewSubmissionPage() {
   useEffect(() => {
     Promise.all([
       api.get('/lookups'),
-    ]).then(([lookupsRes]) => {
+      duplicateId ? api.get(`/submissions/${duplicateId}`) : Promise.resolve({ data: null })
+    ]).then(([lookupsRes, duplicateRes]) => {
       setLookups(lookupsRes.data);
+      
+      if (duplicateRes.data) {
+        const d = duplicateRes.data;
+        setForm({
+          division_id: String(d.division_id || ''),
+          jenis_pengajuan_id: String(d.jenis_pengajuan_id || ''),
+          jenis_perjalanan_id: String(d.jenis_perjalanan_id || ''),
+          status_urgent: d.status_urgent || 'Normal',
+          description: d.description || '',
+          notes: d.notes || '',
+        });
+        
+        if (d.items && d.items.length > 0) {
+          setItems(d.items.map((item: any, idx: number) => ({
+            id: Date.now() + idx,
+            description: item.name || item.description || '',
+            qty: parseFloat(item.qty) || 0,
+            uom_id: String(item.uom_id || ''),
+            nominal: parseFloat(item.price) || parseFloat(item.nominal) || 0
+          })));
+        }
+      } else if (user && !isSuperAdmin && user.division?.id) {
+        setForm(prev => ({ ...prev, division_id: String(user.division?.id) }));
+      }
+      
       setLoading(false);
     }).catch(err => {
       console.error(err);
       setLoading(false);
     });
-  }, []);
-
-  useEffect(() => {
-    if (user && !isSuperAdmin && user.division?.id) {
-      setForm(prev => ({ ...prev, division_id: String(user.division?.id) }));
-    }
-  }, [user, isSuperAdmin]);
+  }, [duplicateId, user, isSuperAdmin]);
 
   const selectedType = lookups.jenis_pengajuan.find((j: any) => j.id == form.jenis_pengajuan_id);
 
@@ -82,6 +105,23 @@ export default function NewSubmissionPage() {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const selectedFiles = Array.from(e.target.files as FileList);
+        const validFiles = selectedFiles.filter(file => file.size <= 10 * 1024 * 1024); // 10MB limit
+        if (validFiles.length !== selectedFiles.length) {
+            alert('Beberapa file melebihi batas 10MB dan tidak ditambahkan.');
+        }
+        setFiles(prev => [...prev, ...validFiles]);
+    }
+    // reset input value so selecting the same file again triggers onChange
+    e.target.value = '';
+  };
+
+  const removeFile = (index: number) => {
+      setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const standardTotal = items.reduce((sum, item) => sum + (item.qty * item.nominal), 0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,7 +137,24 @@ export default function NewSubmissionPage() {
       payload.items = items.map(({ id, ...item }) => item);
       payload.total = standardTotal;
 
-      await api.post('/submissions', payload);
+      const res = await api.post('/submissions', payload);
+      const newSubmissionId = res.data.id;
+
+      if (files.length > 0) {
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append('file', file);
+          try {
+             await api.post(`/submissions/${newSubmissionId}/attachments`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+             });
+          } catch (uploadErr: any) {
+             console.error('Failed to upload attachment:', file.name, uploadErr);
+             alert(`Gagal mengunggah file lampiran: ${file.name}. Error: ${uploadErr.response?.data?.message || uploadErr.message}`);
+          }
+        }
+      }
+
       router.push('/submissions');
     } catch (err: any) {
         console.error(err);
@@ -114,8 +171,17 @@ export default function NewSubmissionPage() {
       <div className="max-w-7xl mx-auto pb-12">
         <header className="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
-            <p className="text-slate-500 mt-2 text-sm sm:text-base">Isi detail pengajuan dan item anggaran dengan lengkap</p>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-900">Buat Pengajuan Baru</h1>
+              {duplicateId && (
+                <span className="bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border border-amber-200 flex items-center gap-1.5">
+                  <Copy size={12} /> Mode Duplikat
+                </span>
+              )}
+            </div>
+            <p className="text-slate-500 mt-2 text-sm sm:text-base">
+              {duplicateId ? `Menyalin kerangka data dari pengajuan lama. Silakan sesuaikan nilai.` : 'Isi detail pengajuan dan item anggaran dengan lengkap'}
+            </p>
           </div>
           <Link href="/submissions">
             <button className="text-slate-500 font-bold hover:text-slate-800 transition-all flex items-center gap-2 text-sm bg-white border border-slate-200 px-4 py-2.5 rounded-xl shadow-sm">
@@ -343,6 +409,52 @@ export default function NewSubmissionPage() {
             </div>
           </div>
 
+          {/* File Upload Section */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="p-6 border-b flex items-center gap-2 bg-slate-50/50 border-slate-100">
+              <UploadCloud className="w-5 h-5 text-sky-500" />
+              <h2 className="font-bold text-sm uppercase tracking-wider text-slate-800">
+                  Lampiran Pendukung
+              </h2>
+            </div>
+            <div className="p-4 sm:p-6 lg:p-8">
+               <label className="block text-sm font-semibold text-slate-700 mb-2">Upload File Dokumen / Bukti</label>
+               <input 
+                  type="file"
+                  multiple
+                  onChange={handleFileChange}
+                  accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx"
+                  className="block w-full text-sm text-slate-500 hover:file:bg-sky-100 file:mr-4 file:py-3 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-sky-50 file:text-sky-700 transition-all border border-slate-200 rounded-xl cursor-pointer bg-white"
+               />
+               <p className="text-[10px] text-slate-400 mt-2">Format yang didukung: JPG, PNG, PDF, DOCX, XLSX. Maksimal 10MB per file.</p>
+               
+               {files.length > 0 && (
+                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       {files.map((file, idx) => (
+                           <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                               <div className="flex items-center gap-3 overflow-hidden">
+                                   <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center shrink-0">
+                                      <File className="w-4 h-4 text-sky-600" />
+                                   </div>
+                                   <div className="truncate min-w-0">
+                                      <p className="text-sm font-bold text-slate-700 truncate">{file.name}</p>
+                                      <p className="text-[10px] text-slate-400 font-medium">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                   </div>
+                               </div>
+                               <button 
+                                  type="button" 
+                                  onClick={() => removeFile(idx)}
+                                  className="p-1.5 text-rose-500 hover:bg-rose-100 rounded-lg transition-colors shrink-0"
+                               >
+                                  <X size={16} />
+                               </button>
+                           </div>
+                       ))}
+                   </div>
+               )}
+            </div>
+          </div>
+
           <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
             <button
               type="button"
@@ -363,5 +475,13 @@ export default function NewSubmissionPage() {
         </form>
       </div>
     </Shell>
+  );
+}
+
+export default function NewSubmissionPage() {
+  return (
+    <Suspense fallback={<Shell><div className="flex justify-center py-20"><Loader2 className="animate-spin text-sky-500" size={32} /></div></Shell>}>
+      <NewSubmissionContent />
+    </Suspense>
   );
 }

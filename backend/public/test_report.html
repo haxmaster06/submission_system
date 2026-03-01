@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Laporan Pengajuan</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        @page {
+            margin: 0;
+            size: A4 landscape;
+            /* Landscape for report */
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10px;
+            color: #444;
+            line-height: 1.4;
+            background: #fff;
+            padding: 15mm 18mm;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        /* ══ KOP SURAT ══ */
+        .kop-outer {
+            margin-bottom: 20px;
+        }
+
+        .kop-accent-bar {
+            height: 5px;
+            background-color: #2a7ba5;
+            border-radius: 3px 3px 0 0;
+            margin-bottom: 5px;
+        }
+
+        .kop-body {
+            padding: 10px 16px;
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        .kop-left {
+            display: table-cell;
+            vertical-align: middle;
+            width: 52%;
+        }
+
+        .kop-right {
+            display: table-cell;
+            vertical-align: middle;
+            text-align: right;
+            width: 48%;
+        }
+
+        .kop-logo-group {
+            display: table;
+            border-collapse: collapse;
+        }
+
+        .kop-logo-group td {
+            vertical-align: middle;
+        }
+
+        .kop-logo img {
+            height: 60px;
+            width: auto;
+            display: block;
+        }
+
+        .kop-company-info {
+            padding-left: 12px;
+            border-left: 2px solid #2a7ba5;
+        }
+
+        .kop-company-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: 0.3px;
+            line-height: 1.15;
+        }
+
+        .kop-company-tagline {
+            font-size: 8px;
+            color: #999;
+            margin-top: 1px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .kop-doc-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2a7ba5;
+            letter-spacing: 0.5px;
+            line-height: 1.1;
+        }
+
+        .kop-doc-ref {
+            font-size: 9px;
+            color: #666;
+            font-weight: 500;
+            margin-top: 3px;
+            letter-spacing: 0.4px;
+        }
+
+        .border-bot {
+            border-bottom: 2px solid #eee;
+            margin-bottom: 15px;
+        }
+
+        /* ══ TABLES ══ */
+        .division-header {
+            margin-top: 30px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #2a7ba5;
+            border-bottom: 2px solid #2a7ba5;
+            padding-bottom: 5px;
+            page-break-after: avoid;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: bold;
+            border: 1px solid #e2e8f0;
+            padding: 8px;
+            text-align: left;
+            font-size: 9px;
+            text-transform: uppercase;
+        }
+
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 6px 8px;
+            vertical-align: top;
+            font-size: 10px;
+        }
+
+        .nominal {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        .pending {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+
+        .approved {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #b8dfc4;
+        }
+
+        .rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .footer {
+            margin-top: 30px;
+            text-align: right;
+            font-style: italic;
+            color: #64748b;
+            font-size: 9px;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- KOP SURAT (Disesuaikan dari detail pengajuan) -->
+    <div class="kop-outer">
+        <div class="kop-accent-bar"></div>
+        <div class="kop-body">
+            <div class="kop-left">
+                <table class="kop-logo-group">
+                    <tr>
+                        <td class="kop-logo" style="padding-right: 12px; border-right: none;">
+                            <!-- Base64 Logo Placeholder for PDF -->
+                            <img src="data:image/png;base64,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"
+                                style="width: 140px; height: auto;" alt="Logo HBM">
+                        </td>
+                        <td class="kop-company-info">
+                            <div class="kop-company-name">PT. HARDJA BHAKTI MARGUNA</div>
+                            <div class="kop-company-tagline">BUDGETING & SUBMISSION SYSTEM</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div class="kop-right">
+                <div class="kop-doc-title">SUMMARY REPORT</div>
+                <div class="kop-doc-ref">REF : HBM-RPT-280226-1641</div>
+            </div>
+        </div>
+    </div>
+    <div class="border-bot"></div>
+
+    <table style="width: 50%; border: none; margin-bottom: 20px;">
+        <tr>
+            <td style="border: none; padding: 2px; font-weight: bold; width: 100px;">Tanggal Filter</td>
+            <td style="border: none; padding: 2px;">: 2024-01-01 s/d 2025-12-31</td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 2px; font-weight: bold;">Status Pengajuan</td>
+            <td style="border: none; padding: 2px;">: ALL</td>
+        </tr>
+        <tr>
+            <td style="border: none; padding: 2px; font-weight: bold;">Filter Dokumen</td>
+            <td style="border: none; padding: 2px;">:
+                                Semua Departemen
+                            </td>
+        </tr>
+    </table>
+
+    
+    
+            <div class="division-header">DIVISION: DOCUMENT CONTROL</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-DC-2-26-0001</strong></td>
+                <td>28/02/2026</td>
+                <td>Audit Re-sertifikasi HACCP 2026 (Bureau Veritas)</td>
+                <td style="text-align:center;">
+                    <span class="status pending">
+                        pending
+                    </span>
+                </td>
+                <td class="nominal">Rp 23.000.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 23.000.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: DOCUMENT CONTROL
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 23.000.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 23.000.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        <div class="division-header">DIVISION: HUMAN RESOURCES DEPARTMENT</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-HRD-2-26-0002</strong></td>
+                <td>28/02/2026</td>
+                <td>ANGGARAN BIAYA KEGIATAN PENYEGARAN DAN PEMBINAAN SECURITY BULAN MARET 2026 (TGL 4 &amp; 12 )</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 2.540.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 2.540.000
+                </td>
+            </tr>
+                                    <tr>
+                <td style="text-align: center;">2</td>
+                <td><strong>AJU.HBM-HRD-2-26-0001</strong></td>
+                <td>28/02/2026</td>
+                <td>ANGGARAN BBM KENDARAAN CV HBM BULAN MARET 2026</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 4.700.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 4.700.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: HUMAN RESOURCES DEPARTMENT
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 7.240.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 7.240.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        <div class="division-header">DIVISION: IT</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-IT-2-26-0001</strong></td>
+                <td>25/02/2026</td>
+                <td>Pengajuan Kabel UTP untuk keperluan Live Streaming Man Base .co</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 310.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 310.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: IT
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 310.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 310.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        <div class="division-header">DIVISION: PRODUCTION</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-PRd-2-26-0001</strong></td>
+                <td>28/02/2026</td>
+                <td>Pengadaan Peralatan Produksi dan Cleaning</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 920.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 920.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: PRODUCTION
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 920.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 920.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        <div class="division-header">DIVISION: QUALITY ASSURANCE</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-QA-2-26-0001</strong></td>
+                <td>25/02/2026</td>
+                <td>Biaya Operasional Pengiriman Bulan Maret</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 600.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 600.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: QUALITY ASSURANCE
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 600.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 600.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        <div class="division-header">DIVISION: QUALITY CONTROL</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="30" style="text-align: center;">No</th>
+                <th width="110">No Pengajuan</th>
+                <th width="65">Tgl Ajuan</th>
+                <th>Detail / Deskripsi</th>
+                <th width="80" style="text-align:center;">Status</th>
+                <th width="110" style="text-align:right;">Nilai Pengajuan</th>
+                <th width="110" style="text-align:right;">Nilai Realisasi</th>
+                <th width="90" style="text-align:right;">Selisih (Sisa)</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+                                    <tr>
+                <td style="text-align: center;">1</td>
+                <td><strong>AJU.HBM-Qc-2-26-0002</strong></td>
+                <td>26/02/2026</td>
+                <td>Dapur &amp; Kebersihan Produksi bulan Maret</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 600.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 600.000
+                </td>
+            </tr>
+                                    <tr>
+                <td style="text-align: center;">2</td>
+                <td><strong>AJU.HBM-Qc-2-26-0001</strong></td>
+                <td>26/02/2026</td>
+                <td>Anggaran Laundry Produksi bulan Maret</td>
+                <td style="text-align:center;">
+                    <span class="status approved">
+                        approved
+                    </span>
+                </td>
+                <td class="nominal">Rp 6.000.000</td>
+                <td class="nominal" style="color: #475569">
+                    Rp 0
+                </td>
+                <td class="nominal"
+                    style="color: #ca8a04">
+                    Rp 6.000.000
+                </td>
+            </tr>
+                    </tbody>
+        <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold; text-align: right;">
+                <td colspan="5" style="border-top: 2px solid #ccc;">SUBTOTAL DIVISI: QUALITY CONTROL
+                </td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 6.600.000</td>
+                <td class="nominal" style="border-top: 2px solid #ccc; color: #166534;">Rp 0</td>
+                <td class="nominal" style="border-top: 2px solid #ccc;">Rp 6.600.000</td>
+            </tr>
+        </tfoot>
+    </table>
+        
+    
+            <div style="margin-top: 30px; border: 2px solid #2a7ba5; padding: 10px; background: #f0f7fa;">
+        <table style="width: 100%; border: none; margin: 0;">
+            <tr style="font-size: 14px; font-weight: bold;">
+                <td style="border: none; text-align: left; color: #2a7ba5;">GRAND TOTAL SELURUH DIVISI</td>
+                <td style="border: none; text-align: right; width: 200px;">Pengajuan: Rp 38.670.000</td>
+                <td style="border: none; text-align: right; width: 200px; color: #166534;">Realisasi: Rp 0</td>
+            </tr>
+        </table>
+    </div>
+    
+    <div class="footer">
+        Dicetak dari sistem pada: 28/02/2026 16:41 WIB oleh Mohammad Husin
+    </div>
+</body>
+
+</html>

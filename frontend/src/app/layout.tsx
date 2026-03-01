@@ -20,7 +20,7 @@ export const viewport = {
 };
 
 import { NotificationProvider } from "@/context/NotificationContext";
-
+import { NotificationPopupProvider } from "@/context/NotificationPopupContext";
 export default function RootLayout({
   children,
 }: {
@@ -34,7 +34,9 @@ export default function RootLayout({
       <body className="antialiased font-sans">
         <AuthProvider>
           <NotificationProvider>
-            {children}
+            <NotificationPopupProvider>
+              {children}
+            </NotificationPopupProvider>
           </NotificationProvider>
         </AuthProvider>
       </body>

@@ -36,8 +36,12 @@ class ApprovalController extends Controller
             $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
         });
 
+        // Super Admin sees ALL pending approvals
+        if ($user->hasRole('Super Admin')) {
+        // No additional filter — show everything
+        }
         // If user is a proxy for director, include director-level approvals
-        if ($user->hasPermissionTo('proxy director signature')) {
+        elseif ($user->hasPermissionTo('proxy director signature')) {
             $query->where(function ($q) use ($user) {
                 $q->where('approver_id', $user->id)
                     ->orWhere('role_name', 'Director');
@@ -69,8 +73,12 @@ class ApprovalController extends Controller
         ])
             ->where('status', '!=', 'pending');
 
+        // Super Admin sees ALL history
+        if ($user->hasRole('Super Admin')) {
+        // No additional filter
+        }
         // Check proxy logic for history
-        if ($user->hasPermissionTo('proxy director signature')) {
+        elseif ($user->hasPermissionTo('proxy director signature')) {
             $query->where(function ($q) use ($user) {
                 $q->where('approver_id', $user->id)
                     ->orWhere('role_name', 'Director');
@@ -93,12 +101,14 @@ class ApprovalController extends Controller
         $request->validate([
             'notes' => 'nullable|string',
             'signature_path' => 'nullable|string',
-            'signed_proof_path' => 'nullable|string', // Base64 or path
+            'signed_proof_path' => 'nullable|string',
             'is_director_proxy' => 'boolean',
+            'override_user_id' => 'nullable|integer|exists:users,id', // Super Admin override
         ]);
 
-        // Mandatory proof if acting as proxy
-        if ($request->input('is_director_proxy') && !$request->input('signed_proof_path')) {
+        // Mandatory proof if acting as proxy (not Super Admin)
+        $user = Auth::user();
+        if ($request->input('is_director_proxy') && !$user->hasRole('Super Admin') && !$request->input('signed_proof_path')) {
             return response()->json([
                 'message' => 'Bukti tanda tangan wajib diunggah untuk persetujuan mewakili Direktur.'
             ], 422);
@@ -135,6 +145,16 @@ class ApprovalController extends Controller
     private function authorizeAction(SubmissionApproval $approval)
     {
         $user = Auth::user();
+
+        // Super Admin can always act on any approval
+        if ($user->hasRole('Super Admin')) {
+            // Only check step order
+            if ($approval->submission->current_approval_step !== $approval->step_order) {
+                abort(400, 'It is not your turn to approve this submission.');
+            }
+            return;
+        }
+
         $isProxy = $user->hasPermissionTo('proxy director signature') && $approval->role_name === 'Director';
 
         if ($approval->approver_id !== $user->id && !$isProxy) {

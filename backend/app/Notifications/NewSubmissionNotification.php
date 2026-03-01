@@ -30,7 +30,7 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast', \App\Broadcasting\WebPushChannel::class];
+        return ['database', 'broadcast', \App\Broadcasting\FcmChannel::class];
     }
 
     /**
@@ -79,12 +79,13 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
         ]);
     }
 
-    public function toWebPush($notifiable): array
+    public function toFcm($notifiable): array
     {
         return [
             'title' => 'Pengajuan Baru (' . $this->submission->code . ')',
             'body' => $this->submission->user->name . ' mengajukan: ' . str($this->submission->description)->limit(40),
-            'url' => '/approvals', // Front-end path for approvers
+            'url' => '/approvals',
+            'type' => 'new_submission',
         ];
     }
 }

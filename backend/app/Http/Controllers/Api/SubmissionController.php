@@ -9,6 +9,7 @@ use App\Services\ApprovalService;
 use App\Services\AuditTrailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SubmissionController extends Controller
 {
@@ -61,13 +62,19 @@ class SubmissionController extends Controller
             $query->whereDate('tanggal_pengajuan', '<=', $request->date_to);
         }
 
-        // Clone query for counts before status filter
-        $countQuery = (clone $query);
+        // Clone query for counts before status filter — single query with conditional aggregation
+        $countRow = (clone $query)->select([
+            DB::raw('COUNT(*) as total'),
+            DB::raw("SUM(CASE WHEN final_status = 'pending' THEN 1 ELSE 0 END) as pending"),
+            DB::raw("SUM(CASE WHEN final_status = 'approved' THEN 1 ELSE 0 END) as approved"),
+            DB::raw("SUM(CASE WHEN final_status = 'rejected' THEN 1 ELSE 0 END) as rejected"),
+        ])->first();
+
         $counts = [
-            'all' => $countQuery->count(),
-            'pending' => (clone $countQuery)->where('final_status', 'pending')->count(),
-            'approved' => (clone $countQuery)->where('final_status', 'approved')->count(),
-            'rejected' => (clone $countQuery)->where('final_status', 'rejected')->count(),
+            'all' => (int)$countRow->total,
+            'pending' => (int)$countRow->pending,
+            'approved' => (int)$countRow->approved,
+            'rejected' => (int)$countRow->rejected,
         ];
 
         if ($request->filled('status') && $request->status !== 'all') {

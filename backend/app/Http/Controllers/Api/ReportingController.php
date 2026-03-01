@@ -21,7 +21,7 @@ class ReportingController extends Controller
     {
         $submissions = $this->buildQuery($request)->latest()->get();
         $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
-        
+
         try {
             $pdf = Pdf::loadView('pdf.submissions_report', [
                 'submissions' => $submissions,
@@ -30,23 +30,53 @@ class ReportingController extends Controller
                 'generated_by' => Auth::user()->name
             ])->setPaper('a4', 'landscape');
 
-            return $pdf->stream('Submissions-Report-'.now()->format('YmdHis').'.pdf');
-        } catch (\Exception $e) {
+            return $pdf->stream('Submissions-Report-' . now()->format('YmdHis') . '.pdf');
+        }
+        catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('PDF Export Error: ' . $e->getMessage());
             \Illuminate\Support\Facades\Log::error($e->getTraceAsString());
             return response()->json(['message' => 'Failed to generate PDF'], 500);
         }
     }
 
+    public function printHtml(Request $request)
+    {
+        $submissions = $this->buildQuery($request)->latest()->get();
+        $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
+
+        return view('pdf.submissions_report', [
+            'submissions' => $submissions,
+            'filters' => $filters,
+            'generated_at' => now()->format('d/m/Y H:i'),
+            // handle case when accessed via signed url where auth()->user() might be null
+            'generated_by' => $request->has('user_name') ? $request->user_name : 'System',
+            'is_print' => true
+        ]);
+    }
+
+    public function getPrintUrl(Request $request)
+    {
+        $params = $request->all();
+        $params['user_name'] = Auth::user()->name;
+
+        $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'api.reports.print',
+            now()->addMinutes(30),
+            $params
+        );
+
+        return response()->json(['url' => $url]);
+    }
+
     protected function buildQuery(Request $request)
     {
-        $query = Submission::with(['user', 'division', 'jenisPengajuan']);
+        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'realizations']);
 
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('no_pengajuan', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
 

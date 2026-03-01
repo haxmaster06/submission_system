@@ -5,7 +5,7 @@ import Shell from '@/components/layout/Shell';
 import Tabs from '@/components/ui/Tabs';
 import Modal from '@/components/ui/Modal';
 import { useAuth } from '@/context/AuthContext';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -30,8 +30,12 @@ import {
   Trash2
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 
-import SubmissionDetailView from '@/components/submissions/SubmissionDetailView';
+const SubmissionDetailView = dynamic(() => import('@/components/submissions/SubmissionDetailView'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="animate-spin text-sky-500" size={32} /></div>
+});
 
 function SubmissionsPageContent() {
 
@@ -89,6 +93,7 @@ function SubmissionsPageContent() {
   }, [search]);
 
   const searchParams = useSearchParams();
+  const router = useRouter();
   const viewId = searchParams.get('view');
 
   useEffect(() => {
@@ -746,6 +751,9 @@ function SubmissionsPageContent() {
         onClose={() => {
           setViewModalOpen(false);
           setSelectedSubmission(null);
+          if (typeof window !== 'undefined') {
+            router.replace(window.location.pathname, { scroll: false });
+          }
         }}
         title="Detail Pengajuan"
         size="2xl"
@@ -756,10 +764,16 @@ function SubmissionsPageContent() {
             onClose={() => {
               setViewModalOpen(false);
               setSelectedSubmission(null);
+              if (typeof window !== 'undefined') {
+                router.replace(window.location.pathname, { scroll: false });
+              }
             }}
             onDelete={() => {
               setViewModalOpen(false);
               setSelectedSubmission(null);
+              if (typeof window !== 'undefined') {
+                router.replace(window.location.pathname, { scroll: false });
+              }
               fetchData();
             }}
           />

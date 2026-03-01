@@ -31,7 +31,7 @@ class ApprovalService
     {
         return DB::transaction(function () use ($submission) {
             $steps = $this->flowBuilder->buildSteps($submission);
-            
+
             foreach ($steps as $index => $step) {
                 SubmissionApproval::create([
                     'submission_id' => $submission->id,
@@ -62,37 +62,49 @@ class ApprovalService
             $user = Auth::user();
             $signaturePath = $data['signature_path'] ?? null;
             $proofPath = $data['signed_proof_path'] ?? null;
+            $isSuperAdminOverride = false;
 
+            // SUPER ADMIN OVERRIDE: Use selected user's signature
+            if ($user->hasRole('Super Admin') && !empty($data['override_user_id'])) {
+                $overrideUser = User::find($data['override_user_id']);
+                if ($overrideUser && $overrideUser->signature_path) {
+                    $signaturePath = $overrideUser->signature_path;
+                    $isSuperAdminOverride = true;
+                }
+            }
             // Handle Proof if proxy
-            if ($data['is_director_proxy'] ?? false) {
+            elseif ($data['is_director_proxy'] ?? false) {
                 $proofPath = $this->saveBase64Image($proofPath, 'proofs');
-                
+
                 // LOGIC: Use Director's signature if available
                 $director = User::role('Director')->first();
 
                 if ($director && $director->signature_path) {
                     // Start: Use Director's existing signature
                     $signaturePath = $director->signature_path;
-                    
+
                     // Notify Director that their signature was used by Proxy
                     Notification::send($director, new ProxySignedNotification($approval->submission, $user->name));
-                    
-                    // End: Use Director's existing signature
-                } else {
+
+                // End: Use Director's existing signature
+                }
+                else {
                     // Fallback: Use the one uploaded by proxy OR proxy's saved signature
-                     if ($signaturePath && str_contains($signaturePath, 'data:image')) {
+                    if ($signaturePath && str_contains($signaturePath, 'data:image')) {
                         $signaturePath = $this->saveBase64Image($signaturePath, 'signatures');
-                    } elseif (!$signaturePath) {
+                    }
+                    elseif (!$signaturePath) {
                         // If no new signature provided, use Proxy's existing signature
                         $signaturePath = $user->signature_path;
                     }
                 }
-            } else {
+            }
+            else {
                 // Normal Approval Logic
                 if ($signaturePath) {
                     if (str_contains($signaturePath, 'data:image')) {
                         $signaturePath = $this->saveBase64Image($signaturePath, 'signatures');
-                        
+
                         // Save to user profile if they don't have one yet
                         if (!$user->signature_path) {
                             $user->update([
@@ -101,7 +113,8 @@ class ApprovalService
                             ]);
                         }
                     }
-                } else {
+                }
+                else {
                     // Fallback to user's saved signature
                     $signaturePath = $user->signature_path;
                 }
@@ -119,24 +132,25 @@ class ApprovalService
 
             $submission = $approval->submission;
             $nextStep = $approval->step_order + 1;
-            
+
             $nextApproval = SubmissionApproval::where('submission_id', $submission->id)
                 ->where('step_order', $nextStep)
                 ->first();
 
             if (!$nextApproval) {
                 $submission->update(['final_status' => 'approved']);
-                
+
                 // Notify Requestor of Final Approval
                 $submission->user->notify(new SubmissionStatusNotification($submission, 'approved', $user->name));
-            } else {
+            }
+            else {
                 $submission->update(['current_approval_step' => $nextStep]);
-                
+
                 // Notify user that it moved to next step (Optional, maybe too spammy? keeping it simple for now)
-                
+
                 // Notify Next Approvers
                 $nextApprovers = $this->getApproversForRole($nextApproval->role_name);
-                
+
                 if ($nextApprovers->isEmpty()) {
                     \Illuminate\Support\Facades\Log::warning("No approvers found for role: {$nextApproval->role_name} in submission {$submission->code}");
                 }
@@ -144,7 +158,13 @@ class ApprovalService
                 Notification::send($nextApprovers, new NewSubmissionNotification($submission));
             }
 
-            AuditTrailService::log('approve', 'SubmissionApproval', $approval->id, null, $approval->toArray());
+            AuditTrailService::log(
+                $isSuperAdminOverride ? 'SUPER_ADMIN_OVERRIDE' : 'approve',
+                'SubmissionApproval',
+                $approval->id,
+                $isSuperAdminOverride ? ['override_user_id' => $data['override_user_id'], 'admin_id' => $user->id] : null,
+                $approval->toArray()
+            );
 
             return $approval;
         });
@@ -154,7 +174,7 @@ class ApprovalService
     {
         // Robust handling for 'GA Legal' to catch variations or split roles
         if ($roleName === 'GA Legal') {
-            return User::whereHas('roles', function($q) {
+            return User::whereHas('roles', function ($q) {
                 $q->whereIn('name', ['GA Legal', 'GA', 'Legal']);
             })->get();
         }
@@ -186,7 +206,7 @@ class ApprovalService
     {
         return DB::transaction(function () use ($approval, $data) {
             $user = Auth::user();
-            
+
             $approval->update([
                 'status' => 'rejected',
                 'approved_at' => now(),
@@ -196,7 +216,7 @@ class ApprovalService
 
             $submission = $approval->submission;
             $submission->update(['final_status' => 'rejected']);
-            
+
             // Notify Requestor of Rejection
             $submission->user->notify(new SubmissionStatusNotification($submission, 'rejected', $user->name));
 

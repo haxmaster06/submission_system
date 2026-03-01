@@ -24,12 +24,14 @@ export default function ReportingPage() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [printing, setPrinting] = useState(false);
   const [lookups, setLookups] = useState<any>({ divisions: [], jenis_pengajuan: [] });
 
   // Detail View States
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const printIframeRef = React.useRef<HTMLIFrameElement>(null);
 
   // Filter states
   const [search, setSearch] = useState('');
@@ -93,6 +95,36 @@ export default function ReportingPage() {
     }
   };
 
+  const handlePrint = async () => {
+    try {
+      setPrinting(true);
+      const params = new URLSearchParams({
+        search,
+        ...filters
+      }).toString();
+
+      const response = await api.get(`/reports/submissions/print-url?${params}`);
+      const { url } = response.data;
+      
+      if (printIframeRef.current) {
+        printIframeRef.current.onload = function() {
+          setTimeout(() => {
+            if (printIframeRef.current?.contentWindow) {
+              printIframeRef.current.contentWindow.focus();
+              printIframeRef.current.contentWindow.print();
+            }
+          }, 500);
+        };
+        printIframeRef.current.src = url;
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Gagal memuat halaman cetak');
+    } finally {
+      setTimeout(() => setPrinting(false), 2000);
+    }
+  };
+
   const resetFilters = () => {
     setSearch('');
     setFilters({
@@ -120,7 +152,27 @@ export default function ReportingPage() {
     }
   };
 
-  const totalNominal = submissions.reduce((sum, sub) => sum + parseFloat(sub.total), 0);
+  // Hitung agregat keseluruhan
+  let grandTotalPengajuan = 0;
+  let grandTotalRealisasi = 0;
+  
+  // Kelompokkan pengajuan berdasarkan Divisi
+  const groupedSubmissions: Record<string, any[]> = {};
+  submissions.forEach(sub => {
+      const divName = sub.division?.name || 'Unknown Division';
+      if(!groupedSubmissions[divName]) groupedSubmissions[divName] = [];
+      groupedSubmissions[divName].push(sub);
+
+      grandTotalPengajuan += parseFloat(sub.total);
+      
+      let realizationTotal = 0;
+      if (sub.realizations && Array.isArray(sub.realizations)) {
+          realizationTotal = sub.realizations
+              .filter((r: any) => r.final_status === 'approved')
+              .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+      }
+      grandTotalRealisasi += realizationTotal;
+  });
 
   return (
     <Shell>
@@ -129,18 +181,28 @@ export default function ReportingPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
               <BarChart3 className="text-sky-500" />
-              Laporan Pengajuan
+              Laporan Realisasi & Budget
             </h1>
-            <p className="text-slate-500 text-sm mt-1">Saring dan ekspor data pengajuan budget</p>
+            <p className="text-slate-500 text-sm mt-1">Saring dan ekspor perbandingan budget vs aktual</p>
           </div>
-          <button
-            onClick={handleExport}
-            disabled={exporting || submissions.length === 0}
-            className="w-full md:w-auto bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
-          >
-            {exporting ? <Loader2 className="animate-spin" size={18} /> : <Printer size={18} />}
-            Ekspor ke PDF
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+             <button
+                onClick={handlePrint}
+                disabled={printing || submissions.length === 0}
+                className="w-full sm:w-auto bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 text-slate-700 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-center gap-2"
+              >
+                {printing ? <Loader2 className="animate-spin" size={18} /> : <Printer size={18} />}
+                Cetak Laporan
+             </button>
+             <button
+               onClick={handleExport}
+               disabled={exporting || submissions.length === 0}
+               className="w-full sm:w-auto bg-sky-500 hover:bg-sky-600 disabled:bg-slate-300 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg shadow-sky-100 flex items-center justify-center gap-2"
+             >
+               {exporting ? <Loader2 className="animate-spin" size={18} /> : <FileText size={18} />}
+               Ekspor ke PDF
+             </button>
+          </div>
         </header>
 
         {/* Filter Section */}
@@ -245,119 +307,197 @@ export default function ReportingPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pengajuan</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Tiket</p>
             <h3 className="text-3xl font-black text-slate-800 tracking-tight">{submissions.length}</h3>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-2">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Nominal</p>
-            <h3 className="text-3xl font-black text-sky-600 tracking-tight">Rp {totalNominal.toLocaleString('id-ID')}</h3>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm md:col-span-3">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 h-full">
+               <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan vs Actual (Approved)</p>
+                  <div className="flex items-baseline gap-3">
+                      <h3 className="text-3xl font-black text-sky-600 tracking-tight">Rp {grandTotalPengajuan.toLocaleString('id-ID')}</h3>
+                      <span className="text-lg font-black text-slate-400">/</span>
+                      <h3 className="text-2xl font-black text-emerald-600 tracking-tight">Rp {grandTotalRealisasi.toLocaleString('id-ID')}</h3>
+                  </div>
+               </div>
+               <div className="text-right">
+                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Selisih Keseluruhan</p>
+                   <p className={`text-xl font-black tracking-tight ${grandTotalPengajuan - grandTotalRealisasi < 0 ? 'text-rose-600' : 'text-amber-500'}`}>
+                       Rp {(grandTotalPengajuan - grandTotalRealisasi).toLocaleString('id-ID')}
+                   </p>
+               </div>
+            </div>
           </div>
         </div>
 
-        {/* Results Table */}
-        <div className="bg-white border border-slate-200 rounded-[32px] shadow-sm overflow-hidden">
-          {/* Desktop View */}
-          <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
-                  <th className="px-6 py-4">No. Pengajuan</th>
-                  <th className="px-6 py-4">Tanggal</th>
-                  <th className="px-6 py-4">Divisi</th>
-                  <th className="px-6 py-4">Deskripsi</th>
-                  <th className="px-6 py-4 text-right">Total</th>
-                  <th className="px-6 py-4 text-center">Status</th>
-                  <th className="px-6 py-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center">
-                      <Loader2 className="animate-spin text-sky-500 mx-auto mb-3" size={32} />
-                      <p className="text-slate-400 font-bold">Memuat laporan...</p>
-                    </td>
-                  </tr>
-                ) : submissions.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-20 text-center">
-                      <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
-                      <p className="text-slate-400 font-bold">Tidak ada data untuk laporan ini</p>
-                    </td>
-                  </tr>
-                ) : (
-                  submissions.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-50/50 transition-all group">
-                      <td className="px-6 py-4 text-sm font-black text-slate-700">{sub.no_pengajuan}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-500">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID')}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-slate-600">{sub.division.name}</td>
-                      <td className="px-6 py-4 text-sm text-slate-600 font-medium max-w-xs truncate">{sub.description}</td>
-                      <td className="px-6 py-4 text-sm font-black text-sky-600 text-right">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                          sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
-                            'bg-amber-50 text-amber-600'
-                          }`}>
-                          {sub.final_status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <button
-                          onClick={() => handleView(sub.id)}
-                          className="p-2 text-slate-400 hover:text-sky-500 hover:bg-sky-50 rounded-lg transition-all"
-                          title="Lihat Detail & Cetak"
-                        >
-                          <Eye size={18} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Mobile View */}
-          <div className="md:hidden divide-y divide-slate-100">
+        {/* Results Tables - Grouped by Division */}
+        <div className="space-y-8">
             {loading ? (
-              <div className="p-10 text-center">
-                <Loader2 className="animate-spin text-sky-500 mx-auto mb-2" size={24} />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memuat...</p>
-              </div>
-            ) : submissions.length === 0 ? (
-              <div className="p-10 text-center">
-                <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kosong</p>
-              </div>
-            ) : (
-              submissions.map((sub) => (
-                <div key={sub.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors" onClick={() => handleView(sub.id)}>
-                  <div className="flex justify-between items-start gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-black text-sky-600 uppercase tracking-tight leading-none">{sub.no_pengajuan}</p>
-                      <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
-                      sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}>
-                      {sub.final_status}
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Divisi: <span className="text-slate-900">{sub.division.name}</span></p>
-                    <p className="text-[11px] font-bold text-slate-600 line-clamp-1">{sub.description}</p>
-                  </div>
-                  <div className="flex justify-between items-end border-t border-slate-50 pt-3">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">TOTAL</p>
-                    <p className="text-lg font-black text-sky-600 leading-none">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
-                  </div>
+                <div className="bg-white border border-slate-200 rounded-[32px] shadow-sm p-20 text-center">
+                    <Loader2 className="animate-spin text-sky-500 mx-auto mb-3" size={32} />
+                    <p className="text-slate-400 font-bold">Memuat laporan dan agregat realisasi...</p>
                 </div>
-              ))
+            ) : submissions.length === 0 ? (
+                <div className="bg-white border border-slate-200 rounded-[32px] shadow-sm p-20 text-center">
+                    <FileText className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                    <p className="text-slate-400 font-bold">Tidak ada data untuk laporan ini</p>
+                </div>
+            ) : (
+                Object.keys(groupedSubmissions).sort().map((divName) => {
+                    const divSubs = groupedSubmissions[divName];
+                    let divTotalPengajuan = 0;
+                    let divTotalRealisasi = 0;
+                    
+                    divSubs.forEach(sub => {
+                        divTotalPengajuan += parseFloat(sub.total);
+                        let realizationTotal = 0;
+                        if (sub.realizations && Array.isArray(sub.realizations)) {
+                            realizationTotal = sub.realizations
+                                .filter((r: any) => r.final_status === 'approved')
+                                .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                        }
+                        divTotalRealisasi += realizationTotal;
+                    });
+
+                    return (
+                    <div key={divName} className="bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden">
+                        {/* Division Header */}
+                        <div className="bg-slate-800 text-white px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-0.5">Divisi</h3>
+                                <p className="font-bold text-lg">{divName}</p>
+                            </div>
+                            <div className="flex gap-6 text-right">
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5">Subtotal Pengajuan</p>
+                                    <p className="font-mono font-bold text-sky-400 tracking-tight">Rp {divTotalPengajuan.toLocaleString('id-ID')}</p>
+                                </div>
+                                <div className="hidden sm:block">
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5">Subtotal Realisasi</p>
+                                    <p className="font-mono font-bold text-emerald-400 tracking-tight">Rp {divTotalRealisasi.toLocaleString('id-ID')}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Desktop View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-100">
+                                <th className="px-6 py-4">No. Pengajuan</th>
+                                <th className="px-6 py-4">Status & Tanggal</th>
+                                <th className="px-6 py-4">Deskripsi</th>
+                                <th className="px-6 py-4 text-right border-l border-slate-100">Budget Awal</th>
+                                <th className="px-6 py-4 text-right bg-emerald-50/50">Realisasi (Actual)</th>
+                                <th className="px-6 py-4 text-right bg-slate-50 border-l border-slate-100">Sisa / Selisih</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 bg-white">
+                                {divSubs.map((sub) => {
+                                    let realizationTotal = 0;
+                                    if (sub.realizations && Array.isArray(sub.realizations)) {
+                                        realizationTotal = sub.realizations
+                                            .filter((r: any) => r.final_status === 'approved')
+                                            .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                                    }
+                                    const nilaiPengajuan = parseFloat(sub.total);
+                                    const selisih = nilaiPengajuan - realizationTotal;
+
+                                    return (
+                                    <tr key={sub.id} className="hover:bg-sky-50/30 transition-all group cursor-pointer" onClick={() => handleView(sub.id)}>
+                                        <td className="px-6 py-4 text-sm font-black text-slate-700">{sub.no_pengajuan}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="space-y-1.5">
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                                                sub.final_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                                    'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                {sub.final_status}
+                                                </span>
+                                                <p className="text-xs font-bold text-slate-500">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID')}</p>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600 font-medium max-w-[200px] truncate">{sub.description}</td>
+                                        
+                                        {/* FINANCIALS */}
+                                        <td className="px-6 py-4 text-sm font-mono font-bold text-slate-700 text-right border-l border-slate-100 group-hover:bg-slate-50/50 transition-colors">
+                                            Rp {nilaiPengajuan.toLocaleString('id-ID')}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-mono font-bold text-emerald-600 text-right bg-emerald-50/20 group-hover:bg-emerald-50/50 transition-colors">
+                                            Rp {realizationTotal > 0 ? realizationTotal.toLocaleString('id-ID') : '-'}
+                                        </td>
+                                        <td className={`px-6 py-4 text-sm font-mono font-black text-right border-l border-slate-100 transition-colors ${selisih < 0 ? 'text-rose-500 bg-rose-50/30' : (selisih === 0 ? 'text-slate-400' : 'text-amber-500 bg-amber-50/20')}`}>
+                                            Rp {selisih.toLocaleString('id-ID')}
+                                        </td>
+                                    </tr>
+                                )})}
+                            </tbody>
+                            <tfoot className="bg-slate-50/80 border-t-2 border-slate-200">
+                                <tr>
+                                    <td colSpan={3} className="px-6 py-4 text-right text-xs font-black text-slate-500 uppercase tracking-widest">
+                                        Subtotal Divisi
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm font-black text-sky-600 border-l border-slate-200">
+                                        Rp {divTotalPengajuan.toLocaleString('id-ID')}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm font-black text-emerald-600 bg-emerald-50">
+                                        Rp {divTotalRealisasi.toLocaleString('id-ID')}
+                                    </td>
+                                    <td className="px-6 py-4 text-right text-sm font-black text-amber-600 border-l border-slate-200">
+                                        Rp {(divTotalPengajuan - divTotalRealisasi).toLocaleString('id-ID')}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                            </table>
+                        </div>
+
+                        {/* Mobile View inside Loop */}
+                        <div className="md:hidden divide-y divide-slate-100">
+                            {divSubs.map((sub) => {
+                                let realizationTotal = 0;
+                                if (sub.realizations && Array.isArray(sub.realizations)) {
+                                    realizationTotal = sub.realizations
+                                        .filter((r: any) => r.final_status === 'approved')
+                                        .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                                }
+                                const nilaiPengajuan = parseFloat(sub.total);
+                                const selisih = nilaiPengajuan - realizationTotal;
+
+                                return (
+                                <div key={sub.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors" onClick={() => handleView(sub.id)}>
+                                    <div className="flex justify-between items-start gap-3">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-sky-600 uppercase tracking-tight leading-none">{sub.no_pengajuan}</p>
+                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">{new Date(sub.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit' })}</p>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${sub.final_status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                                        sub.final_status === 'rejected' ? 'bg-red-50 text-red-600' :
+                                            'bg-amber-50 text-amber-600'
+                                        }`}>
+                                        {sub.final_status}
+                                        </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[11px] font-bold text-slate-600 line-clamp-2 leading-snug">{sub.description}</p>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3 border-t border-slate-50 pt-3">
+                                        <div className="space-y-0.5">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">PENGAJUAN</p>
+                                            <p className="text-sm font-black text-slate-700 leading-none">Rp {nilaiPengajuan.toLocaleString('id-ID')}</p>
+                                        </div>
+                                        <div className="space-y-0.5 text-right">
+                                            <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">REALISASI</p>
+                                            <p className="text-sm font-black text-emerald-600 leading-none">Rp {realizationTotal.toLocaleString('id-ID')}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )})}
+                        </div>
+                    </div>
+                )})
             )}
-          </div>
         </div>
       </div>
 
@@ -365,7 +505,7 @@ export default function ReportingPage() {
       <Modal
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        title="Detail Pengajuan"
+        title="Detail Laporan"
         size="2xl"
       >
         <div className="p-0">
@@ -384,6 +524,9 @@ export default function ReportingPage() {
           )}
         </div>
       </Modal>
+
+      {/* Hidden iframe file printer temporarily visible for debugging */}
+      <iframe ref={printIframeRef} style={{ display: 'block', width: '100%', minHeight: '800px', border: '2px dashed red', marginTop: '20px' }} title="Print Reporting" />
     </Shell>
   );
 }

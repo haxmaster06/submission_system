@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText, Copy, Paperclip, Download, Image as ImageIcon } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -179,6 +179,22 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               Hapus
             </button>
           )}
+          
+          {/* DUPLICATE BUTTON */}
+          <button
+            onClick={() => {
+              const isSalary = submission.payload && submission.payload.employees;
+              router.push(isSalary 
+                ? `/submissions/salary/new?duplicate=${submission.id}` 
+                : `/submissions/new?duplicate=${submission.id}`
+              );
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 font-bold rounded-lg hover:bg-amber-100 transition-colors border border-amber-200 shadow-sm"
+          >
+            <Copy className="w-4 h-4" />
+            Duplikat
+          </button>
+
           <button
             onClick={handlePrint}
             disabled={printing || exporting}
@@ -411,8 +427,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 </div>
               ) : submission.items && submission.items.length > 0 ? (
                 <div className="border border-slate-100 rounded-[24px] overflow-hidden bg-white shadow-inner">
-                  <div className="hidden md:block overflow-x-auto">
-                    <table className="w-full text-left">
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto custom-scrollbar">
+                    <table className="w-full text-left min-w-[700px]">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
                           <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[300px]">Description</th>
@@ -441,30 +458,22 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       </tfoot>
                     </table>
                   </div>
+                  {/* Mobile Compact Cards */}
                   <div className="md:hidden divide-y divide-slate-100">
                     {submission.items.map((item: any) => (
-                      <div key={item.id} className="p-5 space-y-4 active:bg-slate-50 transition-colors bg-white">
-                        <h4 className="font-black text-slate-900 text-sm leading-tight uppercase tracking-tight line-clamp-2">{item.description}</h4>
-                        <div className="flex items-end justify-between gap-4">
-                          <div className="space-y-1">
-                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Price x Qty</p>
-                            <p className="text-xs font-bold text-slate-600">
-                              <span className="font-black text-slate-900">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</span>
-                              <span className="text-[10px] text-slate-300 mx-1.5 font-black">X</span>
-                              <span className="font-black text-slate-900">{parseFloat(item.qty).toLocaleString('id-ID')}</span>
-                              <span className="text-[9px] font-black text-slate-300 ml-1 uppercase">{item.uom?.code || item.uom?.name}</span>
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] leading-none mb-1">Subtotal</p>
-                            <p className="text-lg font-black text-sky-600 tracking-tighter leading-none">Rp {parseFloat(item.total).toLocaleString('id-ID')}</p>
-                          </div>
+                      <div key={item.id} className="px-4 py-3 space-y-1">
+                        <p className="text-xs font-bold text-slate-800 leading-snug">{item.description}</p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[11px] text-slate-500">
+                            {parseFloat(item.qty).toLocaleString('id-ID')} {item.uom?.code || item.uom?.name} × Rp {parseFloat(item.nominal).toLocaleString('id-ID')}
+                          </p>
+                          <p className="text-sm font-black text-sky-600">Rp {parseFloat(item.total).toLocaleString('id-ID')}</p>
                         </div>
                       </div>
                     ))}
-                    <div className="bg-sky-50/50 p-6 flex items-center justify-between border-t border-sky-100 shadow-sm">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">GRAND TOTAL</span>
-                      <span className="text-2xl font-black text-sky-600 tracking-normal font-mono leading-none whitespace-nowrap ml-4">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
+                    <div className="bg-sky-50/50 px-4 py-3 flex items-center justify-between border-t border-sky-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grand Total</span>
+                      <span className="text-lg font-black text-sky-600">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
                     </div>
                   </div>
                 </div>
@@ -493,6 +502,46 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                   </h3>
                   <div className="bg-amber-50/50 p-6 md:p-8 rounded-[32px] text-sm font-bold text-amber-900 leading-relaxed whitespace-pre-wrap border border-amber-200 shadow-inner border-l-4 border-l-amber-500">
                     {submission.notes}
+                  </div>
+                </div>
+              )}
+
+              {submission.attachments && submission.attachments.length > 0 && (
+                <div className="mt-8 pt-6 md:pt-8 border-t border-slate-100 space-y-4">
+                  <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1 flex items-center gap-1.5">
+                    <Paperclip size={14} className="text-sky-500" />
+                    Lampiran Pendukung ({submission.attachments.length})
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {submission.attachments.map((attachment: any, idx: number) => {
+                       const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(attachment.file_type?.toLowerCase() || '');
+                       const fileUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${attachment.file_path}`;
+                       
+                       return (
+                           <div key={attachment.id || idx} className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isImage ? 'bg-sky-50 border-sky-100' : 'bg-indigo-50 border-indigo-100'}`}>
+                                  {isImage ? <ImageIcon className="w-5 h-5 text-sky-500" /> : <FileText className="w-5 h-5 text-indigo-500" />}
+                               </div>
+                               <div className="flex-1 min-w-0">
+                                   <p className="text-sm font-bold text-slate-800 truncate mb-0.5" title={attachment.file_path.split('/').pop()}>
+                                       {attachment.file_path.split('/').pop() || 'Dokumen Lampiran'}
+                                   </p>
+                                   <div className="flex items-center gap-2">
+                                       <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest">{attachment.file_type || 'FILE'}</span>
+                                   </div>
+                               </div>
+                               <a 
+                                  href={fileUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-colors shrink-0"
+                                  title="Download / View"
+                               >
+                                  <Download className="w-4 h-4" />
+                               </a>
+                           </div>
+                       );
+                    })}
                   </div>
                 </div>
               )}
@@ -662,10 +711,8 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     </div>
                   </div>
 
-                  <div className="overflow-hidden rounded-2xl border border-slate-100">
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block">
-                      <table className="w-full text-left text-sm">
+                  <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-slate-100">
+                      <table className="w-full text-left text-sm min-w-[500px]">
                         <thead className="bg-slate-50 text-[10px] text-slate-400 font-bold uppercase tracking-widest border-b border-slate-100">
                           <tr>
                             <th className="px-6 py-3">Item</th>
@@ -685,24 +732,6 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                           ))}
                         </tbody>
                       </table>
-                    </div>
-
-                    {/* Mobile Card List View */}
-                    <div className="md:hidden divide-y divide-slate-50">
-                      {r.details.map((d: any) => (
-                        <div key={d.id} className="p-4 space-y-3 active:bg-slate-50 transition-colors">
-                          <h5 className="font-black text-slate-900 text-xs uppercase tracking-tight">{d.item_name}</h5>
-                          <div className="flex items-center justify-between">
-                            <p className="text-[10px] font-bold text-slate-500">
-                              <span className="font-black">{parseFloat(d.qty).toLocaleString('id-ID')}</span>
-                              <span className="mx-1 text-slate-300">x</span>
-                              <span className="font-black text-slate-800">Rp {parseFloat(d.nominal).toLocaleString('id-ID')}</span>
-                            </p>
-                            <p className="text-sm font-black text-emerald-600 tracking-tighter">Rp {parseFloat(d.total).toLocaleString('id-ID')}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </div>
               ))}

@@ -1,16 +1,10 @@
 <?php
-try {
-    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.submissions_report', [
-        'submissions' => \App\Models\Submission::limit(1)->get(),
-        'filters' => [],
-        'generated_at' => now(),
-        'generated_by' => 'Test User'
-    ])->setPaper('a4', 'landscape');
-    
-    $path = storage_path('test_report.pdf');
-    $pdf->save($path);
-    echo "PDF Generated Successfully at: " . $path . "\n";
-} catch (\Throwable $e) {
-    echo "Error Generating PDF: " . $e->getMessage() . "\n";
-    echo $e->getTraceAsString();
-}
+$user = App\Models\User::first();
+Auth::login($user);
+
+$request = Illuminate\Http\Request::create('/api/reports/submissions/export', 'GET');
+$controller = new App\Http\Controllers\Api\ReportingController();
+$response = $controller->exportPdf($request);
+
+file_put_contents('public/test_report.pdf', $response->getContent());
+echo "PDF Saved to public/test_report.pdf\n";

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard,
@@ -19,25 +19,68 @@ import {
   BarChart3,
   GitBranch,
   Receipt,
-  HelpCircle
+  HelpCircle,
+  Activity,
+  Wrench,
+  ToggleLeft,
+  ToggleRight,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationDropdown from '@/components/ui/NotificationDropdown';
 import { useNotification } from '@/context/NotificationContext';
+import api from '@/lib/api';
 
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const { isSupported, isSubscribed, permission, subscribeToPush } = useNotification();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+
+  // Close profile dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isProfileOpen]);
 
   const isApprover = user?.permissions.some(p => p.name === 'view submissions') ||
     user?.roles.some(r => ['HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(r.name));
 
   const isSuperAdmin = user?.roles.some(r => r.name === 'Super Admin');
+  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      api.get('/maintenance-status').then((res: any) => setIsMaintenance(res.data.maintenance)).catch(() => {});
+    }
+  }, [isSuperAdmin]);
+
+  const handleToggleMaintenance = async () => {
+    const action = isMaintenance ? 'mematikan' : 'MENGAKTIFKAN';
+    if (!confirm(`Apakah Anda yakin ingin ${action} Mode Maintenance? \n\nJika aktif, semua user selain Super Admin tidak akan bisa mengakses sistem.`)) return;
+    
+    setTogglingMaintenance(true);
+    try {
+      const res = await api.post('/admin/maintenance', { enabled: !isMaintenance });
+      setIsMaintenance(res.data.maintenance);
+      alert(res.data.message);
+    } catch (err) {
+      alert('Gagal mengubah status maintenance');
+    } finally {
+      setTogglingMaintenance(false);
+    }
+  };
 
   const isMasterDataAdmin = user?.permissions.some(p => p.name === 'manage master data') || isSuperAdmin;
   const isEmployeeAdmin = user?.permissions.some(p => p.name === 'manage employees') || isSuperAdmin;
@@ -85,6 +128,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Manajemen User', href: '/admin/users', icon: Users },
         { name: 'Peran & Hak Akses', href: '/admin/roles', icon: Shield },
+        { name: 'Audit Log', href: '/admin/audit-logs', icon: Activity },
       ]
     },
     {
@@ -122,10 +166,16 @@ export default function Shell({ children }: { children: React.ReactNode }) {
                   </div>
                   <div>
                     <span className="font-black text-slate-900 block text-lg landscape:text-sm leading-none">HBM</span>
-                    <span className="text-[10px] landscape:text-[8px] font-black text-sky-500 uppercase tracking-[0.2em]">Budgeting</span>
+                    <span className="text-[10px] landscape:text-[8px] font-black text-sky-500 uppercase tracking-[0.2em] mb-1 block">Budgeting</span>
+                    {user && (
+                      <div className="mt-1 pt-1 border-t border-slate-200">
+                        <span className="text-xs font-bold text-slate-800 line-clamp-1">{user.name}</span>
+                        <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest block">{user.roles?.[0]?.display_name || user.roles?.[0]?.name}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 landscape:p-1.5 bg-slate-100 text-slate-500 rounded-2xl landscape:rounded-xl hover:bg-slate-200 transition-colors">
+                <button onClick={() => setIsMobileMenuOpen(false)} className="p-2.5 landscape:p-1.5 bg-slate-100 text-slate-500 rounded-2xl landscape:rounded-xl hover:bg-slate-200 transition-colors self-start">
                   <X size={20} className="landscape:w-4 landscape:h-4" />
                 </button>
               </div>
@@ -203,13 +253,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-100 mt-auto">
+        <div className="p-4 border-t border-slate-100 mt-auto space-y-2">
+          {isSuperAdmin && (
+            <button
+              onClick={handleToggleMaintenance}
+              disabled={togglingMaintenance}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${
+                isMaintenance 
+                  ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' 
+                  : 'text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              <Wrench className={`w-5 h-5 shrink-0 ${isMaintenance ? 'animate-pulse' : ''}`} />
+              {isSidebarOpen && (
+                <div className="flex-1 flex justify-between items-center text-sm font-bold">
+                  <span>Maintenance</span>
+                  {togglingMaintenance ? <Loader2 size={16} className="animate-spin" /> : (isMaintenance ? <ToggleRight size={20} className="text-amber-600" /> : <ToggleLeft size={20} />)}
+                </div>
+              )}
+            </button>
+          )}
+
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all"
+            className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all font-bold"
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            {isSidebarOpen && <span className="font-medium text-sm">Keluar</span>}
+            {isSidebarOpen && <span className="text-sm">Keluar</span>}
           </button>
         </div>
       </aside>
@@ -236,14 +306,71 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 sm:gap-4">
             <NotificationDropdown userId={user?.id || 0} />
             <div className="h-8 w-px bg-slate-200 mx-1"></div>
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-sm font-semibold text-slate-800 leading-none">{user?.name}</p>
-                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{user?.roles[0]?.display_name || user?.roles[0]?.name || 'User'} • {user?.division?.code}</p>
-              </div>
-              <div className="w-10 h-10 2xl:w-12 2xl:h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm overflow-hidden">
-                <User size={24} className="text-slate-400" />
-              </div>
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-3 cursor-pointer group"
+              >
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-semibold text-slate-800 leading-none">{user?.name}</p>
+                  <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{user?.roles[0]?.display_name || user?.roles[0]?.name || 'User'} • {user?.division?.code}</p>
+                </div>
+                <div className={`w-10 h-10 2xl:w-12 2xl:h-12 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl flex items-center justify-center border shadow-sm overflow-hidden transition-all ${isProfileOpen ? 'border-sky-300 ring-2 ring-sky-100' : 'border-slate-200 group-hover:border-slate-300'}`}>
+                  <User size={24} className="text-slate-400" />
+                </div>
+              </button>
+
+              {/* Profile Dropdown */}
+              <AnimatePresence>
+                {isProfileOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-2xl shadow-slate-200/80 border border-slate-100 overflow-hidden z-50"
+                  >
+                    {/* User Info */}
+                    <div className="p-4 bg-slate-50 border-b border-slate-100">
+                      <p className="text-sm font-black text-slate-900 truncate">{user?.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                        {user?.roles[0]?.display_name || user?.roles[0]?.name || 'User'} • {user?.division?.code}
+                      </p>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="p-2">
+                      <Link
+                        href="/profile"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <Settings size={16} className="text-slate-400" />
+                        Profil & Tanda Tangan
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                      >
+                        <LayoutDashboard size={16} className="text-slate-400" />
+                        Beranda
+                      </Link>
+                    </div>
+
+                    {/* Logout */}
+                    <div className="p-2 border-t border-slate-100">
+                      <button
+                        onClick={() => { setIsProfileOpen(false); logout(); }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={16} />
+                        Keluar
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -265,28 +392,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             </div>
           )}
 
-          {isSupported && !isSubscribed && permission !== 'denied' && permission !== 'loading' && (
-            <div className="mb-6 p-4 rounded-2xl bg-sky-50 border border-sky-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500 delay-150">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-sky-400/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-              <div className="flex items-start gap-4 relative z-10 w-full sm:w-auto">
-                <div className="p-2 bg-sky-100 rounded-xl text-sky-600 shrink-0 shadow-sm border border-sky-200 mt-0.5">
-                  <Bell size={20} />
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-sky-900 uppercase tracking-tight mb-1">Aktifkan Notifikasi Desktop</h4>
-                  <p className="text-xs text-sky-800 leading-relaxed font-medium">
-                    Jangan lewatkan pembaruan penting! Izinkan sistem mengirim notifikasi persetujuan (approval) langsung ke layar Anda meskipun aplikasi sedang ditutup.
-                  </p>
-                </div>
-              </div>
-              <button 
-                onClick={() => subscribeToPush()}
-                className="w-full sm:w-auto flex-shrink-0 relative z-10 whitespace-nowrap bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md shadow-sky-600/20 active:scale-95 transition-all"
-              >
-                Izinkan Sekarang
-              </button>
-            </div>
-          )}
+
 
           {children}
         </section>

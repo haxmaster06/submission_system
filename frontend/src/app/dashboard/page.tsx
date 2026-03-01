@@ -7,14 +7,26 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Clock, CheckCircle, AlertCircle, TrendingUp,
   ArrowRight, Loader2, BarChart3, PieChart as PieIcon,
-  History, Shield, Zap, Calendar, User
+  History, Shield, Zap, Calendar, User, Users, Activity
 } from 'lucide-react';
 import api from '@/lib/api';
 import Link from 'next/link';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, BarChart, Bar, Legend
-} from 'recharts';
+import dynamic from 'next/dynamic';
+
+// Lazy-load Recharts (SSR disabled — ~200KB saved from initial bundle)
+const AreaChart = dynamic(() => import('recharts').then(m => m.AreaChart), { ssr: false });
+const Area = dynamic(() => import('recharts').then(m => m.Area), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(m => m.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false });
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false });
+const PieChart = dynamic(() => import('recharts').then(m => m.PieChart), { ssr: false });
+const Pie = dynamic(() => import('recharts').then(m => m.Pie), { ssr: false });
+const Cell = dynamic(() => import('recharts').then(m => m.Cell), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false });
+const Legend = dynamic(() => import('recharts').then(m => m.Legend), { ssr: false });
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'];
 
@@ -23,14 +35,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
 
+  const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
+
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [isSuperAdmin]); // Dependency to re-fetch if role loads
 
   const fetchStats = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/dashboard/stats');
+      const endpoint = isSuperAdmin ? '/admin/dashboard-stats' : '/dashboard/stats';
+      const res = await api.get(endpoint);
       setData(res.data);
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
@@ -61,6 +76,140 @@ export default function DashboardPage() {
     );
   }
 
+  // ============== SUPER ADMIN DASHBOARD ==============
+  if (isSuperAdmin && data) {
+    const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+
+    return (
+      <Shell>
+        <div className="max-w-7xl mx-auto pb-12 2xl:pb-20 px-4 sm:px-6">
+          <header className="mb-6 xl:mb-8 2xl:mb-14 flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+            <div className="space-y-2">
+              <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-amber-100 w-fit">
+                <Shield size={12} /> System Administrator
+              </span>
+              <h1 className="text-3xl xl:text-4xl font-black text-slate-900 tracking-tight leading-tight">
+                System <span className="text-amber-500">Overview</span>
+              </h1>
+              <p className="text-slate-500 font-semibold text-sm">Metrik keseluruhan sistem HBM Budgeting.</p>
+            </div>
+            {data.maintenance && (
+              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl flex items-center gap-3">
+                <AlertCircle size={20} className="animate-pulse" />
+                <span className="text-xs font-bold uppercase tracking-widest">Maintenance Mode Active</span>
+              </div>
+            )}
+          </header>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6 mb-8">
+            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200">
+                <Users size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Users</p>
+                <div className="flex items-end gap-2">
+                  <p className="text-2xl font-black text-slate-900 leading-none">{data.users?.total}</p>
+                  <span className="text-[10px] font-bold text-emerald-500 mb-0.5">{data.users?.active_7d} aktif 7h</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-sky-200">
+                <FileText size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan</p>
+                <div className="flex items-end gap-2">
+                  <p className="text-2xl font-black text-slate-900 leading-none">{data.submissions?.total}</p>
+                  <span className="text-[10px] font-bold text-amber-500 mb-0.5">{data.submissions?.pending} pending</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-200">
+                <CheckCircle size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Anggaran Disetujui</p>
+                <p className="text-lg sm:text-lg lg:text-base xl:text-xl font-black text-slate-900 leading-none truncate" title={formatRp(data.budget?.total_approved || 0)}>
+                  {formatRp(data.budget?.total_approved || 0)}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-rose-200">
+                <Zap size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Realisasi</p>
+                <p className="text-lg sm:text-lg lg:text-base xl:text-xl font-black text-slate-900 leading-none truncate" title={formatRp(data.budget?.total_realized || 0)}>
+                  {formatRp(data.budget?.total_realized || 0)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Division Ranking */}
+            <div className="lg:col-span-1 bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 flex flex-col">
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Activity size={16} className="text-sky-500" /> Top Divisi (Anggaran)
+              </h2>
+              <div className="space-y-4 flex-1">
+                {data.division_ranking?.map((div: any, i: number) => (
+                  <div key={i} className="flex justify-between items-center group">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <div className="w-6 h-6 rounded-md bg-slate-50 text-[10px] font-black text-slate-400 flex items-center justify-center shrink-0">#{i+1}</div>
+                      <p className="text-xs font-bold text-slate-700 truncate">{div.name}</p>
+                    </div>
+                    <p className="text-xs font-black text-emerald-600 ml-2">{formatRp(div.total)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Audit Logs */}
+            <div className="lg:col-span-2 bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                  <History size={16} className="text-indigo-500" /> Recent Audit Logs
+                </h2>
+                <Link href="/admin/audit-logs" className="text-[10px] font-bold text-sky-500 hover:text-sky-600 uppercase tracking-widest">
+                  Lihat Semua
+                </Link>
+              </div>
+              <div className="space-y-3 flex-1">
+                {data.recent_logs?.map((log: any, i: number) => (
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                      <Shield size={14} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 flex items-center gap-1.5 truncate">
+                        <span className="px-1.5 py-0.5 bg-slate-200 text-slate-600 rounded text-[9px] uppercase">{log.action}</span>
+                        {log.model} <span className="text-slate-400 font-medium">#{log.model_id}</span>
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5 truncate flex items-center gap-1.5">
+                        <User size={10} /> {log.user} <span className="text-slate-300">•</span> {new Date(log.created_at).toLocaleString('id-ID')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                {data.recent_logs?.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Belum ada log.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ============== NORMAL DASHBOARD ==============
   return (
     <Shell>
       <div className="max-w-7xl mx-auto pb-12 2xl:pb-20 px-4 sm:px-6">
@@ -290,7 +439,7 @@ export default function DashboardPage() {
                         tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }}
                       />
                       <Tooltip
-                        formatter={(val?: number | string) => `Rp ${Number(val || 0).toLocaleString('id-ID')}`}
+                        formatter={(val: any) => `Rp ${Number(val || 0).toLocaleString('id-ID')}`}
                         contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)' }}
                         itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
                         labelStyle={{ fontWeight: 'black', color: '#94a3b8', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase' }}

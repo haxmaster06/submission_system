@@ -65,8 +65,8 @@ class User extends Authenticatable
         return $this->hasMany(Submission::class);
     }
 
-    public function pushSubscriptions(): HasMany
+    public function fcmTokens(): HasMany
     {
-        return $this->hasMany(PushSubscription::class);
+        return $this->hasMany(FcmToken::class);
     }
 }

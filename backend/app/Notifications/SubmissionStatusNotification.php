@@ -34,7 +34,7 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['database', 'broadcast', \App\Broadcasting\WebPushChannel::class];
+        return ['database', 'broadcast', \App\Broadcasting\FcmChannel::class];
     }
 
     /**
@@ -85,13 +85,14 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
         ]);
     }
 
-    public function toWebPush($notifiable): array
+    public function toFcm($notifiable): array
     {
         $statusIndo = $this->status === 'approved' ? 'Disetujui' : 'Ditolak';
         return [
             'title' => "Pengajuan $statusIndo!",
             'body' => "Pengajuan Anda ({$this->submission->code}) telah $statusIndo oleh $this->approverName.",
             'url' => '/submissions/' . $this->submission->id,
+            'type' => 'submission_status',
         ];
     }
 }

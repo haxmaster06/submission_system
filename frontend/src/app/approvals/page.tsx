@@ -1,15 +1,23 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Shell from '@/components/layout/Shell';
 import api, { STORAGE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Loader2, MessageSquare, ShieldCheck, Info, PenTool, Upload } from 'lucide-react';
-import SignatureCanvas from '@/components/submissions/SignatureCanvas';
-import SubmissionDetailView from '@/components/submissions/SubmissionDetailView';
+import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 
+// Lazy-load heavy modal components
+const SignatureCanvas = dynamic(() => import('@/components/submissions/SignatureCanvas'), { ssr: false });
+const SubmissionDetailView = dynamic(() => import('@/components/submissions/SubmissionDetailView'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center p-20"><Loader2 className="animate-spin text-sky-500" size={32} /></div>
+});
+
 export default function ApprovalsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [approvals, setApprovals] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
@@ -30,8 +38,14 @@ export default function ApprovalsPage() {
   const [directorName, setDirectorName] = useState<string | null>(null);
   const [checkingDirectorSig, setCheckingDirectorSig] = useState(false);
   const [proof, setProof] = useState<string | null>(null);
+  const [modalTab, setModalTab] = useState<'detail' | 'action'>('detail');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sigUploadRef = useRef<HTMLInputElement>(null);
+
+  // Super Admin Override
+  const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
+  const [overrideUsers, setOverrideUsers] = useState<any[]>([]);
+  const [overrideUserId, setOverrideUserId] = useState<number | null>(null);
 
   const getImageUrl = (path: string | null) => {
     if (!path) return null;
@@ -55,6 +69,7 @@ export default function ApprovalsPage() {
     fetchApprovals();
     fetchHistory();
     fetchUserSignature();
+    fetchOverrideUsers();
   }, []);
 
   useEffect(() => {
@@ -76,6 +91,16 @@ export default function ApprovalsPage() {
       console.error('Failed to check director signature');
     } finally {
       setCheckingDirectorSig(false);
+    }
+  };
+
+  const fetchOverrideUsers = async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const res = await api.get('/admin/users-with-signatures');
+      setOverrideUsers(res.data);
+    } catch (err) {
+      console.error('Failed to fetch override users');
     }
   };
 
@@ -177,10 +202,11 @@ export default function ApprovalsPage() {
       if (status === 'approve') {
         await api.post(`/approvals/${selectedApproval.id}/approve`, {
           notes: notes.trim(),
-          signature_path: useSavedSignature ? null : signature,
+          signature_path: (isSuperAdmin && overrideUserId) ? null : (useSavedSignature ? null : signature),
           signature_type: signatureType,
           is_director_proxy: isDirectorProxy,
-          signed_proof_path: proof
+          signed_proof_path: proof,
+          override_user_id: overrideUserId || undefined
         });
       } else {
         await api.post(`/approvals/${selectedApproval.id}/reject`, {
@@ -194,6 +220,10 @@ export default function ApprovalsPage() {
       setSignature('');
       setProof(null);
       setIsDirectorProxy(false);
+      
+      if (typeof window !== 'undefined') {
+        router.replace(window.location.pathname, { scroll: false });
+      }
 
       // Refresh List
       fetchApprovals();
@@ -326,17 +356,18 @@ export default function ApprovalsPage() {
       {/* Approval Modal */}
       <AnimatePresence>
         {selectedApproval && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-4 bg-slate-900/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white w-full max-w-[90rem] rounded-[32px] shadow-2xl flex flex-col overflow-hidden max-h-[95vh] border border-white/20"
+              className="bg-white w-full lg:max-w-[90rem] rounded-none lg:rounded-[32px] shadow-2xl flex flex-col overflow-hidden h-full lg:max-h-[95vh] border-0 lg:border border-white/20"
             >
-              <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 z-10">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">Verifikasi & Detail Pengajuan</h2>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Role: <span className="text-sky-600">{selectedApproval.role_name}</span></p>
+              {/* Header */}
+              <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 z-10">
+                <div className="min-w-0">
+                  <h2 className="text-base sm:text-xl font-black text-slate-900 uppercase tracking-tight truncate">Verifikasi & Detail</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Role: <span className="text-sky-600">{selectedApproval.role_name}</span></p>
                 </div>
                 <button
                   onClick={() => {
@@ -346,24 +377,50 @@ export default function ApprovalsPage() {
                     setProof(null);
                     setIsDirectorProxy(false);
                     setDirectorHasSignature(false);
+                    setModalTab('detail');
+                    if (typeof window !== 'undefined') {
+                      router.replace(window.location.pathname, { scroll: false });
+                    }
                   }}
-                  className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl transition-all"
+                  className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-900 rounded-xl transition-all shrink-0 ml-2"
                 >
                   <X size={20} />
                 </button>
               </div>
 
+              {/* Mobile Tab Switcher */}
+              <div className="lg:hidden flex bg-slate-100 p-1 mx-4 mt-3 mb-1 rounded-xl shrink-0">
+                <button
+                  onClick={() => setModalTab('detail')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                    modalTab === 'detail' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  <FileText size={14} />
+                  Detail Pengajuan
+                </button>
+                <button
+                  onClick={() => setModalTab('action')}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${
+                    modalTab === 'action' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400'
+                  }`}
+                >
+                  <ShieldCheck size={14} />
+                  Tindakan
+                </button>
+              </div>
+
               <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-                {/* Left side: Detail View */}
-                <div className="lg:w-2/3 p-0 overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/50">
+                {/* Left side: Detail View - always visible on desktop, tab-controlled on mobile */}
+                <div className={`lg:w-2/3 p-0 overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-100 bg-slate-50/50 ${modalTab === 'detail' ? 'flex-1' : 'hidden'} lg:block`}>
                   <SubmissionDetailView 
                     submission={selectedApproval.submission} 
                     showPrintButton={true} 
                   />
                 </div>
 
-                {/* Right side: Approval Form */}
-                <div className="lg:w-1/3 p-5 sm:p-8 space-y-8 overflow-y-auto bg-white flex flex-col shrink-0">
+                {/* Right side: Approval Form - always visible on desktop, tab-controlled on mobile */}
+                <div className={`lg:w-1/3 p-5 sm:p-8 space-y-8 overflow-y-auto bg-white flex flex-col shrink-0 ${modalTab === 'action' ? 'flex-1' : 'hidden'} lg:flex`}>
                   <div className="flex-1 space-y-8">
                     {/* Proxy Option if applicable */}
                     {selectedApproval.role_name === 'Director' && canApproveAsDirector && (
@@ -556,6 +613,33 @@ export default function ApprovalsPage() {
                           <p className="text-[10px] font-black text-emerald-900 uppercase tracking-widest">Tanda Tangan Direktur Tersedia</p>
                           <p className="text-[9px] text-emerald-600 font-bold mt-0.5">Sistem akan otomatis membubuhkan tanda tangan {directorName}.</p>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Super Admin Override: Sign As */}
+                    {isSuperAdmin && (
+                      <div className="bg-amber-50 border border-amber-200 p-4 rounded-[20px]">
+                        <label className="text-[10px] font-black text-amber-600 uppercase tracking-[0.2em] flex items-center gap-2 mb-3">
+                          <Shield size={14} className="text-amber-500" />
+                          Tanda Tangan Sebagai (Override)
+                        </label>
+                        <select
+                          value={overrideUserId || ''}
+                          onChange={(e) => setOverrideUserId(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full px-4 py-3 rounded-xl border border-amber-200 bg-white text-sm font-bold text-slate-700 focus:border-amber-500 focus:ring-2 focus:ring-amber-50 outline-none"
+                        >
+                          <option value="">— Gunakan tanda tangan sendiri —</option>
+                          {overrideUsers.map((u: any) => (
+                            <option key={u.id} value={u.id}>
+                              {u.name} ({u.roles?.[0]?.name || 'User'})
+                            </option>
+                          ))}
+                        </select>
+                        {overrideUserId && (
+                          <p className="text-[9px] font-bold text-amber-600 mt-2">
+                            ⚠️ Dokumen akan ditandatangani menggunakan tanda tangan user yang dipilih. Aksi ini akan tercatat di Audit Log.
+                          </p>
+                        )}
                       </div>
                     )}
 

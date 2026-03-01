@@ -8,39 +8,48 @@ use App\Models\JenisPengajuan;
 use App\Models\JenisPerjalanan;
 use App\Models\Uom;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
 
 class LookupController extends Controller
 {
     public function divisions()
     {
-        return response()->json(Division::all());
+        $data = Cache::remember('lookups_divisions', 3600, fn() => Division::all());
+        return response()->json($data);
     }
 
     public function jenisPengajuan()
     {
-        return response()->json(JenisPengajuan::all());
+        $data = Cache::remember('lookups_jenis_pengajuan', 3600, fn() => JenisPengajuan::all());
+        return response()->json($data);
     }
 
     public function jenisPerjalanan()
     {
-        return response()->json(JenisPerjalanan::all());
+        $data = Cache::remember('lookups_jenis_perjalanan', 3600, fn() => JenisPerjalanan::all());
+        return response()->json($data);
     }
 
     public function uoms()
     {
-        return response()->json(Uom::all());
+        $data = Cache::remember('lookups_uoms', 3600, fn() => Uom::all());
+        return response()->json($data);
     }
 
     public function all()
     {
-        return response()->json([
+        $data = Cache::remember('lookups_all', 3600, function () {
+            return [
             'divisions' => Division::all(),
             'jenis_pengajuan' => JenisPengajuan::all(),
             'jenis_perjalanan' => JenisPerjalanan::all(),
             'uoms' => Uom::all(),
             'urgency_statuses' => \App\Models\UrgencyStatus::orderBy('level')->get(),
             'roles' => Role::all(),
-        ]);
+            ];
+        });
+
+        return response()->json($data);
     }
 }
