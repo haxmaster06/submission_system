@@ -168,8 +168,12 @@ export default function ReportingPage() {
       let realizationTotal = 0;
       if (sub.realizations && Array.isArray(sub.realizations)) {
           realizationTotal = sub.realizations
-              .filter((r: any) => r.final_status === 'approved')
-              .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+              .reduce((sum: number, r: any) => {
+                  const detailSum = r.details && Array.isArray(r.details) 
+                      ? r.details.reduce((dSum: number, d: any) => dSum + parseFloat(d.total), 0)
+                      : 0;
+                  return sum + detailSum;
+              }, 0);
       }
       grandTotalRealisasi += realizationTotal;
   });
@@ -355,8 +359,12 @@ export default function ReportingPage() {
                         let realizationTotal = 0;
                         if (sub.realizations && Array.isArray(sub.realizations)) {
                             realizationTotal = sub.realizations
-                                .filter((r: any) => r.final_status === 'approved')
-                                .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                                .reduce((sum: number, r: any) => {
+                                    const detailSum = r.details && Array.isArray(r.details) 
+                                        ? r.details.reduce((dSum: number, d: any) => dSum + parseFloat(d.total), 0)
+                                        : 0;
+                                    return sum + detailSum;
+                                }, 0);
                         }
                         divTotalRealisasi += realizationTotal;
                     });
@@ -399,8 +407,12 @@ export default function ReportingPage() {
                                     let realizationTotal = 0;
                                     if (sub.realizations && Array.isArray(sub.realizations)) {
                                         realizationTotal = sub.realizations
-                                            .filter((r: any) => r.final_status === 'approved')
-                                            .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                                            .reduce((sum: number, r: any) => {
+                                                const detailSum = r.details && Array.isArray(r.details) 
+                                                    ? r.details.reduce((dSum: number, d: any) => dSum + parseFloat(d.total), 0)
+                                                    : 0;
+                                                return sum + detailSum;
+                                            }, 0);
                                     }
                                     const nilaiPengajuan = parseFloat(sub.total);
                                     const selisih = nilaiPengajuan - realizationTotal;
@@ -426,7 +438,7 @@ export default function ReportingPage() {
                                             Rp {nilaiPengajuan.toLocaleString('id-ID')}
                                         </td>
                                         <td className="px-6 py-4 text-sm font-mono font-bold text-emerald-600 text-right bg-emerald-50/20 group-hover:bg-emerald-50/50 transition-colors">
-                                            Rp {realizationTotal > 0 ? realizationTotal.toLocaleString('id-ID') : '-'}
+                                            Rp {realizationTotal.toLocaleString('id-ID')}
                                         </td>
                                         <td className={`px-6 py-4 text-sm font-mono font-black text-right border-l border-slate-100 transition-colors ${selisih < 0 ? 'text-rose-500 bg-rose-50/30' : (selisih === 0 ? 'text-slate-400' : 'text-amber-500 bg-amber-50/20')}`}>
                                             Rp {selisih.toLocaleString('id-ID')}
@@ -459,8 +471,12 @@ export default function ReportingPage() {
                                 let realizationTotal = 0;
                                 if (sub.realizations && Array.isArray(sub.realizations)) {
                                     realizationTotal = sub.realizations
-                                        .filter((r: any) => r.final_status === 'approved')
-                                        .reduce((sum: number, r: any) => sum + parseFloat(r.total_amount), 0);
+                                        .reduce((sum: number, r: any) => {
+                                            const detailSum = r.details && Array.isArray(r.details) 
+                                                ? r.details.reduce((dSum: number, d: any) => dSum + parseFloat(d.total), 0)
+                                                : 0;
+                                            return sum + detailSum;
+                                        }, 0);
                                 }
                                 const nilaiPengajuan = parseFloat(sub.total);
                                 const selisih = nilaiPengajuan - realizationTotal;
@@ -525,8 +541,8 @@ export default function ReportingPage() {
         </div>
       </Modal>
 
-      {/* Hidden iframe file printer temporarily visible for debugging */}
-      <iframe ref={printIframeRef} style={{ display: 'block', width: '100%', minHeight: '800px', border: '2px dashed red', marginTop: '20px' }} title="Print Reporting" />
+      {/* Hidden iframe file printer */}
+      <iframe ref={printIframeRef} style={{ display: 'none' }} title="Print Reporting" />
     </Shell>
   );
 }

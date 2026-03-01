@@ -22,6 +22,13 @@ class ReportingController extends Controller
         $submissions = $this->buildQuery($request)->latest()->get();
         $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
 
+        if (!empty($filters['division_id'])) {
+            $filters['division_name'] = \App\Models\Division::find($filters['division_id'])?->name;
+        }
+        if (!empty($filters['jenis_pengajuan_id'])) {
+            $filters['jenis_name'] = \App\Models\JenisPengajuan::find($filters['jenis_pengajuan_id'])?->name;
+        }
+
         try {
             $pdf = Pdf::loadView('pdf.submissions_report', [
                 'submissions' => $submissions,
@@ -43,6 +50,13 @@ class ReportingController extends Controller
     {
         $submissions = $this->buildQuery($request)->latest()->get();
         $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
+
+        if (!empty($filters['division_id'])) {
+            $filters['division_name'] = \App\Models\Division::find($filters['division_id'])?->name;
+        }
+        if (!empty($filters['jenis_pengajuan_id'])) {
+            $filters['jenis_name'] = \App\Models\JenisPengajuan::find($filters['jenis_pengajuan_id'])?->name;
+        }
 
         return view('pdf.submissions_report', [
             'submissions' => $submissions,
@@ -70,7 +84,7 @@ class ReportingController extends Controller
 
     protected function buildQuery(Request $request)
     {
-        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'realizations']);
+        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'realizations.details']);
 
         if ($request->filled('search')) {
             $search = $request->search;
