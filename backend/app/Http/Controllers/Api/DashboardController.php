@@ -21,7 +21,7 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         $isManagement = $user->hasAnyRole(['Super Admin', 'Director', 'Finance', 'GM']) || $user->hasPermissionTo('view reports');
-        $isDivisionHead = $user->hasRole('Manager') || $user->hasPermissionTo('approve submissions') && !$isManagement;
+        $isDivisionHead = $user->hasAnyRole(['Manager', 'HRD', 'GA Legal']) || ($user->hasPermissionTo('approve submissions') && !$isManagement);
 
         $cacheKey = "dashboard_stats_{$user->id}";
 
@@ -267,12 +267,27 @@ class DashboardController extends Controller
             'counters' => $counters,
             'approvals_count' => $pendingApprovalsCount,
             'attachment_requests_count' => $pendingAttachmentRequestsCount,
+            'categories' => $categorySummary,
             'trends' => $trends,
             'budget' => [
-                'total_approved' => $totalBudgetSum,
-                'total_realized' => $totalRealizationSum,
+                'total_approved' => (float)$totalBudgetSum,
+                'total_realized' => (float)$totalRealizationSum,
+                'absorption_rate' => $totalBudgetSum > 0 ? round(($totalRealizationSum / $totalBudgetSum) * 100, 1) : 0,
             ],
             'division_ranking' => $divisionRanking,
+            'high_value_pending' => $isManagement ? \App\Models\Submission::where('final_status', 'pending')
+                ->with('division')
+                ->orderByDesc('total')
+                ->limit(5)
+                ->get(['id', 'no_pengajuan', 'description', 'total', 'division_id', 'created_at'])
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'no' => $s->no_pengajuan,
+                    'title' => $s->description,
+                    'nominal' => (float)$s->total,
+                    'division' => $s->division?->name,
+                    'date' => $s->created_at->format('Y-m-d')
+                ]) : [],
             'urgency' => $urgencyBreakdown,
             'aging' => round($avgAging, 1),
             'activities' => $recentActivities,

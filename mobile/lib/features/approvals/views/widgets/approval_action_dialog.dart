@@ -171,6 +171,23 @@ class _ApprovalActionSheetState extends ConsumerState<ApprovalActionSheet> {
             ),
           ),
 
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.info_outline, size: 14, color: UiKit.textGray),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Tanda tangan profil Anda akan dilampirkan otomatis.',
+                  style: UiKit.caption.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: UiKit.textGray,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
           const SizedBox(height: 32),
 
           if (_isLoading)

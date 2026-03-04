@@ -64,9 +64,9 @@ export default function DashboardPage() {
   };
 
   const roleLabels: any = {
-    'management': 'Supervision & Strategy',
-    'division': 'Departmental Overview',
-    'staff': 'Personal Workspace'
+    'management': 'Pengawasan & Strategis',
+    'division': 'Ikhtisar Departemen',
+    'staff': 'Area Kerja Pribadi'
   };
 
   if (loading) {
@@ -87,7 +87,15 @@ export default function DashboardPage() {
 
   // ============== SUPER ADMIN DASHBOARD ==============
   if (isSuperAdmin && data) {
-    const formatRp = (val: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    const formatRp = (val: number, compact = false) => {
+      const options: any = { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 };
+      if (compact) {
+        options.notation = 'compact';
+        options.compactDisplay = 'short';
+        options.maximumFractionDigits = 0;
+      }
+      return new Intl.NumberFormat('id-ID', options).format(val);
+    };
 
     return (
       <Shell>
@@ -98,11 +106,11 @@ export default function DashboardPage() {
                 <Shield size={12} /> System Administrator
               </span>
               <h1 className="text-3xl xl:text-4xl font-black text-slate-900 tracking-tight leading-tight">
-                System <span className="text-amber-500">Overview</span>
+                Ikhtisar <span className="text-amber-500">Sistem</span>
               </h1>
               <p className="text-slate-500 font-semibold text-sm">Metrik keseluruhan sistem HBM Budgeting.</p>
             </div>
-            {data.maintenance && (
+            {data?.maintenance && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl flex items-center gap-3">
                 <AlertCircle size={20} className="animate-pulse" />
                 <span className="text-xs font-bold uppercase tracking-widest">Maintenance Mode Active</span>
@@ -117,10 +125,10 @@ export default function DashboardPage() {
                 <Users size={24} />
               </div>
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Users</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pengguna</p>
                 <div className="flex items-end gap-2">
-                  <p className="text-2xl font-black text-slate-900 leading-none">{data.users?.total}</p>
-                  <span className="text-[10px] font-bold text-emerald-500 mb-0.5">{data.users?.active_7d} aktif 7h</span>
+                  <p className="text-2xl font-black text-slate-900 leading-none">{data?.users?.total}</p>
+                  <span className="text-[10px] font-bold text-emerald-500 mb-0.5">{data?.users?.active_7d} aktif 7h</span>
                 </div>
               </div>
             </div>
@@ -132,8 +140,8 @@ export default function DashboardPage() {
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Pengajuan</p>
                 <div className="flex items-end gap-2">
-                  <p className="text-2xl font-black text-slate-900 leading-none">{data.submissions?.total}</p>
-                  <span className="text-[10px] font-bold text-amber-500 mb-0.5">{data.submissions?.pending} pending</span>
+                  <p className="text-2xl font-black text-slate-900 leading-none">{data?.submissions?.total}</p>
+                  <span className="text-[10px] font-bold text-amber-500 mb-0.5">{data?.submissions?.pending} pending</span>
                 </div>
               </div>
             </div>
@@ -144,8 +152,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Anggaran Disetujui</p>
-                <p className="text-lg sm:text-lg lg:text-base xl:text-xl font-black text-slate-900 leading-none truncate" title={formatRp(data.budget?.total_approved || 0)}>
-                  {formatRp(data.budget?.total_approved || 0)}
+                <p className="text-xl font-black text-slate-900 leading-none truncate">
+                  {formatRp(data?.budget?.total_approved || 0, true)}
+                </p>
+                <p className="text-[9px] font-mono font-medium text-slate-400 mt-1 opacity-80">
+                  {formatRp(data?.budget?.total_approved || 0)}
                 </p>
               </div>
             </div>
@@ -156,8 +167,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Realisasi</p>
-                <p className="text-lg sm:text-lg lg:text-base xl:text-xl font-black text-slate-900 leading-none truncate" title={formatRp(data.budget?.total_realized || 0)}>
-                  {formatRp(data.budget?.total_realized || 0)}
+                <p className="text-xl font-black text-slate-900 leading-none truncate">
+                  {formatRp(data?.budget?.total_realized || 0, true)}
+                </p>
+                <p className="text-[9px] font-mono font-medium text-slate-400 mt-1 opacity-80">
+                  {formatRp(data?.budget?.total_realized || 0)}
                 </p>
               </div>
             </div>
@@ -186,7 +200,7 @@ export default function DashboardPage() {
             <div className="lg:col-span-2 bg-white rounded-[24px] border border-slate-100 shadow-sm p-6 flex flex-col">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                  <History size={16} className="text-indigo-500" /> Recent Audit Logs
+                  <History size={16} className="text-indigo-500" /> Audit Log Terbaru
                 </h2>
                 <Link href="/admin/audit-logs" className="text-[10px] font-bold text-sky-500 hover:text-sky-600 uppercase tracking-widest">
                   Lihat Semua
@@ -219,6 +233,16 @@ export default function DashboardPage() {
   }
 
   // ============== NORMAL DASHBOARD ==============
+  const formatRp = (val: number, compact = false) => {
+    const options: any = { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 };
+    if (compact) {
+      options.notation = 'compact';
+      options.compactDisplay = 'short';
+      options.maximumFractionDigits = 0;
+    }
+    return new Intl.NumberFormat('id-ID', options).format(val);
+  };
+
   return (
     <Shell>
       <div className="max-w-7xl mx-auto pb-12 2xl:pb-20 px-4 sm:px-6">
@@ -228,7 +252,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className="px-3 py-1 bg-sky-50 text-sky-600 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 border border-sky-100">
                 <Shield size={12} />
-                {roleLabels[data?.role_scope] || 'Standard Access'}
+                {roleLabels[data?.role_scope] || 'Akses Standar'}
               </span>
               {data?.user_division && (
                 <span className="px-3 py-1 bg-white text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100 shadow-sm">
@@ -315,12 +339,37 @@ export default function DashboardPage() {
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4 xl:gap-4 2xl:gap-6 mb-8 2xl:mb-12">
           {[
-            { label: 'Total Pengajuan', val: data?.counters?.total, icon: FileText, col: 'sky', grad: 'from-sky-500 to-sky-600', delay: 0 },
+            { 
+              label: data?.role_scope === 'management' ? 'Total Pengajuan (System)' : (data?.role_scope === 'division' ? 'Pengajuan Divisi' : 'Pengajuan Saya'), 
+              val: data?.counters?.total, 
+              icon: FileText, 
+              col: 'sky', 
+              grad: 'from-sky-500 to-sky-600', 
+              delay: 0 
+            },
             { label: 'Menunggu', val: data?.counters?.pending, icon: Clock, col: 'amber', grad: 'from-amber-400 to-amber-500', delay: 0.1 },
             { label: 'Disetujui', val: data?.counters?.approved, icon: CheckCircle, col: 'emerald', grad: 'from-emerald-500 to-emerald-600', delay: 0.2 },
-            { label: 'Outstanding', val: data?.counters?.outstanding ?? 0, icon: Zap, col: 'indigo', grad: 'from-indigo-500 to-indigo-600', delay: 0.3 },
-            { label: 'Ditolak', val: data?.counters?.rejected, icon: AlertCircle, col: 'rose', grad: 'from-rose-500 to-rose-600', delay: 0.4 },
-            ...(data?.attachment_requests_count > 0 ? [{ label: 'Minta Berkas', val: data.attachment_requests_count, icon: FileText, col: 'amber', grad: 'from-amber-500 to-amber-600', delay: 0.5, link: '/submissions' }] : [])
+            { 
+              label: data?.role_scope === 'staff' ? 'Ditolak' : 'Outstanding', 
+              val: data?.role_scope === 'staff' ? data?.counters?.rejected : data?.counters?.outstanding ?? 0, 
+              icon: data?.role_scope === 'staff' ? AlertCircle : Zap, 
+              col: data?.role_scope === 'staff' ? 'rose' : 'indigo', 
+              grad: data?.role_scope === 'staff' ? 'from-rose-500 to-rose-600' : 'from-indigo-500 to-indigo-600', 
+              delay: 0.3 
+            },
+            ...(data?.role_scope !== 'staff' && data ? [
+              { 
+                label: data?.role_scope === 'management' ? 'Total Anggaran' : 'Anggaran Divisi', 
+                val: formatRp(data?.budget?.total_approved || 0, true), 
+                title: formatRp(data?.budget?.total_approved || 0),
+                icon: TrendingUp, 
+                col: 'emerald', 
+                grad: 'from-emerald-600 to-emerald-700', 
+                delay: 0.4 
+              }
+            ] : (data ? [
+              { label: 'Draf Saya', val: data?.counters?.drafts ?? 0, icon: FileText, col: 'slate', grad: 'from-slate-400 to-slate-500', delay: 0.4 }
+            ] : [])),
           ].map((s: any) => (
             <motion.div
               key={s.label}
@@ -329,6 +378,7 @@ export default function DashboardPage() {
               transition={{ delay: s.delay }}
               className="bg-white p-4 2xl:p-6 rounded-[20px] 2xl:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden cursor-pointer"
               onClick={() => s.link && router.push(s.link)}
+              title={s.title}
             >
               <div className="flex items-center gap-3 2xl:gap-5 relative z-10">
                 <div className={`w-11 h-11 2xl:w-14 2xl:h-14 rounded-xl 2xl:rounded-2xl bg-gradient-to-br ${s.grad} text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0`}>
@@ -336,7 +386,24 @@ export default function DashboardPage() {
                 </div>
                 <div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 2xl:mb-2">{s.label}</p>
-                  <p className="text-2xl 2xl:text-3xl font-black text-slate-900 leading-none">{s.val}</p>
+                  <p className={`text-2xl font-black text-slate-900 leading-none ${s.label === 'Disetujui' && 'text-emerald-600'}`}>{s.val}</p>
+                  {s.title && (
+                    <p className="text-[9px] font-mono font-medium text-slate-400 mt-1.5 opacity-80 leading-tight">
+                      {s.title}
+                    </p>
+                  )}
+                  {data?.budget?.absorption_rate !== undefined && (
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <motion.div 
+                          initial={{ width: 0 }}
+                          animate={{ width: `${data?.budget?.absorption_rate}%` }}
+                          className="h-full bg-emerald-500"
+                        />
+                      </div>
+                      <span className="text-[10px] font-black text-emerald-600">{data?.budget?.absorption_rate}% Serap</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-${s.col}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform`} />
@@ -344,126 +411,138 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Main Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 2xl:gap-8 mb-6 2xl:mb-10">
+        {data?.role_scope !== 'staff' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 2xl:gap-8 mb-6 2xl:mb-10">
 
-          {/* Trend Chart (Budget vs Realization) */}
-          <div className="lg:col-span-2 bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col">
-            <div className="flex justify-between items-start mb-4 2xl:mb-8">
-              <div>
-                <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Tren Anggaran & Realisasi</h2>
-                <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Histori pengajuan vs aktual (6 bulan terakhir)</p>
+            {/* Trend Chart (Budget vs Realization) */}
+            <div className="lg:col-span-2 bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col">
+              <div className="flex justify-between items-start mb-4 2xl:mb-8">
+                <div>
+                  <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">
+                    {data?.role_scope === 'management' ? 'Tren Anggaran & Realisasi (Perusahaan)' : 'Tren Anggaran & Realisasi (Divisi)'}
+                  </h2>
+                  <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Histori pengajuan vs aktual (6 bulan terakhir)</p>
+                </div>
+                <div className="flex gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-sky-500" />
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Budget</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full bg-emerald-400" />
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Actual</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-4 items-center">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-sky-500" />
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Budget</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-emerald-400" />
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Actual</span>
-                </div>
+
+              <div className="h-[200px] xl:h-[200px] 2xl:h-[300px] w-full min-w-0">
+                {data?.trends && (
+                  <ResponsiveContainer width="99%" height="100%">
+                    <AreaChart data={data?.trends} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorBudget" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1} />
+                          <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis
+                        dataKey="month"
+                        axisLine={false}
+                        tickLine={false}
+                        tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                      />
+                      <YAxis
+                        axisLine={false}
+                        tickLine={false}
+                        width={60}
+                        tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                        tickFormatter={(val) => formatRp(val, true)}
+                      />
+                      <Tooltip
+                        formatter={(value: any) => formatRp(Number(value))}
+                        contentStyle={{ backgroundColor: '#1e293b', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)', padding: '12px' }}
+                        itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
+                        labelStyle={{ fontWeight: 'black', color: '#94a3b8', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="budget"
+                        stroke="#0ea5e9"
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorBudget)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="realization"
+                        stroke="#10b981"
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorReal)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
-            <div className="h-[200px] xl:h-[200px] 2xl:h-[300px] w-full min-w-0">
-              {data?.trends && (
-                <ResponsiveContainer width="99%" height="100%">
-                  <AreaChart data={data.trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorBudget" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.1} />
-                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="month"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                      tickFormatter={(val) => `Rp${(val / 1000000).toFixed(0)}M`}
-                    />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)', padding: '12px' }}
-                      itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
-                      labelStyle={{ fontWeight: 'black', color: '#94a3b8', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase' }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="budget"
-                      stroke="#0ea5e9"
-                      strokeWidth={4}
-                      fillOpacity={1}
-                      fill="url(#colorBudget)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="realization"
-                      stroke="#10b981"
-                      strokeWidth={4}
-                      fillOpacity={1}
-                      fill="url(#colorReal)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
+            {/* Category Breakdown (Pie Chart) */}
+            <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col items-center">
+              <div className="w-full text-left mb-4 2xl:mb-6">
+                <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Analisis Kategori</h2>
+                <p className="text-slate-400 text-xs 2xl:text-sm font-medium">
+                  {data?.role_scope === 'management' ? 'Distribusi global tipe pengajuan.' : 'Distribusi tipe pengajuan divisi.'}
+                </p>
+              </div>
+
+              <div className="h-[180px] 2xl:h-[240px] w-full min-w-0">
+                {data?.categories && (
+                  <ResponsiveContainer width="99%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={(data.categories ?? []).map((entry: any, index: number) => ({
+                          ...entry,
+                          fill: COLORS[index % COLORS.length]
+                        }))}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="count"
+                        nameKey="name"
+                        stroke="none"
+                      >
+                        {(data.categories ?? []).map((entry: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any, name: any) => [value, name]}
+                        contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)' }}
+                        itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              <div className="w-full grid grid-cols-2 gap-2 mt-4">
+                {(data?.categories ?? []).slice(0, 4).map((cat: any, i: number) => (
+                  <div key={cat.name} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                    <span className="text-[10px] font-black text-slate-500 uppercase truncate">{cat.name}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Category Breakdown (Pie Chart) */}
-          <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8 flex flex-col items-center">
-            <div className="w-full text-left mb-4 2xl:mb-6">
-              <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Analisis Kategori</h2>
-              <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Distribusi berdasarkan tipe pengajuan.</p>
-            </div>
-
-            <div className="h-[180px] 2xl:h-[240px] w-full min-w-0">
-              {data?.categories && (
-                <ResponsiveContainer width="99%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={data.categories ?? []}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="count"
-                    >
-                      {(data.categories ?? []).map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)' }}
-                      itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
-                      labelStyle={{ display: 'none' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-
-            <div className="w-full grid grid-cols-2 gap-2 mt-4">
-              {(data?.categories ?? []).map((cat: any, i: number) => (
-                <div key={cat.name} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase truncate">{cat.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Bottom Section: Ranking & Activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 2xl:gap-8">
@@ -509,6 +588,50 @@ export default function DashboardPage() {
                       />
                     </BarChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {data?.role_scope === 'management' && data?.high_value_pending?.length > 0 && (
+              <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-6 2xl:p-8">
+                <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Fokus Strategis (Nilai Tinggi)</h2>
+                    <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Pengajuan dengan nominal terbesar yang menunggu approval.</p>
+                  </div>
+                  <div className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-indigo-100">
+                    Top 5 Prioritas
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {(data?.high_value_pending ?? []).map((item: any, idx: number) => (
+                    <motion.div 
+                      key={item.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.1 }}
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-indigo-200 transition-colors cursor-pointer group"
+                      onClick={() => router.push(`/submissions?view=${item.id}`)}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-slate-400 text-xs shadow-sm group-hover:bg-indigo-500 group-hover:text-white group-hover:border-indigo-500 transition-all">
+                        #{idx + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest border-b border-indigo-100 w-fit mb-1">{item.no}</p>
+                        <p className="text-sm font-black text-slate-800 truncate mb-0.5">{item.title}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                          <Users size={10} /> {item.division} <span className="text-slate-300">•</span> <Clock size={10} /> {new Date(item.date).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-slate-900">
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(item.nominal)}
+                        </p>
+                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter">Butuh Review</span>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
             )}
@@ -559,16 +682,16 @@ export default function DashboardPage() {
             <div className="p-5 2xl:p-8 pb-3 2xl:pb-4">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                <h2 className="font-black text-slate-900 text-base 2xl:text-xl tracking-tight leading-none uppercase">Live Activity</h2>
+                <h2 className="font-black text-slate-900 text-base 2xl:text-xl tracking-tight leading-none uppercase">Aktivitas Langsung</h2>
               </div>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Real-time Updates</p>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest">Update Real-time</p>
             </div>
 
             <div className="flex-1 p-5 2xl:p-8 pt-3 2xl:pt-4 overflow-y-auto space-y-5 2xl:space-y-8 scrollbar-hide">
               {data?.activities?.length > 0 ? (
-                data.activities.map((act: any, idx: number) => (
+                (data?.activities ?? []).map((act: any, idx: number) => (
                   <div key={idx} className="flex gap-4 group relative">
-                    {idx !== data.activities.length - 1 && (
+                    {idx !== (data?.activities?.length ?? 0) - 1 && (
                       <div className="absolute left-5 top-10 w-0.5 h-8 bg-slate-50" />
                     )}
                     <div className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${act.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'
@@ -577,9 +700,9 @@ export default function DashboardPage() {
                     </div>
                     <div>
                       <p className="text-sm text-slate-700 leading-snug">
-                        <span className="font-black">{act.actor_name}</span> has
-                        <span className={`mx-1 font-bold ${act.status === 'approved' ? 'text-emerald-500' : 'text-rose-500'}`}>{act.status}</span>
-                        submission <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{act.no_pengajuan}</span>
+                        <span className="font-black">{act.actor_name}</span> telah
+                        <span className={`mx-1 font-bold ${act.status === 'approved' ? 'text-emerald-500' : 'text-rose-500'}`}>{act.status === 'approved' ? 'menyetujui' : 'menolak'}</span>
+                        pengajuan <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{act.no_pengajuan}</span>
                       </p>
                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
                         <Clock size={10} /> {new Date(act.updated_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -592,10 +715,10 @@ export default function DashboardPage() {
                   <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                     <History size={40} className="text-slate-100" />
                   </div>
-                  <p className="text-lg font-black text-slate-300">Quiet for now...</p>
-                </div>
-              )}
-            </div>
+                    <p className="text-lg font-black text-slate-300">Belum ada aktivitas baru...</p>
+                  </div>
+                )}
+              </div>
 
             <Link href="/submissions">
               <div className="p-4 2xl:p-6 bg-slate-50 text-center border-t border-slate-100 cursor-pointer hover:bg-slate-100 transition-colors">

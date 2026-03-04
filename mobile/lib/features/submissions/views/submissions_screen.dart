@@ -181,7 +181,7 @@ class _SubmissionItem extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              submission.description ?? 'Submission #${submission.id}',
+              submission.description ?? 'Pengajuan #${submission.id}',
               style: UiKit.bodyTextBold,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,

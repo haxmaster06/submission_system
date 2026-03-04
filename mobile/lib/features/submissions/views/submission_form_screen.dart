@@ -61,7 +61,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
     _descriptionController.text = sub.description ?? '';
     _notesController.text = sub.notes;
     // We set IDs during _fetchData so they match lookup items
-    _statusUrgent = sub.isUrgent ? 'Urgent' : 'Normal';
+    _statusUrgent = sub.isUrgent ? 'Mendesak' : 'Normal';
 
     if (sub.payload != null && sub.payload!['type'] == 'salary') {
       try {
@@ -417,7 +417,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
           jenisPengajuanId: _jenisPengajuanId ?? 1,
           statusUrgent: _statusUrgent == 'Normal'
               ? 'NRM'
-              : (_statusUrgent == 'Urgent' ? 'URG' : _statusUrgent),
+              : (_statusUrgent == 'Mendesak' ? 'URG' : _statusUrgent),
           description: _descriptionController.text,
           notes: _notesController.text,
           items: items,
@@ -584,8 +584,8 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
                                 child: Text('Normal'),
                               ),
                               DropdownMenuItem(
-                                value: 'Urgent',
-                                child: Text('Urgent'),
+                                value: 'Mendesak',
+                                child: Text('Mendesak'),
                               ),
                             ],
                       isExpanded: true,

@@ -397,19 +397,76 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Tren Anggaran & Realisasi', style: UiKit.heading2),
-        const SizedBox(height: 8),
-        const Text(
-          'Histori 6 bulan terakhir',
-          style: TextStyle(fontSize: 12, color: UiKit.textGray),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Anggaran VS Realisasi', style: UiKit.heading2),
+                const SizedBox(height: 4),
+                const Text(
+                  'Histori 6 bulan terakhir',
+                  style: TextStyle(fontSize: 12, color: UiKit.textGray),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                _buildLegendItem('Anggaran', Colors.blue),
+                const SizedBox(width: 12),
+                _buildLegendItem('Realisasi', Colors.green),
+              ],
+            ),
+          ],
         ),
         const SizedBox(height: 16),
         TappableCard(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(
+            left: 12,
+            right: 28,
+            top: 24,
+            bottom: 12,
+          ),
           child: SizedBox(
-            height: 200,
+            height: 220,
             child: LineChart(
               LineChartData(
+                lineTouchData: LineTouchData(
+                  handleBuiltInTouches: true,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (spot) =>
+                        UiKit.primaryBlue.withValues(alpha: 0.9),
+                    tooltipRoundedRadius: 8,
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        final flSpot = barSpot;
+                        return LineTooltipItem(
+                          '${barSpot.barIndex == 0 ? "Anggaran" : "Realisasi"}\n',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                          children: [
+                            TextSpan(
+                              text: NumberFormat.currency(
+                                locale: 'id_ID',
+                                symbol: 'Rp',
+                                decimalDigits: 0,
+                              ).format(flSpot.y),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.normal,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: false,
@@ -437,7 +494,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           return const SizedBox.shrink();
                         }
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                          padding: const EdgeInsets.only(top: 10.0),
                           child: Text(
                             trends[index]['month'] ?? '',
                             style: const TextStyle(
@@ -453,7 +510,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 42,
+                      reservedSize: 45,
                       getTitlesWidget: (value, meta) {
                         return Text(
                           NumberFormat.compact(locale: 'id_ID').format(value),
@@ -480,7 +537,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: Colors.blue,
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                            radius: 3,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: Colors.blue,
+                          ),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       color: Colors.blue.withValues(alpha: 0.1),
@@ -497,7 +563,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: Colors.green,
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) =>
+                          FlDotCirclePainter(
+                            radius: 3,
+                            color: Colors.white,
+                            strokeWidth: 2,
+                            strokeColor: Colors.green,
+                          ),
+                    ),
                     belowBarData: BarAreaData(
                       show: true,
                       color: Colors.green.withValues(alpha: 0.1),
@@ -506,6 +581,28 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLegendItem(String label, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: UiKit.textGray,
           ),
         ),
       ],
@@ -599,7 +696,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const Text('Ranking Divisi', style: UiKit.heading2),
         const SizedBox(height: 16),
         TappableCard(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
           child: Column(
             children: ranking.take(5).map((div) {
               final total = (div['total'] as num?)?.toDouble() ?? 0;

@@ -193,7 +193,7 @@ class SubmissionDetailScreen extends ConsumerWidget {
                 ),
                 if (submission.isUrgent) ...[
                   const SizedBox(width: 8),
-                  _buildChip('URGENT', Colors.redAccent),
+                  _buildChip('MENDESAK', Colors.redAccent),
                 ],
               ],
             ),
