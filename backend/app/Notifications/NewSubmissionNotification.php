@@ -82,7 +82,7 @@ class NewSubmissionNotification extends Notification implements ShouldQueue
     public function toFcm($notifiable): array
     {
         return [
-            'title' => 'Pengajuan Baru (' . $this->submission->code . ')',
+            'title' => 'Pengajuan Baru #' . $this->submission->code,
             'body' => $this->submission->user->name . ' mengajukan: ' . str($this->submission->description)->limit(40),
             'url' => '/approvals',
             'type' => 'new_submission',

@@ -90,7 +90,7 @@ class SubmissionStatusNotification extends Notification implements ShouldQueue
         $statusIndo = $this->status === 'approved' ? 'Disetujui' : 'Ditolak';
         return [
             'title' => "Pengajuan $statusIndo!",
-            'body' => "Pengajuan Anda ({$this->submission->code}) telah $statusIndo oleh $this->approverName.",
+            'body' => "Pengajuan Anda #{$this->submission->code} telah $statusIndo oleh $this->approverName.",
             'url' => '/submissions/' . $this->submission->id,
             'type' => 'submission_status',
         ];

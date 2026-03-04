@@ -76,7 +76,7 @@ class BudgetExceededNotification extends Notification implements ShouldQueue
     {
         return [
             'title' => '⚠️ Budget Terlampaui!',
-            'body' => "Pengajuan {$this->submission->code} melebihi limit Divisi. (Limit: Rp " . number_format($this->budgetLimit, 0, ',', '.') . ")",
+            'body' => "Pengajuan {$this->submission->code} melebihi limit Divisi. Limit: Rp " . number_format($this->budgetLimit, 0, ',', '.'),
             'url' => '/approvals',
             'type' => 'budget_exceeded',
         ];

@@ -61,7 +61,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
     _descriptionController.text = sub.description ?? '';
     _notesController.text = sub.notes;
     // We set IDs during _fetchData so they match lookup items
-    _statusUrgent = sub.isUrgent ? 'Mendesak' : 'Normal';
+    _statusUrgent = sub.isUrgent ? 'urgent' : 'Normal';
 
     if (sub.payload != null && sub.payload!['type'] == 'salary') {
       try {
@@ -402,9 +402,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
           widget.submission!.id,
           divisionId: _divisionId ?? user.divisionId ?? 1,
           jenisPengajuanId: _jenisPengajuanId ?? 1,
-          statusUrgent: _statusUrgent == 'Normal'
-              ? 'NRM'
-              : (_statusUrgent == 'Urgent' ? 'URG' : _statusUrgent),
+          statusUrgent: _statusUrgent,
           description: _descriptionController.text,
           notes: _notesController.text,
           items: items,
@@ -415,9 +413,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
         await repo.createSubmission(
           divisionId: _divisionId ?? user.divisionId ?? 1,
           jenisPengajuanId: _jenisPengajuanId ?? 1,
-          statusUrgent: _statusUrgent == 'Normal'
-              ? 'NRM'
-              : (_statusUrgent == 'Mendesak' ? 'URG' : _statusUrgent),
+          statusUrgent: _statusUrgent,
           description: _descriptionController.text,
           notes: _notesController.text,
           items: items,
@@ -584,7 +580,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
                                 child: Text('Normal'),
                               ),
                               DropdownMenuItem(
-                                value: 'Mendesak',
+                                value: 'urgent',
                                 child: Text('Mendesak'),
                               ),
                             ],
