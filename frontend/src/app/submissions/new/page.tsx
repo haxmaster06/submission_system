@@ -17,6 +17,7 @@ function NewSubmissionContent() {
   const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const duplicateId = searchParams.get('duplicate');
+  const editId = searchParams.get('edit');
 
   const [lookups, setLookups] = useState<any>({
     divisions: [],
@@ -48,7 +49,7 @@ function NewSubmissionContent() {
   useEffect(() => {
     Promise.all([
       api.get('/lookups'),
-      duplicateId ? api.get(`/submissions/${duplicateId}`) : Promise.resolve({ data: null })
+      (editId || duplicateId) ? api.get(`/submissions/${editId || duplicateId}`) : Promise.resolve({ data: null })
     ]).then(([lookupsRes, duplicateRes]) => {
       setLookups(lookupsRes.data);
       
@@ -124,7 +125,7 @@ function NewSubmissionContent() {
 
   const standardTotal = items.reduce((sum, item) => sum + (item.qty * item.nominal), 0);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
     if (items.length === 1 && (!items[0].description || items[0].nominal === 0)) {
         alert('Mohon isi minimal 1 item anggaran.');
@@ -136,9 +137,13 @@ function NewSubmissionContent() {
       let payload: any = { ...form };
       payload.items = items.map(({ id, ...item }) => item);
       payload.total = standardTotal;
+      payload.is_draft = isDraft;
 
-      const res = await api.post('/submissions', payload);
-      const newSubmissionId = res.data.id;
+      const res = editId 
+        ? await api.put(`/submissions/${editId}`, payload)
+        : await api.post('/submissions', payload);
+      
+      const newSubmissionId = res.data.id || editId;
 
       if (files.length > 0) {
         for (const file of files) {
@@ -464,12 +469,21 @@ function NewSubmissionContent() {
               Batal
             </button>
             <button
+              type="button"
+              onClick={() => handleSubmit(new Event('submit') as any, true)}
+              disabled={submitting}
+              className="w-full sm:w-auto px-8 py-3 rounded-xl border border-sky-200 text-sky-600 font-bold hover:bg-sky-50 transition-all text-center flex items-center justify-center gap-2"
+            >
+              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
+              Simpan Sebagai Draf
+            </button>
+            <button
               type="submit"
               disabled={submitting}
               className="w-full sm:w-auto px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center justify-center gap-2 disabled:opacity-70 transition-all"
             >
               {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
-              Submit Pengajuan
+              {editId ? 'Simpan & Ajukan' : 'Submit Pengajuan'}
             </button>
           </div>
         </form>

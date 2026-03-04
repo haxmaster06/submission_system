@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Uom extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\ClearsLookupCache;
     protected $fillable = ['name', 'code'];
 
     public function submissions(): HasMany

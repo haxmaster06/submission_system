@@ -7,10 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FileText, Clock, CheckCircle, AlertCircle, TrendingUp,
   ArrowRight, Loader2, BarChart3, PieChart as PieIcon,
-  History, Shield, Zap, Calendar, User, Users, Activity
+  History, Shield, Zap, Calendar, User, Users, Activity,
+  AlertTriangle, ChevronRight, Paperclip
 } from 'lucide-react';
 import api from '@/lib/api';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
 // Lazy-load Recharts (SSR disabled — ~200KB saved from initial bundle)
@@ -32,16 +34,22 @@ const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#6366f1'
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
 
   const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
 
   useEffect(() => {
-    fetchStats();
-  }, [isSuperAdmin]); // Dependency to re-fetch if role loads
+    if (user) {
+      fetchStats();
+    } else {
+      setData(null);
+    }
+  }, [user, isSuperAdmin]); // Dependency to re-fetch if role loads or user changes
 
   const fetchStats = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const endpoint = isSuperAdmin ? '/admin/dashboard-stats' : '/dashboard/stats';
@@ -49,6 +57,7 @@ export default function DashboardPage() {
       setData(res.data);
     } catch (err) {
       console.error('Failed to fetch dashboard stats', err);
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -236,26 +245,72 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
 
 
-            {data?.approvals_count > 0 && (
-              <Link href="/approvals" className="flex-1 sm:flex-initial">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white p-3 xl:p-3 2xl:p-5 pr-6 2xl:pr-8 rounded-[20px] 2xl:rounded-[28px] shadow-xl shadow-sky-100 flex items-center gap-3 2xl:gap-4 group border-b-4 border-sky-700/30"
-                >
-                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center font-black text-xl backdrop-blur-sm">
-                    {data.approvals_count}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-[10px] font-black text-white/70 uppercase tracking-widest leading-none mb-1.5">Persetujuan</p>
-                    <p className="font-black text-sm uppercase tracking-tight">Antrean Masuk</p>
-                  </div>
-                  <ArrowRight size={22} className="group-hover:translate-x-1 transition-transform ml-auto" />
-                </motion.button>
-              </Link>
-            )}
+
           </div>
         </header>
+
+        {/* Need Your Attention Section */}
+        <AnimatePresence>
+          {data?.pending_tasks?.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-8"
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
+                  <AlertTriangle size={18} />
+                </div>
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-widest leading-none">Perlu Perhatian Anda</h2>
+                <div className="h-0.5 bg-slate-100 flex-1 mx-2 rounded-full" />
+                <Link href="/approvals" className="text-[10px] font-black text-sky-500 hover:text-sky-600 transition-colors uppercase tracking-widest flex items-center gap-1.5 mr-3">
+                  Buka Antrean <ArrowRight size={14} />
+                </Link>
+                <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100 uppercase tracking-widest animate-pulse">
+                  {data.pending_tasks?.length ?? 0} Pending
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(data.pending_tasks ?? []).map((task: any, idx: number) => (
+                  <Link key={`${task.type}-${idx}`} href={`/submissions?view=${task.submission_id}`}>
+                    <motion.div 
+                      whileHover={{ scale: 1.01, x: 5 }}
+                      whileTap={{ scale: 0.99 }}
+                      className="bg-white group p-4 rounded-[24px] border border-amber-100 shadow-sm hover:shadow-xl hover:shadow-amber-100/30 transition-all flex items-center gap-4 cursor-pointer relative overflow-hidden"
+                    >
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
+                        task.type === 'approval' ? 'bg-indigo-50 text-indigo-500' : 'bg-amber-50 text-amber-500'
+                      }`}>
+                        {task.type === 'approval' ? <Shield size={22} /> : <Paperclip size={22} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100 uppercase tracking-tighter">
+                            {task.no_pengajuan}
+                          </span>
+                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-widest ${
+                            task.type === 'approval' ? 'bg-indigo-500 text-white' : 'bg-amber-500 text-white'
+                          }`}>
+                            {task.type === 'approval' ? 'Approval' : 'Attachment'}
+                          </span>
+                        </div>
+                        <p className="text-xs font-black text-slate-800 truncate pr-4">{task.description}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest flex items-center gap-1">
+                          <Clock size={10} /> {new Date(task.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                      <ChevronRight size={20} className="text-slate-300 group-hover:text-amber-500 transition-colors" />
+                      
+                      {/* Decorative elements */}
+                      <div className="absolute -right-2 -bottom-2 w-12 h-12 bg-amber-500/5 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                    </motion.div>
+                  </Link>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4 xl:gap-4 2xl:gap-6 mb-8 2xl:mb-12">
@@ -264,14 +319,16 @@ export default function DashboardPage() {
             { label: 'Menunggu', val: data?.counters?.pending, icon: Clock, col: 'amber', grad: 'from-amber-400 to-amber-500', delay: 0.1 },
             { label: 'Disetujui', val: data?.counters?.approved, icon: CheckCircle, col: 'emerald', grad: 'from-emerald-500 to-emerald-600', delay: 0.2 },
             { label: 'Outstanding', val: data?.counters?.outstanding ?? 0, icon: Zap, col: 'indigo', grad: 'from-indigo-500 to-indigo-600', delay: 0.3 },
-            { label: 'Ditolak', val: data?.counters?.rejected, icon: AlertCircle, col: 'rose', grad: 'from-rose-500 to-rose-600', delay: 0.4 }
-          ].map((s) => (
+            { label: 'Ditolak', val: data?.counters?.rejected, icon: AlertCircle, col: 'rose', grad: 'from-rose-500 to-rose-600', delay: 0.4 },
+            ...(data?.attachment_requests_count > 0 ? [{ label: 'Minta Berkas', val: data.attachment_requests_count, icon: FileText, col: 'amber', grad: 'from-amber-500 to-amber-600', delay: 0.5, link: '/submissions' }] : [])
+          ].map((s: any) => (
             <motion.div
               key={s.label}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: s.delay }}
-              className="bg-white p-4 2xl:p-6 rounded-[20px] 2xl:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
+              className="bg-white p-4 2xl:p-6 rounded-[20px] 2xl:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden cursor-pointer"
+              onClick={() => s.link && router.push(s.link)}
             >
               <div className="flex items-center gap-3 2xl:gap-5 relative z-10">
                 <div className={`w-11 h-11 2xl:w-14 2xl:h-14 rounded-xl 2xl:rounded-2xl bg-gradient-to-br ${s.grad} text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0`}>
@@ -375,7 +432,7 @@ export default function DashboardPage() {
                 <ResponsiveContainer width="99%" height="100%">
                   <PieChart>
                     <Pie
-                      data={data.categories}
+                      data={data.categories ?? []}
                       cx="50%"
                       cy="50%"
                       innerRadius={60}
@@ -383,7 +440,7 @@ export default function DashboardPage() {
                       paddingAngle={5}
                       dataKey="count"
                     >
-                      {data.categories.map((entry: any, index: number) => (
+                      {(data.categories ?? []).map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -398,7 +455,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="w-full grid grid-cols-2 gap-2 mt-4">
-              {data?.categories.map((cat: any, i: number) => (
+              {(data?.categories ?? []).map((cat: any, i: number) => (
                 <div key={cat.name} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
                   <span className="text-[10px] font-black text-slate-500 uppercase truncate">{cat.name}</span>
@@ -462,8 +519,8 @@ export default function DashboardPage() {
                 <h2 className="text-base 2xl:text-xl font-black mb-4 2xl:mb-6 relative z-10 text-white">Indikator Urgensi</h2>
                 <div className="space-y-4 relative z-10">
                   {[
-                    { label: 'Darurat', val: data?.urgency['urgent'] || 0, col: 'bg-rose-500' },
-                    { label: 'Biasa', val: data?.urgency['normal'] || 0, col: 'bg-sky-500' }
+                    { label: 'Darurat', val: data?.urgency?.urgent || data?.urgency?.['urgent'] || 0, col: 'bg-rose-500' },
+                    { label: 'Biasa', val: data?.urgency?.normal || data?.urgency?.['normal'] || 0, col: 'bg-sky-500' }
                   ].map(u => (
                     <div key={u.label} className="flex items-center gap-4">
                       <div className={`w-12 h-12 ${u.col} rounded-2xl flex items-center justify-center font-black text-lg shadow-lg border border-white/20`}>

@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\RealizationController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\AttachmentRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class , 'login']);
@@ -58,6 +59,7 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     // Submissions
     Route::apiResource('submissions', SubmissionController::class);
     Route::post('/submissions/bulk-delete', [SubmissionController::class , 'bulkDelete']);
+    Route::post('/submissions/{submission}/publish', [SubmissionController::class , 'publish']);
     Route::post('/submissions/{submission}/attachments', [SubmissionController::class , 'uploadAttachment']);
     Route::get('/submissions/{submission}/export', [SubmissionController::class , 'downloadPdf']);
     Route::get('/submissions/{submission}/preview-url', [SubmissionController::class , 'getPreviewUrl']);
@@ -74,11 +76,17 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::post('/approvals/{approval}/approve', [ApprovalController::class , 'approve']);
     Route::post('/approvals/{approval}/reject', [ApprovalController::class , 'reject']);
 
+    // Attachment Requests
+    Route::get('/attachment-requests/my', [AttachmentRequestController::class, 'myRequests']);
+    Route::post('/attachment-requests', [AttachmentRequestController::class, 'store']);
+    Route::post('/attachment-requests/{attachmentRequest}/fulfill', [AttachmentRequestController::class, 'fulfill']);
+
     // Signatures
     Route::get('/signatures', [SignatureController::class , 'show']);
     Route::post('/signatures', [SignatureController::class , 'store']);
     Route::delete('/signatures', [SignatureController::class , 'destroy']);
     // Users
+    Route::get('/users/selectable', [UserController::class, 'selectable']);
     Route::apiResource('users', UserController::class);
     // Roles & Permissions
     Route::get('/roles-permissions', [\App\Http\Controllers\Api\RolePermissionController::class , 'index']);
@@ -163,6 +171,9 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
         }
         );
 
+        // Admin Dashboard Stats (Accessible by Finance/Reporting users and Super Admin)
+        Route::middleware('permission:view reports|role:Super Admin')->get('/admin/dashboard-stats', [DashboardController::class , 'adminStats']);
+
         // Super Admin Only
         Route::middleware('role:Super Admin')->group(function () {
             Route::get('/admin/audit-logs', [\App\Http\Controllers\Api\AuditTrailController::class , 'all']);
@@ -185,7 +196,6 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
                     ]);
                 }
                 );
-                Route::get('/admin/dashboard-stats', [DashboardController::class , 'adminStats']);
             }
             );
             // Debug route

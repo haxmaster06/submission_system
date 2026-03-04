@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class UrgencyStatus extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\ClearsLookupCache;
 
     protected $fillable = ['name', 'code', 'level', 'color'];
 
     public function submissions()
     {
-        return $this->hasMany(Submission::class, 'status_urgent', 'code');
+        return $this->hasMany(Submission::class , 'status_urgent', 'code');
     }
 }

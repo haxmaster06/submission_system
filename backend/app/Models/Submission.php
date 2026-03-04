@@ -98,4 +98,9 @@ class Submission extends Model
     {
         return $this->hasMany(RealizationHeader::class);
     }
+
+    public function attachmentRequests(): HasMany
+    {
+        return $this->hasMany(AttachmentRequest::class);
+    }
 }

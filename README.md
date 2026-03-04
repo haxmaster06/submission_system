@@ -4,12 +4,15 @@ Sistem Budgeting & Pengajuan Anggaran untuk PT. HBM.
 Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Frontend)**.
 
 ## Fitur Utama
+
 ## Fitur Utama
 
+- **Status Draf & Manajemen Draf**: Simpan pengajuan sebagai draf sebelum diterbitkan, dan kelola (edit/hapus) draf pribadi dengan mudah.
+- **Sistem Role & Permission Fleksibel**: Dukungan multi-role per user dan manajemen Role CRUD (Create/Read/Update/Delete) oleh Super Admin.
 - **Manajemen Pengajuan**: Create, Read, Update, Delete (CRUD) pengajuan anggaran.
 - **Approval Workflow**: Persetujuan bertingkat (Manager -> Senior Manager -> Director).
-- **Mobile-First Excellence**: Antarmuka premium yang dioptimalkan untuk smartphone (Portrait & Landscape) dengan komponen *glassmorphism* dan *data-density* tinggi.
-- **Table-to-Card Transformation**: Konversi otomatis tabel data menjadi *card layout* pada layar kecil untuk kenyamanan navigasi satu tangan.
+- **Mobile-First Excellence**: Antarmuka premium yang dioptimalkan untuk smartphone (Portrait & Landscape) dengan komponen _glassmorphism_ dan _data-density_ tinggi.
+- **Table-to-Card Transformation**: Konversi otomatis tabel data menjadi _card layout_ pada layar kecil untuk kenyamanan navigasi satu tangan.
 - **Notifikasi Realtime**: Menggunakan Laravel Reverb & Echo untuk update status instan.
 - **Signature Digital**: Tanda tangan digital untuk persetujuan dokumen.
 - **Audit Trail**: Pencatatan aktivitas pengguna untuk keamanan dan transparansi.
@@ -60,6 +63,7 @@ npm run dev
 ```
 
 Aplikasi dapat diakses di `http://localhost:3000`.
+
 ### 4. Running with Docker (Recommended)
 
 Pastikan Docker sudah terinstall.
@@ -98,7 +102,7 @@ php artisan test
 ## Deployment
 
 Proyek ini dilengkapi dengan konfigurasi CI/CD `github-actions` untuk pengecekan otomatis.
-Untuk deployment ke server produksi, lihat dokumentasi teknis di `docs/end_user/panduan_teknis.md`.
+Untuk deployment ke server produksi, lihat dokumentasi teknis di `docs/teknis/panduan_deployment.md`.
 
 ## Lisensi
 

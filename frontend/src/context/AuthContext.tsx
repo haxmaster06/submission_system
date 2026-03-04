@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '@/lib/api';
 import { useRouter } from 'next/navigation';
+import { updateEchoAuth } from '@/lib/echo';
 
 interface User {
   id: number;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const res = await api.get('/me');
           setUser(res.data);
+          updateEchoAuth(storedToken);
         } catch (err) {
           window.localStorage.removeItem('auth_token');
           setUser(null);
@@ -57,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem('auth_token', access_token);
     setToken(access_token);
     setUser(user);
+    updateEchoAuth(access_token);
     router.push('/dashboard');
   };
 
@@ -65,6 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.removeItem('auth_token');
       setUser(null);
       setToken(null);
+      updateEchoAuth('');
       router.push('/login');
     });
   };

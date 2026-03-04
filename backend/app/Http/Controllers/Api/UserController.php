@@ -20,6 +20,11 @@ class UserController extends Controller
         return response()->json(User::with(['division', 'roles'])->get());
     }
 
+    public function selectable()
+    {
+        return response()->json(User::select('id', 'name', 'division_id')->with('division:id,name')->get());
+    }
+
     public function store(Request $request)
     {
         if (!auth()->user()->hasRole('Super Admin') && !auth()->user()->can('manage users')) {
@@ -31,7 +36,8 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'password' => ['required', Password::defaults()],
             'division_id' => 'nullable|exists:divisions,id',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,name',
         ]);
 
         $user = User::create([
@@ -41,7 +47,7 @@ class UserController extends Controller
             'division_id' => $validated['division_id'],
         ]);
 
-        $user->assignRole($validated['role']);
+        $user->assignRole($validated['roles']);
 
         return response()->json($user->load(['division', 'roles']), 201);
     }
@@ -65,7 +71,8 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'password' => ['nullable', Password::defaults()],
             'division_id' => 'nullable|exists:divisions,id',
-            'role' => 'required|exists:roles,name',
+            'roles' => 'required|array',
+            'roles.*' => 'exists:roles,name',
         ]);
 
         $user->update([
@@ -78,7 +85,7 @@ class UserController extends Controller
             $user->update(['password' => Hash::make($validated['password'])]);
         }
 
-        $user->syncRoles([$validated['role']]);
+        $user->syncRoles($validated['roles']);
 
         return response()->json($user->load(['division', 'roles']));
     }

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText, Copy, Paperclip, Download, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText, Copy, Paperclip, Download, Image as ImageIcon, Eye, Save } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import RealizationForm from '@/components/realizations/RealizationForm';
+import RequestAttachmentModal from './RequestAttachmentModal';
+import { UserPlus, Upload } from 'lucide-react';
 
 interface SubmissionDetailViewProps {
   submission: any;
@@ -21,10 +23,16 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   const [deleting, setDeleting] = React.useState(false);
   const [showCompleteConfirm, setShowCompleteConfirm] = React.useState(false);
   const [completing, setCompleting] = React.useState(false);
+  const [publishing, setPublishing] = React.useState(false);
 
   const [realizations, setRealizations] = React.useState<any[]>([]);
   const [loadingRealizations, setLoadingRealizations] = React.useState(false);
   const [showRealizationForm, setShowRealizationForm] = React.useState(false);
+
+  const [showRequestModal, setShowRequestModal] = React.useState(false);
+  const [fulfilling, setFulfilling] = React.useState(false);
+  const [fulfillingId, setFulfillingId] = React.useState<number | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = React.useState<'detail' | 'realization' | 'logs'>('detail');
   const [logs, setLogs] = React.useState<any[]>([]);
@@ -33,6 +41,12 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   const { user } = useAuth();
   const router = useRouter();
   const printIframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  const pendingRequestsForMe = React.useMemo(() => {
+    return (submission.attachment_requests || []).filter((req: any) => 
+      req.target_user_id === user?.id && req.status === 'pending'
+    );
+  }, [submission.attachment_requests, user?.id]);
 
   useEffect(() => {
     if (activeTab === 'realization') {
@@ -67,7 +81,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   };
 
   const privilegedRoles = ['Super Admin', 'Finance', 'GM', 'Director'];
-  const canDelete = user?.roles?.some((r: any) => privilegedRoles.includes(r.name));
+  const canDelete = user?.roles?.some((r: any) => privilegedRoles.includes(r.name)) || (user?.id === submission.user_id && submission.final_status === 'draf');
 
   const handleDelete = async () => {
     try {
@@ -95,6 +109,27 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
     } catch (err: any) {
       alert(err.response?.data?.message || 'Gagal menyelesaikan pengajuan');
       setCompleting(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    const message = `PENTING: Apakah Anda yakin ingin menerbitkan pengajuan ini?\n\n` +
+                   `Konsekuensi:\n` +
+                   `1. Pengajuan akan segera masuk ke alur persetujuan approver.\n` +
+                   `2. Anda TIDAK AKAN BISA mengubah data pengajuan ini lagi setelah diterbitkan.\n` +
+                   `3. Nomor pengajuan resmi akan dibuat secara otomatis.\n\n` +
+                   `Lanjutkan untuk menerbitkan?`;
+
+    if (!confirm(message)) return;
+    
+    try {
+      setPublishing(true);
+      await api.post(`/submissions/${submission.id}/publish`);
+      // Refresh window or use a callback to refresh parent
+      window.location.reload();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menerbitkan pengajuan');
+      setPublishing(false);
     }
   };
 
@@ -158,6 +193,34 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
   return (
     <div className="space-y-6">
+      {pendingRequestsForMe.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between gap-4 shadow-sm"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 border border-amber-200 shadow-inner">
+              <Upload size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-amber-900">Permintaan Lampiran</p>
+              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest leading-none mt-1">
+                Anda diminta untuk mengunggah {pendingRequestsForMe.length} berkas tambahan
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => {
+              const element = document.getElementById('attachment-requests-section');
+              element?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="px-4 py-2 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-colors shadow-lg shadow-amber-100"
+          >
+            Lihat Permintaan
+          </button>
+        </motion.div>
+      )}
       {/* Header Actions if needed */}
       {showPrintButton && (
         <div className="flex justify-end mb-4 gap-3">
@@ -170,7 +233,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               Selesaikan
             </button>
           )}
-          {canDelete && (
+          {canDelete && (submission.final_status !== 'draf' || user?.id !== submission.user_id) && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 font-bold rounded-lg hover:bg-red-100 transition-colors border border-red-200"
@@ -194,6 +257,35 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             <Copy className="w-4 h-4" />
             Duplikat
           </button>
+
+          {submission.final_status === 'draf' && user?.id === submission.user_id && (
+            <>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 font-bold rounded-lg hover:bg-rose-100 transition-colors border border-rose-200 shadow-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Hapus Draf
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/submissions/new?edit=${submission.id}`);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm"
+              >
+                <Save className="w-4 h-4" />
+                Ubah Draf
+              </button>
+              <button
+                onClick={handlePublish}
+                disabled={publishing}
+                className="flex items-center gap-2 px-4 py-2 bg-sky-600 text-white font-bold rounded-lg hover:bg-sky-700 transition-colors disabled:opacity-70 shadow-lg shadow-sky-100"
+              >
+                {publishing ? <Loader2 className="animate-spin w-4 h-4" /> : <Save className="w-4 h-4" />}
+                Terbitkan
+              </button>
+            </>
+          )}
 
           <button
             onClick={handlePrint}
@@ -245,7 +337,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-10">
               <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-6">
                 <div className="space-y-1">
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">{submission.no_pengajuan}</h1>
+                  <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">
+                    {submission.no_pengajuan || <span className="text-slate-300 tracking-widest">[ DRAF ]</span>}
+                  </h1>
                   <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest">{submission.jenis_pengajuan?.name}</p>
                 </div>
                 <div className="md:text-right w-full md:w-auto p-4 md:p-0 bg-slate-50 md:bg-transparent rounded-2xl border border-slate-100 md:border-0 shadow-inner md:shadow-none">
@@ -298,7 +392,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-8 ml-1">Approval Timeline</h3>
               <div className="space-y-6 relative">
                 <div className="absolute left-[9px] top-1.5 bottom-1.5 w-0.5 bg-slate-50" />
-                {submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
+                {submission.approvals?.length > 0 ? submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
                   const isCurrent = submission.current_approval_step === approval.step_order && submission.final_status === 'pending';
                   const isDone = approval.status !== 'pending';
                   return (
@@ -335,7 +429,12 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       </div>
                     </div>
                   );
-                })}
+                }) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-center opacity-40">
+                    <Clock size={32} className="mb-2" />
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-tight">Timeline belum tersedia<br/>Harap terbitkan pengajuan</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -508,43 +607,198 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
               {submission.attachments && submission.attachments.length > 0 && (
                 <div className="mt-8 pt-6 md:pt-8 border-t border-slate-100 space-y-4">
-                  <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1 flex items-center gap-1.5">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1 flex items-center gap-1.5">
                     <Paperclip size={14} className="text-sky-500" />
                     Lampiran Pendukung ({submission.attachments.length})
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                     {submission.attachments.map((attachment: any, idx: number) => {
-                       const isImage = ['jpg', 'jpeg', 'png', 'webp'].includes(attachment.file_type?.toLowerCase() || '');
+                       const fileType = attachment.file_type?.toLowerCase() || '';
+                       const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileType);
+                       const isPdf = fileType === 'pdf';
                        const fileUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}/storage/${attachment.file_path}`;
                        
                        return (
-                           <div key={attachment.id || idx} className="flex items-start gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
-                               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${isImage ? 'bg-sky-50 border-sky-100' : 'bg-indigo-50 border-indigo-100'}`}>
-                                  {isImage ? <ImageIcon className="w-5 h-5 text-sky-500" /> : <FileText className="w-5 h-5 text-indigo-500" />}
-                               </div>
-                               <div className="flex-1 min-w-0">
-                                   <p className="text-sm font-bold text-slate-800 truncate mb-0.5" title={attachment.file_path.split('/').pop()}>
-                                       {attachment.file_path.split('/').pop() || 'Dokumen Lampiran'}
-                                   </p>
-                                   <div className="flex items-center gap-2">
-                                       <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-widest">{attachment.file_type || 'FILE'}</span>
+                           <div key={attachment.id || idx} className="group relative bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-sky-200 transition-all overflow-hidden flex flex-col">
+                               {/* Preview Area */}
+                               <div className="aspect-video w-full bg-slate-50 flex items-center justify-center relative overflow-hidden border-b border-slate-100">
+                                   {isImage ? (
+                                       <img 
+                                          src={fileUrl} 
+                                          alt="Preview" 
+                                          className="w-full h-full object-cover transition-transform group-hover:scale-110" 
+                                       />
+                                   ) : isPdf ? (
+                                       <div className="flex flex-col items-center gap-2">
+                                           <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 shadow-sm">
+                                               <FileText className="w-6 h-6 text-rose-500" />
+                                           </div>
+                                           <span className="text-[10px] font-black text-rose-400 uppercase tracking-widest">PDF Document</span>
+                                       </div>
+                                   ) : (
+                                       <div className="flex flex-col items-center gap-2">
+                                           <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm">
+                                               <Paperclip className="w-6 h-6 text-slate-400" />
+                                           </div>
+                                           <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Other File</span>
+                                       </div>
+                                   )}
+                                   
+                                   {/* Overlays / Action Buttons on Hover */}
+                                   <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                       {(isImage || isPdf) && (
+                                           <a 
+                                               href={fileUrl} 
+                                               target="_blank" 
+                                               rel="noopener noreferrer"
+                                               className="w-10 h-10 bg-white text-slate-900 rounded-xl flex items-center justify-center shadow-lg hover:bg-sky-500 hover:text-white transition-all transform hover:scale-110"
+                                               title="View"
+                                           >
+                                               <Eye size={18} />
+                                           </a>
+                                       )}
+                                       <a 
+                                           href={fileUrl} 
+                                           download
+                                           className="w-10 h-10 bg-white text-slate-900 rounded-xl flex items-center justify-center shadow-lg hover:bg-emerald-500 hover:text-white transition-all transform hover:scale-110"
+                                           title="Download"
+                                       >
+                                           <Download size={18} />
+                                       </a>
                                    </div>
                                </div>
-                               <a 
-                                  href={fileUrl} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-sky-500 hover:text-white transition-colors shrink-0"
-                                  title="Download / View"
-                               >
-                                  <Download className="w-4 h-4" />
-                               </a>
+                               
+                               {/* Info Area */}
+                               <div className="p-4 flex items-center justify-between gap-3">
+                                   <div className="min-w-0 flex-1">
+                                       <p className="text-xs font-bold text-slate-800 truncate" title={attachment.file_path.split('/').pop()}>
+                                           {attachment.file_path.split('/').pop() || 'Dokumen Lampiran'}
+                                       </p>
+                                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-0.5">{fileType} File</p>
+                                   </div>
+                               </div>
                            </div>
                        );
                     })}
                   </div>
                 </div>
               )}
+
+              {/* ATTACHMENT REQUESTS SECTION */}
+              <div id="attachment-requests-section" className="mt-8 pt-6 md:pt-8 border-t border-slate-100 space-y-6">
+                <div className="flex items-center justify-between ml-1">
+                  <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-1.5">
+                    <History size={14} className="text-amber-500" />
+                    Permintaan Lampiran {submission.attachment_requests?.length > 0 && `(${submission.attachment_requests.length})`}
+                  </h3>
+                  {(user?.id === submission.user_id || user?.roles?.some((r: any) => r.name === 'Super Admin') || user?.permissions?.some((p: any) => p.name === 'request attachments')) && submission.final_status !== 'rejected' && (
+                    <button
+                      onClick={() => setShowRequestModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-amber-100 transition-colors border border-amber-100"
+                    >
+                      <UserPlus size={14} />
+                      Minta Berkas
+                    </button>
+                  )}
+                </div>
+
+                {submission.attachment_requests?.length > 0 ? (
+                  <div className="space-y-4">
+                    {submission.attachment_requests.map((req: any) => {
+                      const isTarget = user?.id === req.target_user_id;
+                      const isPending = req.status === 'pending';
+
+                      return (
+                        <div
+                          key={req.id}
+                          className={`p-4 md:p-6 rounded-[24px] border ${
+                            isPending ? 'bg-amber-50/30 border-amber-100' : 'bg-slate-50/50 border-slate-100'
+                          } flex flex-col md:flex-row md:items-center justify-between gap-4`}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm ${
+                              isPending ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                            }`}>
+                              {isPending ? <Clock size={18} /> : <CheckCircle size={18} />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-slate-800">{req.file_description}</p>
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
+                                {isPending ? `Diminta kepada: ${req.target_user_name}` : `Diunggah oleh: ${req.target_user_name}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          {isTarget && isPending && (
+                            <button
+                              disabled={fulfilling}
+                              onClick={() => {
+                                setFulfillingId(req.id);
+                                fileInputRef.current?.click();
+                              }}
+                              className="w-full md:w-auto px-6 py-2 bg-sky-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-sky-100 hover:bg-sky-600 transition-all flex items-center justify-center gap-2"
+                            >
+                              {fulfilling && fulfillingId === req.id ? (
+                                <Loader2 size={14} className="animate-spin" />
+                              ) : (
+                                <Upload size={14} />
+                              )}
+                              Upload Berkas
+                            </button>
+                          )}
+
+                          {!isPending && (
+                             <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit">
+                               Terpenuhi
+                             </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-slate-50/50 p-8 rounded-[24px] border border-dashed border-slate-200 text-center">
+                    <p className="text-xs font-bold text-slate-400">Belum ada permintaan lampiran berkas.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* HIDDEN FILE INPUT FOR FULFILLMENT */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !fulfillingId) return;
+
+                  try {
+                    setFulfilling(true);
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    await api.post(`/attachment-requests/${fulfillingId}/fulfill`, formData, {
+                      headers: { 'Content-Type': 'multipart/form-data' }
+                    });
+
+                    // Refresh page to show new attachment
+                    window.location.reload();
+                  } catch (err: any) {
+                    console.error(err);
+                    alert(err.response?.data?.message || 'Gagal mengunggah berkas');
+                  } finally {
+                    setFulfilling(false);
+                    setFulfillingId(null);
+                  }
+                }}
+              />
+
+              <RequestAttachmentModal
+                isOpen={showRequestModal}
+                onClose={() => setShowRequestModal(false)}
+                submissionId={submission.id}
+                onSuccess={() => window.location.reload()}
+              />
             </div>
           </div>
         </div>

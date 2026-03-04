@@ -19,8 +19,20 @@ class NotificationController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // Filter out notifications for deleted submissions
+        $submissionIds = $notifications->pluck('data.submission_id')->filter()->unique();
+        $existingIds = \App\Models\Submission::whereIn('id', $submissionIds)->pluck('id')->toArray();
+
+        $filtered = $notifications->filter(function ($n) use ($existingIds) {
+            $data = $n->data;
+            if (isset($data['submission_id'])) {
+                return in_array($data['submission_id'], $existingIds);
+            }
+            return true;
+        })->values();
+
         return response()->json([
-            'data' => $notifications
+            'data' => $filtered
         ]);
     }
 

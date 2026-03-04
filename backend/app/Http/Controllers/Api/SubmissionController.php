@@ -25,7 +25,7 @@ class SubmissionController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details']);
+        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details', 'attachments']);
 
         // Only Super Admin, Finance, GM, Director can see all submissions
         // Only Super Admin or users with 'view reports' permission can see all submissions
@@ -33,6 +33,13 @@ class SubmissionController extends Controller
 
         if (!$canSeeAll) {
             $query->where('user_id', $user->id);
+        } else {
+            // Even privileged users should only see published/active submissions by default,
+            // or we add a filter. For now, let's say they only see drafts if they are the owner.
+            $query->where(function($q) use ($user) {
+                $q->whereIn('final_status', ['pending', 'approved', 'rejected'])
+                  ->orWhere('user_id', $user->id);
+            });
         }
 
         // Filtering Logic
@@ -65,16 +72,18 @@ class SubmissionController extends Controller
         // Clone query for counts before status filter — single query with conditional aggregation
         $countRow = (clone $query)->select([
             DB::raw('COUNT(*) as total'),
+            DB::raw("SUM(CASE WHEN final_status = 'draf' THEN 1 ELSE 0 END) as draf"),
             DB::raw("SUM(CASE WHEN final_status = 'pending' THEN 1 ELSE 0 END) as pending"),
             DB::raw("SUM(CASE WHEN final_status = 'approved' THEN 1 ELSE 0 END) as approved"),
             DB::raw("SUM(CASE WHEN final_status = 'rejected' THEN 1 ELSE 0 END) as rejected"),
         ])->first();
 
         $counts = [
-            'all' => (int)$countRow->total,
-            'pending' => (int)$countRow->pending,
-            'approved' => (int)$countRow->approved,
-            'rejected' => (int)$countRow->rejected,
+            'all' => (int)($countRow->total ?? 0),
+            'draf' => (int)($countRow->draf ?? 0),
+            'pending' => (int)($countRow->pending ?? 0),
+            'approved' => (int)($countRow->approved ?? 0),
+            'rejected' => (int)($countRow->rejected ?? 0),
         ];
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -100,6 +109,7 @@ class SubmissionController extends Controller
             'notes' => 'nullable|string',
             'payload' => 'nullable|array',
             'total' => 'nullable|numeric',
+            'is_draft' => 'nullable|boolean',
 
             // Items validation (conditional)
             'items' => 'nullable|array|max:20',
@@ -109,8 +119,10 @@ class SubmissionController extends Controller
             'items.*.nominal' => 'required_with:items|numeric|min:0',
         ]);
 
-        $data = $request->except('items');
+        $data = $request->except(['items', 'is_draft']);
         $data['user_id'] = Auth::id();
+        $isDraft = $request->boolean('is_draft', false);
+        $data['final_status'] = $isDraft ? 'draf' : 'pending';
 
         if ($request->has('payload') && !empty($request->payload)) {
             $submission = $this->submissionService->createSubmission($data); // uses data['total']
@@ -123,17 +135,96 @@ class SubmissionController extends Controller
             $submission = $this->submissionService->createSubmissionWithItems($data, $request->items);
         }
 
-        $this->approvalService->initializeApprovals($submission);
+        if (!$isDraft) {
+            $this->approvalService->initializeApprovals($submission);
+        }
 
         AuditTrailService::log('CREATED', 'Submission', $submission->id, null, $submission->toArray());
 
         return response()->json($submission->load(['approvals', 'items.uom']), 201);
     }
 
+    public function update(Request $request, Submission $submission)
+    {
+        $this->authorize('update', $submission);
+
+        if ($submission->final_status !== 'draf') {
+            return response()->json(['message' => 'Hanya pengajuan berstatus draf yang dapat diubah.'], 403);
+        }
+
+        $request->validate([
+            'division_id' => 'required|exists:divisions,id',
+            'jenis_pengajuan_id' => 'required|exists:jenis_pengajuan,id',
+            'jenis_perjalanan_id' => 'nullable|exists:jenis_perjalanan,id',
+            'status_urgent' => 'required|exists:urgency_statuses,code',
+            'description' => 'required|string',
+            'notes' => 'nullable|string',
+            'payload' => 'nullable|array',
+            'total' => 'nullable|numeric',
+            'items' => 'nullable|array|max:20',
+            'items.*.description' => 'required_with:items|string|max:500',
+            'items.*.qty' => 'required_with:items|numeric|min:0.01',
+            'items.*.uom_id' => 'required_with:items|exists:uoms,id',
+            'items.*.nominal' => 'required_with:items|numeric|min:0',
+        ]);
+
+        return DB::transaction(function () use ($request, $submission) {
+            $data = $request->except('items');
+            
+            // Recalculate total if items provided
+            if ($request->has('items')) {
+                $grandTotal = 0;
+                foreach ($request->items as $item) {
+                    $grandTotal += ($item['qty'] * $item['nominal']);
+                }
+                $data['total'] = $grandTotal;
+            }
+
+            $submission->update($data);
+
+            if ($request->has('items')) {
+                $submission->items()->delete();
+                foreach ($request->items as $item) {
+                    $submission->items()->create($item);
+                }
+            }
+
+            AuditTrailService::log('UPDATED_DRAFT', 'Submission', $submission->id, null, $submission->toArray());
+
+            return response()->json($submission->load('items.uom'));
+        });
+    }
+
+    public function publish(Submission $submission)
+    {
+        $this->authorize('update', $submission);
+
+        if ($submission->final_status !== 'draf') {
+            return response()->json(['message' => 'Pengajuan sudah diterbitkan atau tidak berstatus draf.'], 400);
+        }
+
+        return DB::transaction(function () use ($submission) {
+            $division = $submission->division;
+            $noPengajuan = $this->submissionService->generateNoPengajuan($division->code);
+
+            $submission->update([
+                'final_status' => 'pending',
+                'no_pengajuan' => $noPengajuan,
+                'tanggal_pengajuan' => now(),
+            ]);
+
+            $this->approvalService->initializeApprovals($submission);
+
+            AuditTrailService::log('PUBLISHED', 'Submission', $submission->id, ['status' => 'draf'], ['status' => 'pending', 'no' => $noPengajuan]);
+
+            return response()->json(['message' => 'Pengajuan berhasil diterbitkan.', 'submission' => $submission->load('approvals')]);
+        });
+    }
+
     public function show(Submission $submission)
     {
         $this->authorize('view', $submission);
-        return response()->json($submission->load(['user', 'division', 'jenisPengajuan', 'jenisPerjalanan', 'uom', 'items.uom', 'approvals.approver', 'attachments']));
+        return response()->json($submission->load(['user', 'division', 'jenisPengajuan', 'jenisPerjalanan', 'uom', 'items.uom', 'approvals.approver', 'attachments', 'attachmentRequests.targetUser', 'attachmentRequests.requester']));
     }
 
     public function uploadAttachment(Request $request, Submission $submission)
@@ -144,7 +235,9 @@ class SubmissionController extends Controller
             'file' => 'required|file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,xls,xlsx', // Added MIME validation
         ]);
 
-        $path = $request->file('file')->store('attachments', 'public');
+        $file = $request->file('file');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $path = $file->storeAs('attachments', $filename, 'public');
 
         $attachment = $submission->attachments()->create([
             'file_path' => $path,
@@ -304,12 +397,7 @@ class SubmissionController extends Controller
      */
     public function destroy(Submission $submission)
     {
-        $user = Auth::user();
-
-        // Only privileged roles/permissions can delete
-        if (!$user->can('delete submissions')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus pengajuan.'], 403);
-        }
+        $this->authorize('delete', $submission);
 
         // Delete related attachments from storage
         foreach ($submission->attachments as $attachment) {
@@ -357,11 +445,7 @@ class SubmissionController extends Controller
      */
     public function bulkDelete(Request $request)
     {
-        $user = \Illuminate\Support\Facades\Auth::user();
-
-        if (!$user->can('delete submissions')) {
-            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus pengajuan.'], 403);
-        }
+        $user = Auth::user();
 
         $request->validate([
             'ids' => 'required|array',
@@ -372,20 +456,27 @@ class SubmissionController extends Controller
         $count = 0;
 
         foreach ($submissions as $submission) {
-            // Delete related attachments from storage
-            foreach ($submission->attachments as $attachment) {
-                \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+            // Check if user is authorized to delete this specific submission
+            if ($user->can('delete', $submission)) {
+                // Delete related attachments from storage
+                foreach ($submission->attachments as $attachment) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($attachment->file_path);
+                }
+
+                // Cascade delete related records
+                $submission->items()->delete();
+                $submission->approvals()->delete();
+                $submission->attachments()->delete();
+
+                \App\Services\AuditTrailService::log('BULK_DELETED', 'Submission', $submission->id, $submission->toArray(), null);
+
+                $submission->delete();
+                $count++;
             }
+        }
 
-            // Cascade delete related records
-            $submission->items()->delete();
-            $submission->approvals()->delete();
-            $submission->attachments()->delete();
-
-            \App\Services\AuditTrailService::log('BULK_DELETED', 'Submission', $submission->id, $submission->toArray(), null);
-
-            $submission->delete();
-            $count++;
+        if ($count === 0 && count($request->ids) > 0) {
+            return response()->json(['message' => 'Anda tidak memiliki izin untuk menghapus pengajuan yang dipilih.'], 403);
         }
 
         return response()->json(['message' => "{$count} pengajuan berhasil dihapus."]);

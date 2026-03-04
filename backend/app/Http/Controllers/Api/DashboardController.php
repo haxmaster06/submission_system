@@ -20,7 +20,7 @@ class DashboardController extends Controller
     public function stats()
     {
         $user = Auth::user();
-        $isManagement = $user->hasAnyRole(['Super Admin', 'Director', 'Finance', 'GM']);
+        $isManagement = $user->hasAnyRole(['Super Admin', 'Director', 'Finance', 'GM']) || $user->hasPermissionTo('view reports');
         $isDivisionHead = $user->hasRole('Manager') || $user->hasPermissionTo('approve submissions') && !$isManagement;
 
         $cacheKey = "dashboard_stats_{$user->id}";
@@ -37,12 +37,13 @@ class DashboardController extends Controller
         // Base Query Scoping
         $query = Submission::query();
         if (!$isManagement) {
-            if ($isDivisionHead) {
-                $query->where('division_id', $user->division_id);
-            }
-            else {
-                $query->where('user_id', $user->id);
-            }
+            $query->where(function ($q) use ($user, $isDivisionHead) {
+                if ($isDivisionHead) {
+                    $q->where('division_id', $user->division_id);
+                } else {
+                    $q->where('user_id', $user->id);
+                }
+            });
         }
 
         // 1. Core Counters — Single query with conditional aggregation (was 4 separate queries)
@@ -54,23 +55,15 @@ class DashboardController extends Controller
         ])->first();
 
         $outstanding = (clone $query)
-            ->where('final_status', 'approved')
             ->where('is_completed', false)
-            ->whereNotExists(function ($eq) {
-            $eq->select(DB::raw(1))
-                ->from('realization_headers')
-                ->join('realization_details', 'realization_headers.id', '=', 'realization_details.realization_id')
-                ->whereColumn('realization_headers.submission_id', 'submissions.id')
-                ->groupBy('realization_headers.submission_id')
-                ->havingRaw('SUM(realization_details.total) >= submissions.total');
-        })
+            ->where('final_status', 'pending')
             ->count();
 
         $counters = [
-            'total' => (int)$counterRow->total,
-            'pending' => (int)$counterRow->pending,
-            'approved' => (int)$counterRow->approved,
-            'rejected' => (int)$counterRow->rejected,
+            'total' => (int)($counterRow->total ?? 0),
+            'pending' => (int)($counterRow->pending ?? 0),
+            'approved' => (int)($counterRow->approved ?? 0),
+            'rejected' => (int)($counterRow->rejected ?? 0),
             'outstanding' => $outstanding,
         ];
 
@@ -82,7 +75,13 @@ class DashboardController extends Controller
         })
             ->count();
 
-        // 3. Category Analysis (Pie Chart)
+        // 3. Pending Attachment Requests Count
+        $pendingAttachmentRequestsCount = DB::table('attachment_requests')
+            ->where('target_user_id', $user->id)
+            ->where('status', 'pending')
+            ->count();
+
+        // 4. Category Analysis (Pie Chart)
         $categorySummary = (clone $query)
             ->select('jenis_pengajuan_id', DB::raw('count(*) as count'), DB::raw('sum(total) as total_amount'))
             ->groupBy('jenis_pengajuan_id')
@@ -117,11 +116,10 @@ class DashboardController extends Controller
             ->where('submissions.final_status', 'approved')
             ->where('realization_headers.realization_date', '>=', $sixMonthsAgo->toDateString())
             ->when(!$isManagement, function ($q) use ($user, $isDivisionHead) {
-            if ($isDivisionHead) {
-                return $q->where('submissions.division_id', $user->division_id);
-            }
-            return $q->where('submissions.user_id', $user->id);
-        })
+                return $isDivisionHead 
+                    ? $q->where('submissions.division_id', $user->division_id) 
+                    : $q->where('submissions.user_id', $user->id);
+            })
             ->select(
             DB::raw("DATE_FORMAT(realization_headers.realization_date, '%Y-%m') as month_key"),
             DB::raw('SUM(realization_details.total) as realization')
@@ -132,14 +130,22 @@ class DashboardController extends Controller
 
         // Build trends array for last 6 months
         $trends = [];
+        $totalBudgetSum = 0;
+        $totalRealizationSum = 0;
         for ($i = 5; $i >= 0; $i--) {
             $month = Carbon::now()->subMonths($i);
             $key = $month->format('Y-m');
+            $budgetVal = (float)($budgetTrends[$key] ?? 0);
+            $realVal = (float)($realizationTrends[$key] ?? 0);
+            
             $trends[] = [
                 'month' => $month->format('M'),
-                'budget' => (float)($budgetTrends[$key] ?? 0),
-                'realization' => (float)($realizationTrends[$key] ?? 0),
+                'budget' => $budgetVal,
+                'realization' => $realVal,
             ];
+            
+            $totalBudgetSum += $budgetVal;
+            $totalRealizationSum += $realVal;
         }
 
         // 5. Division Ranking (Management Only)
@@ -216,16 +222,61 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // 9. Pending Tasks (Approvals + Attachment Requests)
+        $pendingApprovals = SubmissionApproval::where('approver_id', $user->id)
+            ->where('status', 'pending')
+            ->whereHas('submission', function ($q) {
+                $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
+            })
+            ->with('submission:id,no_pengajuan,total')
+            ->get()
+            ->map(fn($ap) => [
+                'type' => 'approval',
+                'submission_id' => $ap->submission_id,
+                'no_pengajuan' => $ap->submission->no_pengajuan,
+                'description' => 'Menunggu persetujuan Anda',
+                'amount' => (float)$ap->submission->total,
+                'date' => $ap->created_at->toISOString(),
+            ]);
+
+        $pendingRequests = DB::table('attachment_requests')
+            ->join('submissions', 'attachment_requests.submission_id', '=', 'submissions.id')
+            ->join('users as requesters', 'attachment_requests.requested_by', '=', 'requesters.id')
+            ->where('attachment_requests.target_user_id', $user->id)
+            ->where('attachment_requests.status', 'pending')
+            ->select(
+                'attachment_requests.submission_id',
+                'submissions.no_pengajuan',
+                'requesters.name as requester_name',
+                'attachment_requests.file_description',
+                'attachment_requests.created_at'
+            )
+            ->get()
+            ->map(fn($req) => [
+                'type' => 'attachment_request',
+                'submission_id' => $req->submission_id,
+                'no_pengajuan' => $req->no_pengajuan,
+                'description' => "Diminta oleh {$req->requester_name}: " . ($req->file_description ?: 'Lampiran tambahan'),
+                'date' => Carbon::parse($req->created_at)->toISOString(),
+            ]);
+
+        $pendingTasks = $pendingApprovals->concat($pendingRequests)->sortByDesc('date')->values();
+
         return [
             'role_scope' => $isManagement ? 'management' : ($isDivisionHead ? 'division' : 'staff'),
             'counters' => $counters,
             'approvals_count' => $pendingApprovalsCount,
-            'categories' => $categorySummary,
+            'attachment_requests_count' => $pendingAttachmentRequestsCount,
             'trends' => $trends,
+            'budget' => [
+                'total_approved' => $totalBudgetSum,
+                'total_realized' => $totalRealizationSum,
+            ],
             'division_ranking' => $divisionRanking,
             'urgency' => $urgencyBreakdown,
             'aging' => round($avgAging, 1),
             'activities' => $recentActivities,
+            'pending_tasks' => $pendingTasks,
             'user_division' => $user->division->name ?? null
         ];
     }
@@ -282,14 +333,24 @@ class DashboardController extends Controller
                 $monthlySubmissions = Submission::where('created_at', '>=', $sixMonthsAgo)
                     ->select(
                     DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month_key"),
-                    DB::raw("DATE_FORMAT(created_at, '%b') as month_name"),
                     DB::raw('COUNT(*) as count'),
                     DB::raw("SUM(CASE WHEN final_status = 'approved' THEN total ELSE 0 END) as budget")
                 )
-                    ->groupBy('month_key', 'month_name')
+                    ->groupBy('month_key')
                     ->orderBy('month_key')
                     ->get()
                     ->keyBy('month_key');
+
+                $monthlyRealization = DB::table('realization_details')
+                    ->join('realization_headers', 'realization_details.realization_id', '=', 'realization_headers.id')
+                    ->where('realization_headers.realization_date', '>=', $sixMonthsAgo->toDateString())
+                    ->select(
+                    DB::raw("DATE_FORMAT(realization_headers.realization_date, '%Y-%m') as month_key"),
+                    DB::raw('SUM(realization_details.total) as realization')
+                )
+                    ->groupBy('month_key')
+                    ->orderBy('month_key')
+                    ->pluck('realization', 'month_key');
 
                 $trends = [];
                 for ($i = 5; $i >= 0; $i--) {
@@ -299,6 +360,7 @@ class DashboardController extends Controller
                         'month' => $month->format('M'),
                         'count' => (int)($monthlySubmissions[$key]->count ?? 0),
                         'budget' => (float)($monthlySubmissions[$key]->budget ?? 0),
+                        'realization' => (float)($monthlyRealization[$key] ?? 0),
                     ];
                 }
 
@@ -319,6 +381,7 @@ class DashboardController extends Controller
                 $maintenance = \App\Models\Setting::isMaintenanceMode();
 
                 return [
+                'role_scope' => 'management',
                 'users' => [
                 'total' => $totalUsers,
                 'active_7d' => $activeUsers,
@@ -334,6 +397,15 @@ class DashboardController extends Controller
                 'total_realized' => (float)$totalRealization,
                 ],
                 'top_submitters' => $topSubmitters,
+                'categories' => \App\Models\JenisPengajuan::withCount(['submissions' => function($q) {
+                    $q->where('final_status', 'approved');
+                }])->withSum(['submissions' => function($q) {
+                    $q->where('final_status', 'approved');
+                }], 'total')->get()->map(fn($j) => [
+                    'name' => $j->name, 
+                    'count' => (int)$j->submissions_count, // withSum includes withCount if available? No, need to be careful.
+                    'amount' => (float)($j->submissions_sum_total ?: 0)
+                ]),
                 'division_ranking' => $divisionRanking,
                 'trends' => $trends,
                 'recent_logs' => $recentLogs,

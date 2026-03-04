@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "370106824988",
+    "project_id": "hbm-project-001",
+    "storage_bucket": "hbm-project-001.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:370106824988:android:aa83f3964529d4bd85e2d9",
+        "android_client_info": {
+          "package_name": "com.hbm.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMWRMUueSqKcvXg4QGrQs66SjleS2bhS8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Division extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\ClearsLookupCache;
     protected $fillable = ['name', 'code', 'budget_limit'];
 
     public function users(): HasMany

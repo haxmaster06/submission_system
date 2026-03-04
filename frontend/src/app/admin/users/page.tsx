@@ -45,7 +45,7 @@ export default function UserManagementPage() {
     email: '',
     password: '',
     division_id: '',
-    role: '',
+    roles: [] as string[],
   });
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function UserManagementPage() {
         email: user.email,
         password: '',
         division_id: user.division_id || '',
-        role: user.roles[0]?.name || '',
+        roles: user.roles?.map((r: any) => r.name) || [],
       });
     } else {
       setEditingUser(null);
@@ -87,7 +87,7 @@ export default function UserManagementPage() {
         email: '',
         password: '',
         division_id: '',
-        role: '',
+        roles: [],
       });
     }
     setIsUserModalOpen(true);
@@ -101,8 +101,17 @@ export default function UserManagementPage() {
       email: '',
       password: '',
       division_id: '',
-      role: '',
+      roles: [],
     });
+  };
+
+  const toggleRoleSelection = (roleName: string) => {
+    const currentRoles = [...userForm.roles];
+    if (currentRoles.includes(roleName)) {
+      setUserForm({ ...userForm, roles: currentRoles.filter(r => r !== roleName) });
+    } else {
+      setUserForm({ ...userForm, roles: [...currentRoles, roleName] });
+    }
   };
 
   const handleUserSubmit = async (e: React.FormEvent) => {
@@ -193,9 +202,17 @@ export default function UserManagementPage() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <Shield size={14} className="text-sky-500" />
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-50 text-sky-700 uppercase">
-                            {translateRole(user.roles[0]?.name)}
-                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {user.roles && user.roles.length > 0 ? (
+                              user.roles.map((r: any) => (
+                                <span key={r.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black bg-sky-50 text-sky-700 uppercase tracking-tighter border border-sky-100">
+                                  {translateRole(r.name)}
+                                </span>
+                              ))
+                            ) : (
+                              <span className="text-[10px] text-slate-400">No Roles</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -416,19 +433,28 @@ export default function UserManagementPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">Peran / Role</label>
-                <div className="relative">
-                  <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-400 w-5 h-5 pointer-events-none" />
-                  <select
-                    required
-                    value={userForm.role}
-                    onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
-                    className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 transition-all font-medium appearance-none"
-                  >
-                    <option value="" className="text-slate-400">Pilih Role</option>
-                    {lookups.roles.map((r: any) => <option key={r.id} value={r.name} className="text-slate-900">{translateRole(r.name)}</option>)}
-                  </select>
+              <div className="col-span-1 md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-3">Peran (Roles) — Bisa pilih lebih dari satu</label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  {lookups.roles.map((r: any) => {
+                    const isSelected = userForm.roles.includes(r.name);
+                    return (
+                      <div
+                        key={r.id}
+                        onClick={() => toggleRoleSelection(r.name)}
+                        className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all cursor-pointer select-none ${isSelected
+                            ? 'border-sky-500 bg-sky-50 text-sky-700 ring-2 ring-sky-100'
+                            : 'border-slate-100 bg-white text-slate-600 hover:border-slate-200'
+                          }`}
+                      >
+                        <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${isSelected ? 'bg-sky-500 border-sky-500 text-white' : 'border-slate-300'
+                          }`}>
+                          {isSelected && <CheckCircle2 size={12} />}
+                        </div>
+                        <span className="text-xs font-bold">{translateRole(r.name)}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

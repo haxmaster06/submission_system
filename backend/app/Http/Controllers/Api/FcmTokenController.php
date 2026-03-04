@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FcmTokenController extends Controller
 {
@@ -17,15 +18,18 @@ class FcmTokenController extends Controller
         $request->validate([
             'token' => 'required|string',
             'device_name' => 'nullable|string|max:255',
+            'device_type' => 'nullable|string|max:255',
         ]);
 
         $user = Auth::user();
 
         // Update or create based on token itself since it's unique per device
         $user->fcmTokens()->updateOrCreate(
-        ['token' => $request->token],
-        ['device_name' => $request->device_name]
+            ['token' => $request->token],
+            ['device_name' => $request->device_name ?? $request->device_type]
         );
+
+        Log::info("FCM Token registered successfully for user: {$user->id}");
 
         return response()->json(['message' => 'FCM Token registered successfully']);
     }

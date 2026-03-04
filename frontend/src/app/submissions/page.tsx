@@ -18,15 +18,15 @@ import {
   Eye,
   AlertCircle,
   TrendingUp,
+  Save,
+  Check,
   Info,
   Calendar,
   DollarSign,
-  Save,
   Search,
   Filter,
   ChevronDown,
   X,
-  Check,
   Trash2
 } from 'lucide-react';
 import Link from 'next/link';
@@ -70,6 +70,7 @@ function SubmissionsPageContent() {
   });
   const [counts, setCounts] = useState<any>({
     all: 0,
+    draf: 0,
     pending: 0,
     approved: 0,
     rejected: 0
@@ -158,11 +159,11 @@ function SubmissionsPageContent() {
     setIsModalOpen(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.post('/submissions', form);
+      await api.post('/submissions', { ...form, is_draft: isDraft });
       await fetchData();
       closeModal();
     } catch (err: any) {
@@ -206,6 +207,7 @@ function SubmissionsPageContent() {
     switch (status) {
       case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
       case 'rejected': return 'bg-rose-50 text-rose-600 border-rose-200';
+      case 'draf': return 'bg-slate-50 text-slate-500 border-slate-200';
       default: return 'bg-amber-50 text-amber-600 border-amber-200';
     }
   };
@@ -214,6 +216,7 @@ function SubmissionsPageContent() {
     switch (status) {
       case 'approved': return <CheckCircle className="w-4 h-4" />;
       case 'rejected': return <XCircle className="w-4 h-4" />;
+      case 'draf': return <Save className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
@@ -249,6 +252,27 @@ function SubmissionsPageContent() {
       label: 'Semua',
       icon: <FileText size={18} />,
       badge: statusCounts.all,
+      content: (
+        <SubmissionsList
+          submissions={submissions}
+          loading={loading}
+          getStatusColor={getStatusColor}
+          getStatusIcon={getStatusIcon}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onToggleSelectAll={toggleSelectAll}
+          onView={(sub: any) => {
+            setSelectedSubmission(sub);
+            setViewModalOpen(true);
+          }}
+        />
+      )
+    },
+    {
+      id: 'draf',
+      label: 'Draf',
+      icon: <Save size={18} />,
+      badge: statusCounts.draf,
       content: (
         <SubmissionsList
           submissions={submissions}
@@ -734,6 +758,15 @@ function SubmissionsPageContent() {
                 Batalkan
               </button>
               <button
+                type="button"
+                onClick={() => handleSubmit(new Event('submit') as any, true)}
+                disabled={submitting}
+                className="px-8 py-4 rounded-2xl border border-sky-100 text-sky-600 font-black tracking-tight hover:bg-white hover:border-sky-200 transition-all shadow-sm flex items-center gap-2"
+              >
+                {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-6 h-6" />}
+                Simpan Draf
+              </button>
+              <button
                 type="submit"
                 disabled={submitting}
                 className="px-12 py-4 rounded-2xl bg-sky-600 text-white font-black tracking-tight hover:bg-sky-500 shadow-xl shadow-sky-100 flex items-center gap-3 disabled:opacity-70 transition-all ring-offset-2 active:scale-95"
@@ -855,7 +888,9 @@ function SubmissionsList({
                     </div>
                     <div className="space-y-1.5 flex-1 cursor-pointer" onClick={() => onToggleSelect(sub.id)}>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest"># {sub.no_pengajuan}</span>
+                        <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">
+                          # {sub.no_pengajuan || <small className="text-slate-300 tracking-[0.2em] font-black">DRAF</small>}
+                        </span>
                       </div>
                       <h3 className="font-black text-slate-900 text-lg leading-tight group-hover:text-sky-600 transition-colors line-clamp-2 pr-4">{sub.description}</h3>
                     </div>
@@ -873,7 +908,7 @@ function SubmissionsList({
                     {getStatusIcon(sub.final_status)}
                     {sub.final_status === 'pending'
                       ? (sub.current_step_role ? `Menunggu ${sub.current_step_role}` : 'Menunggu')
-                      : (sub.final_status === 'approved' ? 'Disetujui' : 'Ditolak')}
+                      : (sub.final_status === 'approved' ? 'Disetujui' : (sub.final_status === 'draf' ? 'Draf' : 'Ditolak'))}
                   </div>
                   {sub.status_urgent === 'urgent' && (
                     <div className="bg-rose-50 text-rose-500 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 flex items-center gap-1.5">

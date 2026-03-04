@@ -28,6 +28,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage realizations',
             'complete submissions',
             'delete submissions',
+            'request attachments',
         ];
 
         foreach ($permissions as $permission) {
@@ -35,10 +36,10 @@ class RoleAndPermissionSeeder extends Seeder
         }
 
         // Create roles and assign permissions
-        Role::findOrCreate('Staff', 'web')->givePermissionTo(['create submissions', 'view submissions', 'manage signatures']);
+        Role::findOrCreate('Staff', 'web')->givePermissionTo(['create submissions', 'view submissions', 'manage signatures', 'request attachments']);
         Role::findOrCreate('HRD', 'web')->givePermissionTo(['create submissions', 'view submissions', 'approve submissions', 'reject submissions', 'manage signatures', 'manage employees']);
         Role::findOrCreate('GA Legal', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'manage employees']);
-        Role::findOrCreate('Finance', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'proxy director signature', 'view reports']);
+        Role::findOrCreate('Finance', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'proxy director signature', 'view reports', 'request attachments']);
         Role::findOrCreate('GM', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions']);
         Role::findOrCreate('Director', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'view reports']);
 

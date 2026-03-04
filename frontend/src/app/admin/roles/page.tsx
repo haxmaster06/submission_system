@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Shell from '@/components/layout/Shell';
 import api from '@/lib/api';
-import { Shield, CheckCircle2, XCircle, Loader2, Info, Edit2, Save, Circle, Search, ClipboardList, PenTool, Wallet, Settings, LayoutGrid } from 'lucide-react';
+import { Shield, CheckCircle2, XCircle, Loader2, Info, Edit2, Save, Circle, Search, ClipboardList, PenTool, Wallet, Settings, LayoutGrid, Plus, Trash2 } from 'lucide-react';
 import React from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -20,6 +20,11 @@ export default function RolesPermissionsPage() {
   const [editingRole, setEditingRole] = useState<any>(null);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Add Role Modal states
+  const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [addingRole, setAddingRole] = useState(false);
 
   useEffect(() => {
     fetchRolesAndPermissions();
@@ -90,20 +95,70 @@ export default function RolesPermissionsPage() {
     }
   };
 
+  const handleCreateRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return;
+
+    setAddingRole(true);
+    try {
+      await api.post('/roles-permissions', {
+        name: newRoleName,
+        permissions: [] // Start as empty
+      });
+      await fetchRolesAndPermissions();
+      setIsAddRoleModalOpen(false);
+      setNewRoleName('');
+      alert('Role berhasil dibuat!');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal membuat role');
+    } finally {
+      setAddingRole(false);
+    }
+  };
+
+  const handleDeleteRole = async (role: any) => {
+    const protectedRoles = ['Super Admin', 'Staff', 'HRD', 'GA Legal', 'Finance', 'GM', 'Director'];
+    if (protectedRoles.includes(role.name)) {
+      alert('Role bawaan sistem tidak dapat dihapus.');
+      return;
+    }
+
+    if (!confirm(`Apakah Anda yakin ingin menghapus role "${role.name}"? Terdapat pengecekan keamanan untuk memastikan role tidak sedang digunakan.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/roles/${role.id}`);
+      await fetchRolesAndPermissions();
+      alert('Role berhasil dihapus!');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menghapus role');
+    }
+  };
+
   if (loading) return <Shell><div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin text-sky-500" /></div></Shell>;
 
   return (
     <Shell>
       <div className="max-w-7xl mx-auto">
-        <header className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Shield className="w-8 h-8 text-sky-500" />
-            <h1 className="text-3xl font-bold text-slate-900">Peran & Hak Akses</h1>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <Shield className="w-8 h-8 text-sky-500" />
+                <h1 className="text-3xl font-bold text-slate-900">Peran & Hak Akses</h1>
+              </div>
+              <p className="text-slate-500">
+                Matriks lengkap yang menunjukkan hak akses (permissions) untuk setiap peran (role) di sistem.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsAddRoleModalOpen(true)}
+              className="bg-sky-500 text-white px-6 py-3 rounded-xl font-bold hover:bg-sky-600 shadow-lg shadow-sky-100 flex items-center gap-2 transition-all self-start md:self-center"
+            >
+              <Plus size={20} />
+              Tambah Role
+            </button>
           </div>
-          <p className="text-slate-500">
-            Matriks lengkap yang menunjukkan hak akses (permissions) untuk setiap peran (role) di sistem.
-          </p>
-        </header>
 
         <div className="flex flex-col md:flex-row items-center gap-4 mb-8">
           <div className="relative flex-1 w-full">
@@ -140,17 +195,28 @@ export default function RolesPermissionsPage() {
                           <Shield className="w-5 h-5" />
                         </div>
                         <span className="text-slate-900">{translateRole(role.name)}</span>
-                        <button
-                          onClick={() => openPermissionModal(role)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-wider ${role.name === 'Super Admin'
-                              ? 'text-slate-300 cursor-not-allowed bg-slate-50'
-                              : 'text-sky-600 bg-white border border-sky-100 hover:bg-sky-500 hover:text-white hover:border-sky-500 shadow-sm'
-                            }`}
-                          disabled={role.name === 'Super Admin'}
-                        >
-                          <Edit2 size={12} />
-                          <span>Edit</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <button
+                            onClick={() => openPermissionModal(role)}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all text-[10px] font-black uppercase tracking-wider ${role.name === 'Super Admin'
+                                ? 'text-slate-300 cursor-not-allowed bg-slate-50'
+                                : 'text-sky-600 bg-white border border-sky-100 hover:bg-sky-500 hover:text-white hover:border-sky-500 shadow-sm'
+                              }`}
+                            disabled={role.name === 'Super Admin'}
+                          >
+                            <Edit2 size={12} />
+                            <span>Edit</span>
+                          </button>
+                          {!['Super Admin', 'Staff', 'HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(role.name) && (
+                            <button
+                              onClick={() => handleDeleteRole(role)}
+                              className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-all"
+                              title="Hapus Role"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </th>
                   ))}
@@ -399,6 +465,53 @@ export default function RolesPermissionsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Add Role Modal */}
+      <Modal
+        isOpen={isAddRoleModalOpen}
+        onClose={() => setIsAddRoleModalOpen(false)}
+        title="Tambah Role Baru"
+        size="md"
+      >
+        <form onSubmit={handleCreateRole} className="space-y-6">
+          <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 flex items-start gap-3">
+            <Info className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-sky-800 leading-relaxed">
+              Buat peran baru untuk mengelompokkan hak akses tertentu. Setelah dibuat, Anda dapat mengatur permission secara detail melalui matriks utama.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Nama Role</label>
+            <input
+              type="text"
+              required
+              value={newRoleName}
+              onChange={(e) => setNewRoleName(e.target.value)}
+              placeholder="e.g. Compliance Officer"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-sky-50 focus:border-sky-500 outline-none transition-all font-medium text-slate-900"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsAddRoleModalOpen(false)}
+              className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all text-sm"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              disabled={addingRole || !newRoleName.trim()}
+              className="px-8 py-2.5 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-lg disabled:opacity-50 transition-all text-sm flex items-center gap-2"
+            >
+              {addingRole ? <Loader2 className="animate-spin w-4 h-4" /> : <Plus size={18} />}
+              Buat Role
+            </button>
+          </div>
+        </form>
+      </Modal>
     </Shell>
   );
 }
@@ -409,7 +522,8 @@ function groupPermissions(permissions: string[]) {
       'create submissions',
       'view submissions',
       'delete submissions',
-      'complete submissions'
+      'complete submissions',
+      'request attachments'
     ],
     'Persetujuan (Approvals)': [
       'approve submissions',
@@ -490,7 +604,8 @@ function translatePermission(permission: string): string {
     'manage employees': 'Kelola Data Karyawan',
     'manage realizations': 'Kelola Realisasi',
     'complete submissions': 'Selesaikan Pengajuan',
-    'delete submissions': 'Hapus Pengajuan'
+    'delete submissions': 'Hapus Pengajuan',
+    'request attachments': 'Minta Lampiran'
   };
   return mapping[permission] || permission;
 }
@@ -509,7 +624,8 @@ function getPermissionDescription(permission: string): string {
     'manage employees': 'Mengelola Data Karyawan',
     'manage realizations': 'Mencatat dan mengelola realisasi anggaran hasil pengajuan',
     'complete submissions': 'Menandai pengajuan selesai secara manual',
-    'delete submissions': 'Menghapus data pengajuan (Super Admin Only)'
+    'delete submissions': 'Menghapus data pengajuan (Super Admin Only)',
+    'request attachments': 'Meminta lampiran tambahan kepada user tertentu'
   };
   return descriptions[permission] || 'Tidak ada deskripsi';
 }

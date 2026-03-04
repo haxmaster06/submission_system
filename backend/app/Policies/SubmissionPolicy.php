@@ -32,7 +32,12 @@ class SubmissionPolicy
         }
         
         // Approvers involved in the submission can view
-        if ($submission->approvals()->where('approver_id', $user->id)->exists()) {
+        if ($submission->approvals()->where(['approver_id' => $user->id])->exists()) {
+            return true;
+        }
+
+        // Target users of attachment requests can view
+        if ($submission->attachmentRequests()->where(['target_user_id' => $user->id, 'status' => 'pending'])->exists()) {
             return true;
         }
 
@@ -64,11 +69,15 @@ class SubmissionPolicy
         return $user->hasRole('Super Admin');
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Submission $submission): bool
     {
+        // Owner can ONLY delete if it's still a draft
+        if ($user->id === $submission->user_id && $submission->final_status === 'draf') {
+            return true;
+        }
+
+        // If it's NOT a draft (Published/Terbit), 
+        // it can only be deleted by those with explicit permission
         return $user->can('delete submissions');
     }
     
@@ -79,5 +88,18 @@ class SubmissionPolicy
     {
         // Same as view permissions essentially, plus owner
         return $this->view($user, $submission);
+    }
+    /**
+     * Determine whether the user can request an attachment for the submission.
+     */
+    public function requestAttachment(User $user, Submission $submission): bool
+    {
+        // Owner can request
+        if ($user->id === $submission->user_id) {
+            return true;
+        }
+
+        // Super Admin or users with 'request attachments' permission
+        return $user->hasRole('Super Admin') || $user->hasPermissionTo('request attachments');
     }
 }

@@ -24,7 +24,11 @@ export default function ManualBook() {
           description: 'Jika Anda menjabat sebagai manajer, direktur, atau memiliki hak memvalidasi pengajuan, Anda WAJIB mendaftarkan tanda tangan Anda. Buka menu "Profil & Tanda Tangan", lalu gunakan kursor/jari tangan Anda untuk menggambar di kanvas yang tersedia, atau upload gambar tanda tangan Anda dengan format PNG. Terdapat pratinjau stempel di bagian tersebut untuk memastikan tanda tangan Anda terlihat rapi.'
         },
         {
-          title: '3. Kenali Batas Anggaran (Limit Budget)',
+          title: '3. Memahami Peran (Roles)',
+          description: 'Sistem ini mendukung lebih dari satu peran untuk satu pengguna. Anda dapat melihat peran Anda di bawah nama pada menu profil. Peran menentukan hak akses Anda terhadap fitur-fitur tertentu.'
+        },
+        {
+          title: '4. Kenali Batas Anggaran (Limit Budget)',
           description: 'Pastikan Anda mengetahui bahwa persetujuan dan pembuatan budget tunduk pada limit bulanan departemen. Semua ini dicatat secara otomatis oleh sistem.'
         }
       ]
@@ -50,16 +54,20 @@ export default function ManualBook() {
       icon: <FileText size={20} />,
       content: [
         {
-          title: 'Cara Membuat Pengajuan Reguler',
-          description: 'Klik menu "Buat Pengajuan Baru". Isi formulir utama (Divisi, Jenis, Urgent/Normal, Deskripsi). Lalu tambahkan item barang/jasa yang ingin diajukan di bagian bawah lengkap dengan Qty, Satuan, dan Harga Satuan (Nominal). Klik Simpan jika sudah yakin.'
+          title: '1. Menyimpan sebagai Draf',
+          description: 'Jika Anda belum selesai mengisi data, klik "Simpan Draf". Pengajuan ini HANYA dapat dilihat oleh Anda dan belum masuk ke alur persetujuan. Anda dapat mengedit atau menghapusnya kapan saja dari menu "Pengajuan Saya" tab "Draf".'
         },
         {
-          title: 'Cara Membuat Pengajuan Gaji (Khusus HRD)',
-          description: 'Klik menu "Pengajuan Gaji". Anda dapat melampirkan daftar gaji karyawan lewat file Excel (menggunakan template) atau menginputnya satu per satu secara manual. Jangan lupa pilih "Divisi Pembebanan" untuk menentukan dari anggaran divisi mana uang ini akan ditarik.'
+          title: '2. Cara Membuat Pengajuan Reguler',
+          description: 'Klik menu "Buat Pengajuan Baru". Isi formulir utama. Lalu tambahkan item barang/jasa. Klik "Kirim/Ajukan" jika data sudah final untuk memulai alur persetujuan.'
         },
         {
-          title: 'Tentang Status "Batas Normal / Urgent"',
-          description: 'Status Urgent hanya boleh digunakan untuk keadaan mendesak yang butuh pencairan dana segera. Pengajuan normal akan mengikuti siklus pencairan reguler perusahaan.'
+          title: '3. Cara Membuat Pengajuan Gaji (Khusus HRD)',
+          description: 'Klik menu "Pengajuan Gaji". Anda dapat melampirkan daftar gaji karyawan lewat file Excel atau menginputnya secara manual.'
+        },
+        {
+          title: '4. Mengelola Draf Anda',
+          description: 'Buka menu "Pengajuan Saya" dan pilih tab "Draf". Di sini Anda dapat membuka kembali draf untuk diedit (Ubah Draf), menerbitkannya (Terbitkan), atau menghapusnya jika tidak lagi diperlukan.'
         }
       ]
     },

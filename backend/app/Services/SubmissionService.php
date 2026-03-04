@@ -19,7 +19,12 @@ class SubmissionService
     {
         return DB::transaction(function () use ($data) {
             $division = Division::findOrFail($data['division_id']);
-            $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
+            $isDraft = $data['final_status'] === 'draf';
+
+            if (!$isDraft) {
+                $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
+            }
+            
             // Use provided total (e.g., from payload calculations), or fallback to legacy calculation
             $data['total'] = $data['total'] ?? ($data['qty'] ?? 0) * ($data['nominal'] ?? 0);
             $data['tanggal_pengajuan'] = now();
@@ -28,22 +33,24 @@ class SubmissionService
 
             AuditTrailService::log('create', 'Submission', $submission->id, null, $submission->toArray());
 
-            // Notify HRD
-            $approvers = User::role('HRD')->get();
-            Notification::send($approvers, new NewSubmissionNotification($submission));
+            if (!$isDraft) {
+                // Notify HRD
+                $approvers = User::role('HRD')->get();
+                Notification::send($approvers, new NewSubmissionNotification($submission));
 
-            // Budget Check (Bypass for Directors)
-            if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
-                $currentUsage = Submission::where('division_id', $division->id)
-                    ->whereMonth('tanggal_pengajuan', now()->month)
-                    ->whereYear('tanggal_pengajuan', now()->year)
-                    ->where('id', '!=', $submission->id)
-                    ->sum('total');
+                // Budget Check (Bypass for Directors)
+                if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
+                    $currentUsage = Submission::where('division_id', $division->id)
+                        ->whereMonth('tanggal_pengajuan', now()->month)
+                        ->whereYear('tanggal_pengajuan', now()->year)
+                        ->where('id', '!=', $submission->id)
+                        ->sum('total');
 
-                $totalUsage = $currentUsage + $submission->total;
+                    $totalUsage = $currentUsage + $submission->total;
 
-                if ($totalUsage > $division->budget_limit) {
-                    Notification::send($approvers->merge([$submission->user]), new BudgetExceededNotification($submission, $submission->total, $division->budget_limit, $totalUsage));
+                    if ($totalUsage > $division->budget_limit) {
+                        Notification::send($approvers->merge([$submission->user]), new BudgetExceededNotification($submission, $submission->total, $division->budget_limit, $totalUsage));
+                    }
                 }
             }
 
@@ -55,7 +62,11 @@ class SubmissionService
     {
         return DB::transaction(function () use ($data, $items) {
             $division = Division::findOrFail($data['division_id']);
-            $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
+            $isDraft = ($data['final_status'] ?? 'pending') === 'draf';
+
+            if (!$isDraft) {
+                $data['no_pengajuan'] = $this->generateNoPengajuan($division->code);
+            }
             $data['tanggal_pengajuan'] = now();
 
             // Calculate grand total from items
@@ -79,22 +90,24 @@ class SubmissionService
 
             AuditTrailService::log('create', 'Submission', $submission->load('items')->id, null, $submission->toArray());
 
-            // Notify HRD
-            $approvers = User::role('HRD')->get();
-            Notification::send($approvers, new NewSubmissionNotification($submission));
+            if (!$isDraft) {
+                // Notify HRD
+                $approvers = User::role('HRD')->get();
+                Notification::send($approvers, new NewSubmissionNotification($submission));
 
-            // Budget Check (Bypass for Directors)
-            if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
-                $currentUsage = Submission::where('division_id', $division->id)
-                    ->whereMonth('tanggal_pengajuan', now()->month)
-                    ->whereYear('tanggal_pengajuan', now()->year)
-                    ->where('id', '!=', $submission->id)
-                    ->sum('total');
+                // Budget Check (Bypass for Directors)
+                if ($division->budget_limit > 0 && !$submission->user->hasRole('Director')) {
+                    $currentUsage = Submission::where('division_id', $division->id)
+                        ->whereMonth('tanggal_pengajuan', now()->month)
+                        ->whereYear('tanggal_pengajuan', now()->year)
+                        ->where('id', '!=', $submission->id)
+                        ->sum('total');
 
-                $totalUsage = $currentUsage + $submission->total;
+                    $totalUsage = $currentUsage + $submission->total;
 
-                if ($totalUsage > $division->budget_limit) {
-                    Notification::send($approvers->merge([$submission->user]), new BudgetExceededNotification($submission, $submission->total, $division->budget_limit, $totalUsage));
+                    if ($totalUsage > $division->budget_limit) {
+                        Notification::send($approvers->merge([$submission->user]), new BudgetExceededNotification($submission, $submission->total, $division->budget_limit, $totalUsage));
+                    }
                 }
             }
 

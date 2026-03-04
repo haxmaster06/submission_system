@@ -36,8 +36,8 @@ if (typeof window !== 'undefined') {
 
 // Update token dynamically if needed
 export const updateEchoAuth = (token: string) => {
-  if (echo) {
-    echo.connector.options.auth.headers.Authorization = `Bearer ${token}`;
+  if (echo && echo.connector && echo.connector.options.auth) {
+    echo.connector.options.auth.headers.Authorization = token ? `Bearer ${token}` : '';
   }
 };
 

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class JenisPengajuan extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\ClearsLookupCache;
     protected $table = 'jenis_pengajuan';
     protected $fillable = ['name', 'form_schema_json', 'requires_travel_type'];
 

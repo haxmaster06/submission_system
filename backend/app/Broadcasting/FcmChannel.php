@@ -65,15 +65,23 @@ class FcmChannel
                     $error = $failure->error()->getMessage();
                     Log::warning("FCM send failed for token: {$failedToken}. Error: {$error}");
 
+                    $errorMessage = strtoupper((string) $error);
                     // If the token is unregistered or invalid, remove it from the database
-                    if (str_contains(strtoupper($error), 'UNREGISTERED') || str_contains(strtoupper($error), 'INVALID_ARGUMENT')) {
+                    if (
+                        str_contains($errorMessage, 'UNREGISTERED') ||
+                        str_contains($errorMessage, 'INVALID_ARGUMENT') ||
+                        str_contains($errorMessage, 'NOT FOUND') ||
+                        str_contains($errorMessage, 'NOT_FOUND') ||
+                        str_contains($errorMessage, 'SENDER_ID_MISMATCH')
+                    ) {
+                        Log::info("FcmChannel: Attempting to remove stale token: {$failedToken} due to error: {$error}");
                         $notifiable->fcmTokens()->where('token', $failedToken)->delete();
-                        Log::info("Removed stale FCM token: {$failedToken}");
+                        Log::info("FcmChannel: Stale token removed.");
                     }
                 }
             }
 
-            if ($report->hasSuccesses()) {
+            if ($report->successes()->count() > 0) {
                 Log::info("FCM multcast successful to " . $report->successes()->count() . " devices.");
             }
 

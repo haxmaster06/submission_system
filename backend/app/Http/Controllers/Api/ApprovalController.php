@@ -29,6 +29,7 @@ class ApprovalController extends Controller
             'submission.division',
             'submission.uom',
             'submission.items.uom',
+            'submission.attachments',
             'submission.approvals.approver' // Load timeline data
         ])
             ->where('status', 'pending')
@@ -69,6 +70,7 @@ class ApprovalController extends Controller
             'submission.division',
             'submission.uom',
             'submission.items.uom',
+            'submission.attachments',
             'submission.approvals.approver' // Load timeline data
         ])
             ->where('status', '!=', 'pending');

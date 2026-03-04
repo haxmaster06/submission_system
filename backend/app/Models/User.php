@@ -69,4 +69,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(FcmToken::class);
     }
+
+    public function attachmentRequests(): HasMany
+    {
+        return $this->hasMany(AttachmentRequest::class, 'target_user_id');
+    }
+
+    public function sentAttachmentRequests(): HasMany
+    {
+        return $this->hasMany(AttachmentRequest::class, 'requested_by');
+    }
 }

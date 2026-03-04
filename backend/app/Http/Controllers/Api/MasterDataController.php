@@ -133,6 +133,8 @@ class MasterDataController extends Controller
             \App\Models\UrgencyStatus::where('id', $id)->update(['level' => $index + 1]);
         }
 
+        \App\Models\UrgencyStatus::clearLookupCache();
+
         return response()->json(['message' => 'Order updated successfully']);
     }
 
