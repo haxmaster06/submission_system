@@ -24,6 +24,7 @@ export default function MobileAppsManagementPage() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [page, setPage] = useState(1);
   const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
 
@@ -62,6 +63,7 @@ export default function MobileAppsManagementPage() {
   };
 
   const openModal = () => {
+    setUploadProgress(0);
     setForm({
       platform: 'android',
       version: '',
@@ -93,6 +95,7 @@ export default function MobileAppsManagementPage() {
     }
     
     setSubmitting(true);
+    setUploadProgress(0);
     try {
       const formData = new FormData();
       formData.append('platform', form.platform);
@@ -102,7 +105,12 @@ export default function MobileAppsManagementPage() {
       formData.append('is_active', form.is_active ? '1' : '0');
       formData.append('file', form.file);
 
-      const res = await mobileAppsApi.create(formData);
+      const res = await mobileAppsApi.create(formData, (progressEvent: any) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        }
+      });
       
       // Refresh list to trigger is_active logic update across all items
       fetchData();
@@ -112,6 +120,7 @@ export default function MobileAppsManagementPage() {
       alert(err.response?.data?.message || 'Gagal mengunggah aplikasi');
     } finally {
       setSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -329,20 +338,52 @@ export default function MobileAppsManagementPage() {
               </label>
             </div>
 
+            {submitting && uploadProgress > 0 && (
+              <div className="space-y-2">
+                <div className="flex justify-between items-center text-sm font-bold">
+                  <span className={uploadProgress === 100 ? 'text-emerald-600' : 'text-sky-600'}>
+                    {uploadProgress === 100 ? 'Memproses File...' : 'Mengunggah File...'}
+                  </span>
+                  <span className={uploadProgress === 100 ? 'text-emerald-600' : 'text-sky-600'}>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner relative">
+                  <motion.div
+                    className={`h-full rounded-full transition-colors duration-300 ${uploadProgress === 100 ? 'bg-emerald-500' : 'bg-sky-500'}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${uploadProgress}%` }}
+                    transition={{ ease: "linear" }}
+                  />
+                  {uploadProgress === 100 && (
+                    <motion.div 
+                      className="absolute inset-0 bg-white/30"
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
                 onClick={closeModal}
-                className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all"
+                disabled={submitting}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold hover:bg-slate-50 transition-all disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-8 py-2.5 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-70 transition-all"
+                className="px-8 py-2.5 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center gap-2 disabled:opacity-70 transition-all min-w-[160px] justify-center"
               >
-                {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : 'Unggah Rilis'}
+                {submitting ? (
+                  <>
+                    <Loader2 className="animate-spin w-5 h-5" /> 
+                    {uploadProgress < 100 ? `${uploadProgress}%` : 'Memproses...'}
+                  </>
+                ) : 'Unggah Rilis'}
               </button>
             </div>
           </form>

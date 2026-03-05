@@ -21,7 +21,7 @@ export const mobileAppsApi = {
     return res.data;
   },
   
-  create: async (formData: FormData) => {
+  create: async (formData: FormData, onUploadProgress?: (progressEvent: any) => void) => {
     const res = await api.post<{ success: boolean; message: string; data: MobileAppRelease }>(
       '/mobile-apps',
       formData,
@@ -29,6 +29,7 @@ export const mobileAppsApi = {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress,
       }
     );
     return res.data;
