@@ -29,6 +29,7 @@ class RoleAndPermissionSeeder extends Seeder
             'complete submissions',
             'delete submissions',
             'request attachments',
+            'manage mobile apps',
         ];
 
         foreach ($permissions as $permission) {

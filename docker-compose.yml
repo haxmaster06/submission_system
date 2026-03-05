@@ -9,6 +9,7 @@ services:
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
+      - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
     environment:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production

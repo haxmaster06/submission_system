@@ -24,7 +24,8 @@ import {
   Wrench,
   ToggleLeft,
   ToggleRight,
-  Loader2
+  Loader2,
+  Smartphone
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -128,6 +129,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       items: [
         { name: 'Manajemen User', href: '/admin/users', icon: Users },
         { name: 'Peran & Hak Akses', href: '/admin/roles', icon: Shield },
+        { name: 'Mobile Apps', href: '/admin/mobile-apps', icon: Smartphone },
         { name: 'Audit Log', href: '/admin/audit-logs', icon: Activity },
       ]
     },

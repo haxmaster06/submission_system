@@ -188,7 +188,21 @@ String _readAttachmentType(Map<dynamic, dynamic> json, String key) {
 }
 
 String _readAttachmentName(Map<dynamic, dynamic> json, String key) {
-  return json['original_name']?.toString() ?? 'file';
+  if (json['original_name'] != null &&
+      json['original_name'].toString().isNotEmpty) {
+    return json['original_name'].toString();
+  }
+
+  // Fallback: extract from file_path e.g. "submissions/attachments/file.pdf" -> "file.pdf"
+  final path = json['file_path']?.toString();
+  if (path != null && path.isNotEmpty) {
+    if (path.contains('/')) {
+      return path.split('/').last;
+    }
+    return path;
+  }
+
+  return 'file';
 }
 
 @freezed

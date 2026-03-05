@@ -17,6 +17,7 @@ class SubmissionsScreen extends ConsumerStatefulWidget {
 class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
   final ScrollController _scrollController = ScrollController();
   String _filterStatus = 'All';
+  String _filterUrgency = 'All';
 
   @override
   void initState() {
@@ -71,6 +72,22 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
             ),
           ),
 
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _buildUrgencyPillTab('All', 'Semua Urgensi'),
+                  _buildUrgencyPillTab('Normal', 'Normal'),
+                  _buildUrgencyPillTab('Mendesak', 'Mendesak'),
+                ],
+              ),
+            ),
+          ),
+
           Expanded(
             child: RefreshIndicator(
               onRefresh: notifier.refresh,
@@ -111,12 +128,48 @@ class _SubmissionsScreenState extends ConsumerState<SubmissionsScreen> {
     );
   }
 
+  Widget _buildUrgencyPillTab(String value, String label) {
+    bool isSelected = _filterUrgency == value;
+    return GestureDetector(
+      onTap: () => setState(() => _filterUrgency = value),
+      child: Container(
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? UiKit.primaryBlue.withValues(alpha: 0.1)
+              : Colors.transparent,
+          border: Border.all(
+            color: isSelected ? UiKit.primaryBlue : Colors.grey.shade300,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? UiKit.primaryBlue : UiKit.textGray,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildList(SubmissionListState state) {
     var displayList = state.submissions;
     if (_filterStatus != 'All') {
       displayList = displayList
           .where((s) => s.status.toLowerCase() == _filterStatus.toLowerCase())
           .toList();
+    }
+
+    if (_filterUrgency != 'All') {
+      if (_filterUrgency == 'Mendesak') {
+        displayList = displayList.where((s) => s.isUrgent).toList();
+      } else if (_filterUrgency == 'Normal') {
+        displayList = displayList.where((s) => !s.isUrgent).toList();
+      }
     }
 
     if (displayList.isEmpty && state.isLoading) {
@@ -172,7 +225,7 @@ class _SubmissionItem extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildStatusBadge(submission.status),
+                _buildStatusBadge(submission),
                 Text(
                   DateFormat('dd MMM yyyy').format(submission.createdAt),
                   style: UiKit.caption,
@@ -238,10 +291,10 @@ class _SubmissionItem extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
+  Widget _buildStatusBadge(Submission sub) {
     Color color;
     String label;
-    switch (status.toLowerCase()) {
+    switch (sub.status.toLowerCase()) {
       case 'draf':
         color = Colors.blueGrey;
         label = 'DRAF';
@@ -256,7 +309,9 @@ class _SubmissionItem extends StatelessWidget {
         break;
       default:
         color = UiKit.statusPendingText;
-        label = 'MENUNGGU';
+        label = sub.current_step_role != null
+            ? 'MENUNGGU ${sub.current_step_role!.toUpperCase()}'
+            : 'MENUNGGU';
         break;
     }
 

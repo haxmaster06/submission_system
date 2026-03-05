@@ -8,9 +8,10 @@ import {
   FileText, Clock, CheckCircle, AlertCircle, TrendingUp,
   ArrowRight, Loader2, BarChart3, PieChart as PieIcon,
   History, Shield, Zap, Calendar, User, Users, Activity,
-  AlertTriangle, ChevronRight, Paperclip
+  AlertTriangle, ChevronRight, Paperclip, Smartphone, Download
 } from 'lucide-react';
 import api from '@/lib/api';
+import { mobileAppsApi, MobileAppRelease } from '@/lib/mobileApps';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
@@ -37,16 +38,27 @@ export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [activeApps, setActiveApps] = useState<MobileAppRelease[]>([]);
 
   const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
 
   useEffect(() => {
     if (user) {
       fetchStats();
+      if (!isSuperAdmin) fetchActiveApps();
     } else {
       setData(null);
     }
   }, [user, isSuperAdmin]); // Dependency to re-fetch if role loads or user changes
+
+  const fetchActiveApps = async () => {
+    try {
+      const res = await mobileAppsApi.getAll(true);
+      setActiveApps(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch mobile apps', err);
+    }
+  };
 
   const fetchStats = async () => {
     if (!user) return;
@@ -272,6 +284,38 @@ export default function DashboardPage() {
 
           </div>
         </header>
+
+        {/* Mobile App Download Banner */}
+        {activeApps.length > 0 && (
+          <div className="mb-8 bg-gradient-to-r from-sky-500 to-indigo-600 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-xl shadow-indigo-200">
+            <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 border border-white/30">
+                  <Smartphone size={28} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-black tracking-tight mb-1">Aplikasi Mobile Tersedia!</h2>
+                  <p className="text-sky-100 text-sm font-medium mb-3">Unduh aplikasi HBM Budgeting untuk akses lebih cepat dan mudah langsung dari genggaman Anda.</p>
+                  <div className="flex flex-wrap gap-3">
+                    {activeApps.map(app => (
+                      <a 
+                        key={app.id} 
+                        href={mobileAppsApi.getDownloadUrl(app.id)}
+                        className="inline-flex items-center gap-2 bg-white text-indigo-600 hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-transform hover:scale-105 active:scale-95 shadow-sm"
+                      >
+                        <Download size={16} />
+                        Download {app.platform === 'android' ? 'Android' : 'iOS'} (v{app.version})
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Decorative background elements */}
+            <div className="absolute -right-10 -bottom-20 opacity-20"><Smartphone size={200} /></div>
+            <div className="absolute top-0 right-1/4 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+          </div>
+        )}
 
         {/* Need Your Attention Section */}
         <AnimatePresence>

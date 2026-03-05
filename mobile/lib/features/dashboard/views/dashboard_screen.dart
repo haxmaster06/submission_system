@@ -19,6 +19,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _touchedPieIndex = -1;
+
   Future<void> _onRefresh() async {
     ref.invalidate(dashboardSummaryProvider);
     ref.invalidate(adminStatsProvider);
@@ -397,24 +399,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Anggaran VS Realisasi', style: UiKit.heading2),
-                const SizedBox(height: 4),
-                const Text(
-                  'Histori 6 bulan terakhir',
-                  style: TextStyle(fontSize: 12, color: UiKit.textGray),
-                ),
-              ],
+            const Text('Anggaran VS Realisasi', style: UiKit.heading2),
+            const SizedBox(height: 4),
+            const Text(
+              'Histori 6 bulan terakhir',
+              style: TextStyle(fontSize: 12, color: UiKit.textGray),
             ),
-            Row(
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
               children: [
                 _buildLegendItem('Anggaran', Colors.blue),
-                const SizedBox(width: 12),
                 _buildLegendItem('Realisasi', Colors.green),
               ],
             ),
@@ -423,8 +422,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         const SizedBox(height: 16),
         TappableCard(
           padding: const EdgeInsets.only(
-            left: 12,
-            right: 28,
+            left: 20,
+            right: 32,
             top: 24,
             bottom: 12,
           ),
@@ -475,13 +474,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     strokeWidth: 1,
                   ),
                 ),
+                clipData: const FlClipData.none(),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 16,
+                      getTitlesWidget: (_, __) => const SizedBox.shrink(),
+                    ),
                   ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 16,
+                      getTitlesWidget: (_, __) => const SizedBox.shrink(),
+                    ),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -510,14 +518,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 45,
+                      reservedSize: 60,
                       getTitlesWidget: (value, meta) {
-                        return Text(
-                          NumberFormat.compact(locale: 'id_ID').format(value),
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: UiKit.textGray,
-                            fontWeight: FontWeight.bold,
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: Text(
+                            NumberFormat.compact(locale: 'id_ID').format(value),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: UiKit.textGray,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         );
                       },
@@ -632,25 +643,106 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               SizedBox(
                 height: 180,
-                child: PieChart(
-                  PieChartData(
-                    sectionsSpace: 4,
-                    centerSpaceRadius: 40,
-                    sections: categories.asMap().entries.map((e) {
-                      final index = e.key;
-                      final value =
-                          (e.value['amount'] as num?)?.toDouble() ?? 0;
-                      return PieChartSectionData(
-                        color: categoryColors[index % categoryColors.length],
-                        value: value,
-                        title: '',
-                        radius: 12,
-                      );
-                    }).toList(),
-                  ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    PieChart(
+                      PieChartData(
+                        pieTouchData: PieTouchData(
+                          touchCallback:
+                              (FlTouchEvent event, pieTouchResponse) {
+                                setState(() {
+                                  if (!event.isInterestedForInteractions ||
+                                      pieTouchResponse == null ||
+                                      pieTouchResponse.touchedSection == null) {
+                                    _touchedPieIndex = -1;
+                                    return;
+                                  }
+                                  _touchedPieIndex = pieTouchResponse
+                                      .touchedSection!
+                                      .touchedSectionIndex;
+                                });
+                              },
+                        ),
+                        sectionsSpace: 4,
+                        centerSpaceRadius: 60,
+                        sections: categories.asMap().entries.map((e) {
+                          final index = e.key;
+                          final isTouched = index == _touchedPieIndex;
+                          final radius = isTouched ? 20.0 : 16.0;
+                          final value =
+                              (e.value['amount'] as num?)?.toDouble() ?? 0;
+
+                          return PieChartSectionData(
+                            color:
+                                categoryColors[index % categoryColors.length],
+                            value: value,
+                            title: '',
+                            radius: radius,
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),
+              if (_touchedPieIndex != -1 &&
+                  _touchedPieIndex < categories.length)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 12,
+                    horizontal: 16,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color:
+                        categoryColors[_touchedPieIndex % categoryColors.length]
+                            .withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color:
+                          categoryColors[_touchedPieIndex %
+                                  categoryColors.length]
+                              .withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        categories[_touchedPieIndex]['name'] ?? '',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              categoryColors[_touchedPieIndex %
+                                  categoryColors.length],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'id_ID',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(
+                          (categories[_touchedPieIndex]['amount'] as num?)
+                                  ?.toDouble() ??
+                              0,
+                        ),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: UiKit.textBlack,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Wrap(
                 spacing: 16,
                 runSpacing: 8,

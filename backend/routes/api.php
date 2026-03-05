@@ -56,6 +56,10 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     // Dashboard
     Route::get('/dashboard/stats', [DashboardController::class , 'stats']);
 
+    // Mobile Apps
+    Route::get('/mobile-apps/download/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'download']);
+    Route::get('/mobile-apps', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'index']);
+    
     // Submissions
     Route::apiResource('submissions', SubmissionController::class);
     Route::post('/submissions/bulk-delete', [SubmissionController::class , 'bulkDelete']);
@@ -176,6 +180,12 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
 
         // Super Admin Only
         Route::middleware('role:Super Admin')->group(function () {
+            
+            // Manage Mobile Apps
+            Route::post('/mobile-apps', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'store']);
+            Route::put('/mobile-apps/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'update']);
+            Route::delete('/mobile-apps/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'destroy']);
+            
             Route::get('/admin/audit-logs', [\App\Http\Controllers\Api\AuditTrailController::class , 'all']);
             Route::get('/admin/users-with-signatures', function () {
                     return response()->json(
