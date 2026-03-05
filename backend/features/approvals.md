@@ -29,8 +29,8 @@ This feature handles the complex dynamic workflow logic of the organization. It 
 ### API Routes
 
 - **Execution**:
-    - `GET /approvals/pending`
-    - `GET /approvals/history`
+    - `GET /approvals/pending` (paginated, `per_page=25`)
+    - `GET /approvals/history` (paginated, `per_page=25`)
     - `POST /approvals/{id}/approve`
     - `POST /approvals/{id}/reject`
 - **Configuration (Admin)**:

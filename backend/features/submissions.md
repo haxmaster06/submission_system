@@ -29,7 +29,7 @@ The core module of the application where users can create, edit, attach document
 
 ### API Routes
 
-- `API Resource /submissions`: Standard CRUD and paginated lists.
+- `API Resource /submissions`: Standard CRUD and paginated lists (`per_page=25`, server-side search).
 - `POST /submissions/bulk-delete`: Allows multiple deletion.
 - `POST /submissions/{submission}/attachments`: Upload documents.
 - `GET /submissions/{submission}/export`: Download PDF.

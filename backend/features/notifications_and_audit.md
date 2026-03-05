@@ -34,4 +34,4 @@ This combined feature is critical for tracking system behavior, accountability, 
 - `DELETE /notifications/batch`
 - `POST /fcm/register`, `/unregister`, `/check`
 - `GET /audit-logs/{model}/{id}`
-- `GET /admin/audit-logs`
+- `GET /admin/audit-logs` (paginated, `per_page=25`)

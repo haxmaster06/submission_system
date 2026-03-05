@@ -4,6 +4,32 @@ Riwayat penambahan fitur dan perubahan signifikan pada sistem.
 
 ---
 
+## [2026-03-05] — Mobile App Download & Server-Side Pagination
+
+### Ditambahkan
+
+- **Mobile App Download**: Super Admin dapat mengunggah, mengelola, dan mendistribusikan file APK/IPA melalui halaman admin.
+- **Banner Download**: Dashboard menampilkan banner unduh untuk rilis aktif per platform.
+- **Upload Limit 200MB**: Konfigurasi Nginx, PHP, dan Apache untuk mendukung upload file besar.
+- **Server-Side Pagination**: Seluruh halaman daftar (Submissions, Users, Employees, Approvals, Mobile Apps, Audit Logs) kini menggunakan pagination server-side dengan default 25 item/halaman.
+- **Komponen Pagination Reusable**: Komponen `<Pagination>` baru dengan numbered navigation, ellipsis, dan info "Menampilkan X–Y dari Z".
+- **Server-Side Search**: Users dan Employees beralih dari filter client-side ke pencarian server-side.
+
+### Diubah
+
+- **UserController, EmployeeController**: `->get()` → `->paginate(25)` + search server-side.
+- **MobileAppReleaseController**: Paginated untuk admin view, `->get()` untuk dashboard banner.
+- **SubmissionController**: Default `per_page` dari `10` → `25`.
+- **ApprovalController** (pending + history): Default `per_page` dari `10` → `25`.
+- **AuditTrailController**: Default `per_page` dari `20` → `25`.
+- **mobileApps.ts**: `getAll()` mendukung parameter `page` opsional.
+
+### Dokumentasi
+
+- Diperbarui: README, arsitektur sistem, daftar fitur (64 → 70), changelog, dan seluruh backend feature docs.
+
+---
+
 ## [2026-03-04] — Draf, Penghapusan, & Manajemen Role
 
 ### Ditambahkan

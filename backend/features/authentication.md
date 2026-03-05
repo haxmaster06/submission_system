@@ -26,7 +26,7 @@ This module handles user identity, session management via Laravel Sanctum, and r
 - `GET /roles-permissions`: Fetches all roles and permissions.
 - `GET /roles/{id}`: Fetches specific role details.
 - `PUT /roles/{id}/permissions`: Updates permissions for a specific role.
-- `API Resource /users`: CRUD endpoints for managing users.
+- `API Resource /users`: CRUD endpoints for managing users (paginated, `per_page=25`, server-side search).
 
 ## Security & Middleware
 

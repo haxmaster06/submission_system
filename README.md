@@ -5,8 +5,6 @@ Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Fro
 
 ## Fitur Utama
 
-## Fitur Utama
-
 - **Status Draf & Manajemen Draf**: Simpan pengajuan sebagai draf sebelum diterbitkan, dan kelola (edit/hapus) draf pribadi dengan mudah.
 - **Sistem Role & Permission Fleksibel**: Dukungan multi-role per user dan manajemen Role CRUD (Create/Read/Update/Delete) oleh Super Admin.
 - **Manajemen Pengajuan**: Create, Read, Update, Delete (CRUD) pengajuan anggaran.
@@ -17,13 +15,16 @@ Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Fro
 - **Signature Digital**: Tanda tangan digital untuk persetujuan dokumen.
 - **Audit Trail**: Pencatatan aktivitas pengguna untuk keamanan dan transparansi.
 - **Laporan Realisasi**: Pelacakan penggunaan anggaran per divisi.
+- **Mobile App Download**: Super Admin dapat mengunggah file APK/IPA dan mengelola rilis aplikasi mobile. User biasa melihat banner unduh di dashboard.
+- **Server-Side Pagination**: Seluruh halaman daftar menggunakan pagination server-side (25 item/halaman) dengan navigasi numbered pagination.
 
 ## Prasyarat
 
 - PHP >= 8.2
 - Composer
-- Node.js >= 18
+- Node.js >= 20
 - MySQL / MariaDB
+- Docker & Docker Compose (Recommended)
 
 ## Instalasi & Setup
 
@@ -89,6 +90,14 @@ Akses Aplikasi (Single Port 3030):
 - Frontend: `http://36.92.42.135:3030`
 - Backend API: `http://36.92.42.135:3030/api`
 - Reverb WebSocket: `http://36.92.42.135:3030/app` (Proxy via Nginx)
+
+### 5. Konfigurasi Upload Size (Opsional)
+
+Aplikasi mendukung upload file hingga **200MB** (untuk APK/IPA). Konfigurasi ini diatur di:
+
+- **Nginx:** `client_max_body_size 200M` → `docker/nginx/conf.d/app.conf`
+- **PHP:** `upload_max_filesize = 200M` → `docker/php/uploads.ini`
+- **Apache (reverse proxy):** `LimitRequestBody 209715200` → `/etc/apache2/sites-available/budgeting-system.conf`
 
 ## Testing
 

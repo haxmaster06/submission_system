@@ -2,7 +2,7 @@
 
 > Dokumen ini mencatat **seluruh fitur** yang tersedia pada sistem HBM Budgeting, mencakup Backend (Laravel), Frontend Web (Next.js), dan Mobile (Flutter).
 >
-> **Terakhir diperbarui**: 4 Maret 2026
+> **Terakhir diperbarui**: 5 Maret 2026
 
 ---
 
@@ -174,12 +174,33 @@
 
 ---
 
-## 📖 P. Bantuan & Panduan
+## � O2. Mobile App Download
 
-| #   | Fitur                     | Platform | Keterangan                                                         |
-| --- | ------------------------- | -------- | ------------------------------------------------------------------ |
-| 64  | Panduan Pengguna (In-App) | Web      | Manual book interaktif dengan pencarian, navigasi tab, dan animasi |
+| #   | Fitur                        | Platform | Keterangan                                                       |
+| --- | ---------------------------- | -------- | ---------------------------------------------------------------- |
+| 64  | Upload Rilis APK/IPA         | Web      | Super Admin mengunggah file installer mobile (hingga 200MB)      |
+| 65  | Kelola Rilis Aktif           | Web      | Toggle rilis aktif per platform (otomatis deactivate rilis lama) |
+| 66  | Banner Download di Dashboard | Web      | User melihat banner unduh untuk rilis aktif di dashboard         |
+| 67  | Download File Rilis          | Web      | Download file APK/IPA melalui endpoint terproteksi               |
 
 ---
 
-> **Total: 64 fitur** tersebar di 3 platform (Backend Laravel, Web Next.js, Mobile Flutter).
+## 📄 P2. Pagination
+
+| #   | Fitur                        | Platform | Keterangan                                                                |
+| --- | ---------------------------- | -------- | ------------------------------------------------------------------------- |
+| 68  | Server-Side Pagination       | Backend  | Semua endpoint daftar menggunakan `paginate(25)` sebagai default          |
+| 69  | Komponen Pagination Reusable | Web      | Numbered pagination (Prev, 1, 2, …, Next) + info "Menampilkan X–Y dari Z" |
+| 70  | Server-Side Search           | Web      | Pencarian server-side di halaman Users dan Employees                      |
+
+---
+
+## �📖 P. Bantuan & Panduan
+
+| #   | Fitur                     | Platform | Keterangan                                                         |
+| --- | ------------------------- | -------- | ------------------------------------------------------------------ |
+| 71  | Panduan Pengguna (In-App) | Web      | Manual book interaktif dengan pencarian, navigasi tab, dan animasi |
+
+---
+
+> **Total: 71 fitur** tersebar di 3 platform (Backend Laravel, Web Next.js, Mobile Flutter).
