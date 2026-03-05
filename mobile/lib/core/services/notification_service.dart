@@ -124,6 +124,20 @@ class NotificationService {
     }
   }
 
+  /// Unregister the current FCM token from backend (call before logout).
+  Future<void> unregisterToken() async {
+    try {
+      final token = await _messaging.getToken();
+      if (token != null) {
+        debugPrint('FCM: Unregistering token from backend...');
+        await _dio.post('/fcm/unregister', data: {'token': token});
+        debugPrint('FCM: Token unregistered successfully.');
+      }
+    } catch (e) {
+      debugPrint('FCM: Unregister failed (ignored): $e');
+    }
+  }
+
   Future<void> showForegroundNotification(RemoteMessage message) async {
     RemoteNotification? notification = message.notification;
 

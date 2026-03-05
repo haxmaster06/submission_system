@@ -222,6 +222,7 @@ function SubmissionsPageContent() {
       case 'approved': return 'bg-emerald-50 text-emerald-600 border-emerald-200';
       case 'rejected': return 'bg-rose-50 text-rose-600 border-rose-200';
       case 'draf': return 'bg-slate-50 text-slate-500 border-slate-200';
+      case 'on_hold': return 'bg-amber-50 text-amber-600 border-amber-200';
       default: return 'bg-amber-50 text-amber-600 border-amber-200';
     }
   };
@@ -231,6 +232,7 @@ function SubmissionsPageContent() {
       case 'approved': return <CheckCircle className="w-4 h-4" />;
       case 'rejected': return <XCircle className="w-4 h-4" />;
       case 'draf': return <Save className="w-4 h-4" />;
+      case 'on_hold': return <Clock className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
@@ -929,7 +931,7 @@ function SubmissionsList({
                     {getStatusIcon(sub.final_status)}
                     {sub.final_status === 'pending'
                       ? (sub.current_step_role ? `Menunggu ${sub.current_step_role}` : 'Menunggu')
-                      : (sub.final_status === 'approved' ? 'Disetujui' : (sub.final_status === 'draf' ? 'Draf' : 'Ditolak'))}
+                      : (sub.final_status === 'approved' ? 'Disetujui' : (sub.final_status === 'draf' ? 'Draf' : (sub.final_status === 'on_hold' ? 'Ditunda' : 'Ditolak')))}
                   </div>
                   {sub.status_urgent === 'urgent' && (
                     <div className="bg-rose-50 text-rose-500 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-rose-100 flex items-center gap-1.5">

@@ -4,6 +4,30 @@ Riwayat penambahan fitur dan perubahan signifikan pada sistem.
 
 ---
 
+## [2026-03-05] — Fitur Tunda (Hold Approval) & Bug Fixes
+
+### Ditambahkan
+
+- **Status Approval "Tunda" (On Hold)**: Approver dapat menunda pengajuan dengan catatan. Pemilik mendapat notifikasi untuk merevisi, lalu approver review ulang.
+- **Notifikasi Tunda & Revisi**: `SubmissionHeldNotification` (ke pemilik) dan `SubmissionRevisedNotification` (ke approver) via database, broadcast, dan FCM.
+- **Endpoint Hold**: `POST /approvals/{approval}/hold` dengan validasi catatan wajib.
+- **Revisi Pengajuan On Hold**: `SubmissionController.update()` mendukung edit pengajuan berstatus `on_hold`, otomatis set status `revised` dan notifikasi approver.
+- **FCM Token Unregister**: Method `unregisterToken()` di `NotificationService` Flutter, dipanggil saat logout.
+
+### Diperbaiki
+
+- **Bug Dashboard Navigation**: Klik task approval dari dashboard kini mengarah ke halaman review (bukan detail submission) — Web dan Mobile.
+- **Bug FCM Token Persist**: Token FCM dihapus dari backend saat user logout, mencegah notifikasi silang antar akun.
+
+### Diubah
+
+- **ApprovalController.pending()**: Include status `revised` agar approver melihat pengajuan yang sudah direvisi.
+- **Frontend Approvals**: Tombol Tunda (amber) di samping Tolak/Setujui, badge "Sudah Direvisi" (indigo), status "Ditunda" di riwayat.
+- **Frontend Submissions**: Status `on_hold` dengan label "Ditunda", tombol "Revisi Pengajuan" di detail view.
+- **Mobile Flutter**: Tombol TUNDA di dialog approval, badge DITUNDA/DIREVISI di approval card.
+
+---
+
 ## [2026-03-05] — Mobile App Download & Server-Side Pagination
 
 ### Ditambahkan

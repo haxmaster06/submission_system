@@ -79,6 +79,7 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::get('/approvals/pending', [ApprovalController::class , 'pending']);
     Route::post('/approvals/{approval}/approve', [ApprovalController::class , 'approve']);
     Route::post('/approvals/{approval}/reject', [ApprovalController::class , 'reject']);
+    Route::post('/approvals/{approval}/hold', [ApprovalController::class , 'hold']);
 
     // Attachment Requests
     Route::get('/attachment-requests/my', [AttachmentRequestController::class, 'myRequests']);

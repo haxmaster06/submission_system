@@ -225,4 +225,33 @@ class ApprovalService
             return $approval;
         });
     }
+
+    /**
+     * Process a hold (tunda) action.
+     * Sets approval to on_hold and notifies the submission owner to revise.
+     */
+    public function hold(SubmissionApproval $approval, array $data)
+    {
+        return DB::transaction(function () use ($approval, $data) {
+            $user = Auth::user();
+
+            $approval->update([
+                'status' => 'on_hold',
+                'notes' => $data['notes'] ?? 'Ditunda',
+                'approver_id' => $user->id,
+            ]);
+
+            $submission = $approval->submission;
+            $submission->update(['final_status' => 'on_hold']);
+
+            // Notify submission owner to revise
+            $submission->user->notify(
+                new \App\Notifications\SubmissionHeldNotification($submission, $user->name, $data['notes'] ?? '')
+            );
+
+            AuditTrailService::log('hold', 'SubmissionApproval', $approval->id, null, $approval->toArray());
+
+            return $approval;
+        });
+    }
 }

@@ -68,4 +68,14 @@ class ApprovalRepository {
       throw Exception('Gagal menolak pengajuan');
     }
   }
+
+  Future<void> holdSubmission(int approvalId, String notes) async {
+    final response = await _dio.post(
+      '/approvals/$approvalId/hold',
+      data: {'notes': notes},
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Gagal menunda pengajuan');
+    }
+  }
 }

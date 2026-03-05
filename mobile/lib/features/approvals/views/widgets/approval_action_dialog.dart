@@ -89,6 +89,49 @@ class _ApprovalActionSheetState extends ConsumerState<ApprovalActionSheet> {
     }
   }
 
+  Future<void> _handleHold() async {
+    if (_notesController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Catatan wajib diisi untuk menunda pengajuan.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final repo = ref.read(approvalRepositoryProvider);
+      await repo.holdSubmission(widget.item.id, _notesController.text.trim());
+
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pengajuan berhasil ditunda'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        widget.onSuccess();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -193,31 +236,53 @@ class _ApprovalActionSheetState extends ConsumerState<ApprovalActionSheet> {
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else
-            Row(
+            Column(
               children: [
-                if (user?.hasPermission('reject submissions') ?? false)
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => _handleAction(false),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
-                        side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                Row(
+                  children: [
+                    if (user?.hasPermission('reject submissions') ?? false)
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => _handleAction(false),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                          ),
+                          child: const Text(
+                            'TOLAK',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
-                      child: const Text(
-                        'TOLAK',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                    if (user?.hasPermission('reject submissions') ?? false)
+                      const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _handleHold,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.orange,
+                          side: const BorderSide(color: Colors.orange),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Text(
+                          'TUNDA',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
-                  ),
-                if ((user?.hasPermission('reject submissions') ?? false) &&
-                    (user?.hasPermission('approve submissions') ?? false))
-                  const SizedBox(width: 16),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 if (user?.hasPermission('approve submissions') ?? false)
-                  Expanded(
+                  SizedBox(
+                    width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () => _handleAction(true),
                       style: ElevatedButton.styleFrom(

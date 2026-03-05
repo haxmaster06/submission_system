@@ -183,6 +183,14 @@ class ApprovalCard extends StatelessWidget {
       bgColor = UiKit.statusRejectedBg;
       textColor = UiKit.statusRejectedText;
       label = 'DITOLAK';
+    } else if (status == 'on_hold') {
+      bgColor = const Color(0xFFFFF3E0);
+      textColor = Colors.orange;
+      label = 'DITUNDA';
+    } else if (status == 'revised') {
+      bgColor = const Color(0xFFE8EAF6);
+      textColor = const Color(0xFF3F51B5);
+      label = 'DIREVISI';
     }
 
     return Container(

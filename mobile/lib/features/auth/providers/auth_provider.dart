@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:mobile/features/auth/models/user_model.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:mobile/features/auth/repositories/auth_repository.dart';
+import 'package:mobile/core/services/notification_service.dart';
 
 part 'auth_provider.freezed.dart';
 part 'auth_provider.g.dart';
@@ -40,7 +41,9 @@ class Auth extends _$Auth {
   Future<void> login(String email, String password) async {
     state = const AuthState.loading();
     try {
-      final user = await ref.read(authRepositoryProvider).login(email, password);
+      final user = await ref
+          .read(authRepositoryProvider)
+          .login(email, password);
       state = AuthState.authenticated(user);
     } catch (e) {
       state = AuthState.error(e.toString());
@@ -52,6 +55,10 @@ class Auth extends _$Auth {
 
   Future<void> logout() async {
     state = const AuthState.loading();
+    // Unregister FCM token before logout to prevent stale notifications
+    try {
+      await ref.read(notificationServiceProvider).unregisterToken();
+    } catch (_) {}
     await ref.read(authRepositoryProvider).logout();
     state = const AuthState.unauthenticated();
   }

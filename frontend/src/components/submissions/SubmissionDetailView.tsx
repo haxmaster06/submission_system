@@ -187,6 +187,8 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   const getStepStatusIcon = (status: string, isCurrent: boolean) => {
     if (status === 'approved') return <CheckCircle className="text-emerald-500 w-6 h-6" />;
     if (status === 'rejected') return <XCircle className="text-rose-500 w-6 h-6" />;
+    if (status === 'on_hold') return <Clock className="text-amber-500 w-6 h-6" />;
+    if (status === 'revised') return <Clock className="text-indigo-500 w-6 h-6 animate-pulse" />;
     if (isCurrent) return <Clock className="text-amber-500 w-6 h-6 animate-pulse" />;
     return <div className="w-6 h-6 rounded-full border-2 border-slate-200" />;
   };
@@ -285,6 +287,18 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 Terbitkan
               </button>
             </>
+          )}
+
+          {submission.final_status === 'on_hold' && user?.id === submission.user_id && (
+            <button
+              onClick={() => {
+                router.push(`/submissions/new?edit=${submission.id}`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 font-bold rounded-lg hover:bg-amber-100 transition-colors border border-amber-200 shadow-sm animate-pulse"
+            >
+              <Save className="w-4 h-4" />
+              Revisi Pengajuan
+            </button>
           )}
 
           <button
@@ -393,7 +407,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               <div className="space-y-6 relative">
                 <div className="absolute left-[9px] top-1.5 bottom-1.5 w-0.5 bg-slate-50" />
                 {submission.approvals?.length > 0 ? submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
-                  const isCurrent = submission.current_approval_step === approval.step_order && submission.final_status === 'pending';
+                  const isCurrent = submission.current_approval_step === approval.step_order && ['pending', 'on_hold'].includes(submission.final_status);
                   const isDone = approval.status !== 'pending';
                   return (
                     <div key={approval.id} className="relative flex gap-4">

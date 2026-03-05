@@ -32,7 +32,7 @@ class ApprovalController extends Controller
             'submission.attachments',
             'submission.approvals.approver' // Load timeline data
         ])
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'revised'])
             ->whereHas('submission', function ($q) {
             $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
         });
@@ -166,5 +166,18 @@ class ApprovalController extends Controller
         if ($approval->submission->current_approval_step !== $approval->step_order) {
             abort(400, 'It is not your turn to approve this submission.');
         }
+    }
+
+    public function hold(Request $request, SubmissionApproval $approval)
+    {
+        $this->authorizeAction($approval);
+
+        $request->validate([
+            'notes' => 'required|string',
+        ]);
+
+        $result = $this->approvalService->hold($approval, $request->all());
+
+        return response()->json($result);
     }
 }

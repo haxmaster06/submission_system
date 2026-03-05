@@ -341,7 +341,7 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(data.pending_tasks ?? []).map((task: any, idx: number) => (
-                  <Link key={`${task.type}-${idx}`} href={`/submissions?view=${task.submission_id}`}>
+                  <Link key={`${task.type}-${idx}`} href={task.type === 'approval' ? '/approvals' : `/submissions?view=${task.submission_id}`}>
                     <motion.div 
                       whileHover={{ scale: 1.01, x: 5 }}
                       whileTap={{ scale: 0.99 }}
@@ -738,14 +738,31 @@ export default function DashboardPage() {
                     {idx !== (data?.activities?.length ?? 0) - 1 && (
                       <div className="absolute left-5 top-10 w-0.5 h-8 bg-slate-50" />
                     )}
-                    <div className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${act.status === 'approved' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'
-                      }`}>
-                      {act.status === 'approved' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                    <div className={`w-10 h-10 rounded-2xl shrink-0 flex items-center justify-center shadow-sm ${
+                      act.status === 'approved' ? 'bg-emerald-50 text-emerald-500' :
+                      act.status === 'on_hold' ? 'bg-orange-50 text-orange-500' :
+                      act.status === 'revised' ? 'bg-indigo-50 text-indigo-500' :
+                      'bg-rose-50 text-rose-500'
+                    }`}>
+                      {act.status === 'approved' ? <CheckCircle size={18} /> : 
+                       act.status === 'on_hold' ? <Clock size={18} /> : 
+                       act.status === 'revised' ? <History size={18} /> : 
+                       <AlertCircle size={18} />}
                     </div>
                     <div>
                       <p className="text-sm text-slate-700 leading-snug">
                         <span className="font-black">{act.actor_name}</span> telah
-                        <span className={`mx-1 font-bold ${act.status === 'approved' ? 'text-emerald-500' : 'text-rose-500'}`}>{act.status === 'approved' ? 'menyetujui' : 'menolak'}</span>
+                        <span className={`mx-1 font-bold ${
+                          act.status === 'approved' ? 'text-emerald-500' : 
+                          act.status === 'on_hold' ? 'text-orange-500' :
+                          act.status === 'revised' ? 'text-indigo-500' :
+                          'text-rose-500'
+                        }`}>
+                          {act.status === 'approved' ? 'menyetujui' : 
+                           act.status === 'on_hold' ? 'menunda' : 
+                           act.status === 'revised' ? 'merevisi' : 
+                           'menolak'}
+                        </span>
                         pengajuan <span className="font-mono text-[10px] font-black text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded">{act.no_pengajuan}</span>
                       </p>
                       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1.5 flex items-center gap-1.5">

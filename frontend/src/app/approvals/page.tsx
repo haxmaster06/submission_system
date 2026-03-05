@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Shell from '@/components/layout/Shell';
 import api, { STORAGE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText } from 'lucide-react';
+import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText, Pause } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
@@ -253,6 +253,40 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleHold = async () => {
+    if (!selectedApproval) return;
+    if (!notes.trim()) {
+      alert('Catatan wajib diisi untuk menunda pengajuan.');
+      return;
+    }
+
+    setProcessingId(selectedApproval.id);
+    try {
+      await api.post(`/approvals/${selectedApproval.id}/hold`, {
+        notes: notes.trim()
+      });
+
+      setSelectedApproval(null);
+      setNotes('');
+      setSignature('');
+      setProof(null);
+      setIsDirectorProxy(false);
+
+      if (typeof window !== 'undefined') {
+        router.replace(window.location.pathname, { scroll: false });
+      }
+
+      fetchApprovals();
+      fetchHistory();
+    } catch (err: any) {
+      console.error('Hold action failed:', err);
+      const errorMsg = err.response?.data?.message || 'Gagal menunda pengajuan. Silakan coba lagi.';
+      alert(`Error: ${errorMsg}`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (loading) return <Shell><div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin text-sky-500" /></div></Shell>;
 
   return (
@@ -305,6 +339,11 @@ export default function ApprovalsPage() {
                     <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-100 uppercase tracking-tight shadow-sm">
                       Step: {app.role_name}
                     </span>
+                    {app.status === 'revised' && (
+                      <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-xl border border-indigo-100 uppercase tracking-tight shadow-sm animate-pulse">
+                        Sudah Direvisi
+                      </span>
+                    )}
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-auto md:ml-0">{app.submission.user.name.split(' ')[0]}</span>
                   </div>
 
@@ -323,10 +362,12 @@ export default function ApprovalsPage() {
                     <div>
                       {activeTab === 'history' && app.status !== 'pending' && (
                         <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-widest border ${
-                          app.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'
+                          app.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                          app.status === 'on_hold' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          'bg-red-50 text-red-600 border-red-100'
                         }`}>
-                          {app.status === 'approved' ? <Check size={14}/> : <X size={14}/>}
-                          {app.status}
+                          {app.status === 'approved' ? <Check size={14}/> : app.status === 'on_hold' ? <Pause size={14}/> : <X size={14}/>}
+                          {app.status === 'on_hold' ? 'Ditunda' : app.status}
                         </div>
                       )}
                     </div>
@@ -679,7 +720,7 @@ export default function ApprovalsPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 pt-6 mt-4 border-t border-slate-100">
+                   <div className="flex items-center gap-3 pt-6 mt-4 border-t border-slate-100">
                     <button
                       onClick={() => handleAction('reject')}
                       disabled={processingId === selectedApproval.id}
@@ -687,6 +728,14 @@ export default function ApprovalsPage() {
                     >
                       {processingId === selectedApproval.id ? <Loader2 size={16} className="animate-spin" /> : <X size={16} />}
                       Tolak
+                    </button>
+                    <button
+                      onClick={handleHold}
+                      disabled={processingId === selectedApproval.id || !notes.trim()}
+                      className="flex-1 py-4 bg-amber-50 text-amber-600 font-black uppercase tracking-[0.15em] text-[10px] rounded-2xl hover:bg-amber-100 transition-all disabled:opacity-50 flex items-center justify-center gap-2 active:scale-95 border border-amber-200 shrink-0"
+                    >
+                      {processingId === selectedApproval.id ? <Loader2 size={16} className="animate-spin" /> : <Pause size={16} />}
+                      Tunda
                     </button>
                     <button
                       onClick={() => handleAction('approve')}

@@ -856,7 +856,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return TappableCard(
       margin: const EdgeInsets.only(bottom: 12),
       boxShadow: UiKit.softShadow,
-      onTap: () => context.push('/submissions/${task['submission_id']}'),
+      onTap: () {
+        if (task['type'] == 'approval') {
+          context.go('/approvals');
+        } else {
+          context.push('/submissions/${task['submission_id']}');
+        }
+      },
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(10),

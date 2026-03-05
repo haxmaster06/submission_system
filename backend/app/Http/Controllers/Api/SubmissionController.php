@@ -148,8 +148,10 @@ class SubmissionController extends Controller
     {
         $this->authorize('update', $submission);
 
-        if ($submission->final_status !== 'draf') {
-            return response()->json(['message' => 'Hanya pengajuan berstatus draf yang dapat diubah.'], 403);
+        $isOnHold = $submission->final_status === 'on_hold';
+
+        if ($submission->final_status !== 'draf' && !$isOnHold) {
+            return response()->json(['message' => 'Hanya pengajuan berstatus draf atau ditunda yang dapat diubah.'], 403);
         }
 
         $request->validate([
@@ -168,7 +170,7 @@ class SubmissionController extends Controller
             'items.*.nominal' => 'required_with:items|numeric|min:0',
         ]);
 
-        return DB::transaction(function () use ($request, $submission) {
+        return DB::transaction(function () use ($request, $submission, $isOnHold) {
             $data = $request->except('items');
             
             // Recalculate total if items provided
@@ -189,7 +191,31 @@ class SubmissionController extends Controller
                 }
             }
 
-            AuditTrailService::log('UPDATED_DRAFT', 'Submission', $submission->id, null, $submission->toArray());
+            // If submission was on_hold, mark as revised and notify approver
+            if ($isOnHold) {
+                $submission->update(['final_status' => 'pending']);
+
+                // Find the on_hold approval and set to revised
+                $holdApproval = $submission->approvals()
+                    ->where('status', 'on_hold')
+                    ->where('step_order', $submission->current_approval_step)
+                    ->first();
+
+                if ($holdApproval) {
+                    $holdApproval->update(['status' => 'revised']);
+
+                    // Notify the approver that the submission has been revised
+                    if ($holdApproval->approver) {
+                        $holdApproval->approver->notify(
+                            new \App\Notifications\SubmissionRevisedNotification($submission, $submission->user->name)
+                        );
+                    }
+                }
+
+                AuditTrailService::log('REVISED', 'Submission', $submission->id, null, $submission->toArray());
+            } else {
+                AuditTrailService::log('UPDATED_DRAFT', 'Submission', $submission->id, null, $submission->toArray());
+            }
 
             return response()->json($submission->load('items.uom'));
         });
