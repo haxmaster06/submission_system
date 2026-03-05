@@ -23,11 +23,17 @@ class MobileAppReleaseController extends Controller
 
         if ($activeOnly) {
             $query->where('is_active', '=', true);
+            // For dashboard banner — return all active (usually 1-2 per platform)
+            return response()->json([
+                'success' => true,
+                'data'    => $query->get()
+            ]);
         }
 
+        // Admin view — paginated
         return response()->json([
             'success' => true,
-            'data'    => $query->get()
+            'data'    => $query->paginate($request->query('per_page', 25))
         ]);
     }
 

@@ -15,6 +15,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 export default function MobileAppsManagementPage() {
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,8 @@ export default function MobileAppsManagementPage() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -36,12 +39,21 @@ export default function MobileAppsManagementPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page]);
 
   const fetchData = async () => {
     try {
-      const res = await mobileAppsApi.getAll(false);
-      setReleases(res.data);
+      const res = await mobileAppsApi.getAll(false, page);
+      const paginated = res.data;
+      setReleases(paginated.data);
+      setPaginationMeta({
+        current_page: paginated.current_page,
+        last_page: paginated.last_page,
+        from: paginated.from,
+        to: paginated.to,
+        total: paginated.total,
+        per_page: paginated.per_page,
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -227,6 +239,13 @@ export default function MobileAppsManagementPage() {
             </table>
           </div>
         </div>
+
+        {/* Pagination */}
+        {paginationMeta && (
+          <div className="mt-4 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <Pagination pagination={paginationMeta} onPageChange={setPage} />
+          </div>
+        )}
 
         {/* Form Modal */}
         <Modal

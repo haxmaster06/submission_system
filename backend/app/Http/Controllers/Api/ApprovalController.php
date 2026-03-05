@@ -53,7 +53,7 @@ class ApprovalController extends Controller
         }
 
         $approvals = $query->latest()
-            ->paginate(10);
+            ->paginate(25);
 
         return response()->json($approvals);
     }
@@ -91,7 +91,7 @@ class ApprovalController extends Controller
         }
 
         $approvals = $query->latest('updated_at')
-            ->paginate(10);
+            ->paginate(25);
 
         return response()->json($approvals);
     }

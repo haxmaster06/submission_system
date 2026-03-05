@@ -12,11 +12,16 @@ class EmployeeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $employees = Employee::orderBy('name')->get();
-        return response()->json($employees);
+    public function index(Request $request)
+{
+    $query = Employee::orderBy('name');
+
+    if ($search = $request->query('search')) {
+        $query->where('name', 'like', "%{$search}%");
     }
+
+    return response()->json($query->paginate($request->query('per_page', 25)));
+}
 
     /**
      * Store a newly created resource in storage.

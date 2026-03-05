@@ -8,6 +8,7 @@ import {
   Search, Filter, Calendar, ChevronDown, ChevronRight,
   Loader2, User, Clock, Activity, Shield
 } from 'lucide-react';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export default function AuditLogsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const params: any = { page, per_page: 20 };
+      const params: any = { page, per_page: 25 };
       if (action) params.action = action;
       if (model) params.model = model;
       if (dateFrom) params.date_from = dateFrom;
@@ -272,40 +273,10 @@ export default function AuditLogsPage() {
 
             {/* Pagination */}
             {pagination && pagination.last_page > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50/50">
-                <p className="text-xs text-slate-500 font-bold">
-                  {pagination.from}-{pagination.to} dari {pagination.total}
-                </p>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: Math.min(pagination.last_page, 5) }, (_, i) => {
-                    const p = i + 1;
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => setPage(p)}
-                        className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
-                          page === p ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-100'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    );
-                  })}
-                  {pagination.last_page > 5 && (
-                    <>
-                      <span className="text-slate-300">...</span>
-                      <button
-                        onClick={() => setPage(pagination.last_page)}
-                        className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
-                          page === pagination.last_page ? 'bg-slate-900 text-white' : 'text-slate-400 hover:bg-slate-100'
-                        }`}
-                      >
-                        {pagination.last_page}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <Pagination
+                pagination={pagination}
+                onPageChange={setPage}
+              />
             )}
           </div>
         )}

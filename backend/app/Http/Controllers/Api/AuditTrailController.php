@@ -77,7 +77,7 @@ class AuditTrailController extends Controller
         $actions = AuditTrail::select('action')->distinct()->orderBy('action')->pluck('action');
         $models = AuditTrail::select('model')->distinct()->orderBy('model')->pluck('model');
 
-        $logs = $query->latest()->paginate($request->get('per_page', 20));
+        $logs = $query->latest()->paginate($request->get('per_page', 25));
 
         return response()->json([
             'logs' => $logs,

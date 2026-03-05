@@ -11,9 +11,12 @@ export interface MobileAppRelease {
 }
 
 export const mobileAppsApi = {
-  getAll: async (activeOnly: boolean = false) => {
-    const res = await api.get<{ success: boolean; data: MobileAppRelease[] }>(
-      `/mobile-apps${activeOnly ? '?active_only=true' : ''}`
+  getAll: async (activeOnly: boolean = false, page?: number) => {
+    const params: any = {};
+    if (activeOnly) params.active_only = true;
+    if (page) params.page = page;
+    const res = await api.get<{ success: boolean; data: any }>(
+      '/mobile-apps', { params }
     );
     return res.data;
   },

@@ -90,7 +90,7 @@ class SubmissionController extends Controller
             $query->where('final_status', $request->status);
         }
 
-        $paginated = $query->latest()->paginate($request->get('per_page', 10));
+        $paginated = $query->latest()->paginate($request->get('per_page', 25));
 
         return response()->json([
             'submissions' => $paginated,

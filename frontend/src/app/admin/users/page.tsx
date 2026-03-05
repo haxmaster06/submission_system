@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 export default function UserManagementPage() {
   const [activeTab, setActiveTab] = useState('users');
@@ -33,6 +34,8 @@ export default function UserManagementPage() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [lookups, setLookups] = useState<any>({ divisions: [], roles: [] });
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
 
   // Modal states
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -50,16 +53,25 @@ export default function UserManagementPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, search]);
 
   const fetchData = async () => {
     try {
       const [usersRes, rolesRes, lookupsRes] = await Promise.all([
-        api.get('/users'),
+        api.get('/users', { params: { page, per_page: 25, search } }),
         api.get('/roles-permissions'),
         api.get('/lookups')
       ]);
-      setUsers(usersRes.data);
+      const paginated = usersRes.data;
+      setUsers(paginated.data);
+      setPaginationMeta({
+        current_page: paginated.current_page,
+        last_page: paginated.last_page,
+        from: paginated.from,
+        to: paginated.to,
+        total: paginated.total,
+        per_page: paginated.per_page,
+      });
       setRoles(rolesRes.data.roles);
       setPermissions(rolesRes.data.permissions);
       setLookups(lookupsRes.data);
@@ -143,10 +155,7 @@ export default function UserManagementPage() {
     }
   };
 
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredUsers = users;
 
   if (loading) return <Shell><div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin text-sky-500" /></div></Shell>;
 
@@ -361,6 +370,13 @@ export default function UserManagementPage() {
         </header>
 
         <Tabs tabs={tabs} defaultTab="users" onChange={setActiveTab} />
+
+        {/* Pagination for Users tab */}
+        {activeTab === 'users' && paginationMeta && (
+          <div className="mt-4 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <Pagination pagination={paginationMeta} onPageChange={setPage} />
+          </div>
+        )}
 
         {/* User Form Modal */}
         <Modal

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 // Lazy-load heavy modal components
 const SignatureCanvas = dynamic(() => import('@/components/submissions/SignatureCanvas'), { ssr: false });
@@ -25,6 +26,8 @@ export default function ApprovalsPage() {
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPaginationMeta, setHistoryPaginationMeta] = useState<PaginationMeta | null>(null);
 
   // Modal State
   const [notes, setNotes] = useState('');
@@ -73,6 +76,10 @@ export default function ApprovalsPage() {
   }, []);
 
   useEffect(() => {
+    fetchHistory();
+  }, [historyPage]);
+
+  useEffect(() => {
     if (isDirectorProxy) {
       checkDirectorSignature();
     } else {
@@ -117,8 +124,16 @@ export default function ApprovalsPage() {
 
   const fetchHistory = async () => {
     try {
-      const res = await api.get('/approvals/history');
+      const res = await api.get('/approvals/history', { params: { page: historyPage, per_page: 25 } });
       setHistory(res.data.data);
+      setHistoryPaginationMeta({
+        current_page: res.data.current_page,
+        last_page: res.data.last_page,
+        from: res.data.from,
+        to: res.data.to,
+        total: res.data.total,
+        per_page: res.data.per_page,
+      });
     } catch (err) {
       console.error('Failed to fetch history');
     } finally {
@@ -348,6 +363,13 @@ export default function ApprovalsPage() {
                   ? 'Tidak ada dokumen yang menunggu persetujuan Anda saat ini.' 
                   : 'Belum ada riwayat persetujuan yang Anda lakukan.'}
               </p>
+            </div>
+          )}
+
+          {/* Pagination for History tab */}
+          {activeTab === 'history' && historyPaginationMeta && (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              <Pagination pagination={historyPaginationMeta} onPageChange={setHistoryPage} />
             </div>
           )}
         </div>

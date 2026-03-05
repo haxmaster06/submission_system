@@ -8,11 +8,14 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import Modal from '@/components/ui/Modal';
 import { useRouter } from 'next/navigation';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 export default function EmployeesPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
   const [formData, setFormData] = useState<any>({});
@@ -32,8 +35,17 @@ export default function EmployeesPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/master/employees');
-      setData(res.data);
+      const res = await api.get('/master/employees', { params: { page, per_page: 25, search } });
+      const paginated = res.data;
+      setData(paginated.data);
+      setPaginationMeta({
+        current_page: paginated.current_page,
+        last_page: paginated.last_page,
+        from: paginated.from,
+        to: paginated.to,
+        total: paginated.total,
+        per_page: paginated.per_page,
+      });
     } catch (err) {
       console.error(err);
     } finally {
@@ -43,7 +55,7 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [page, search]);
 
   const handleCreate = () => {
     setEditingItem(null);
@@ -87,10 +99,7 @@ export default function EmployeesPage() {
     }
   };
 
-  const filteredData = data.filter(item =>
-    item.name?.toLowerCase().includes(search.toLowerCase()) ||
-    item.department?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredData = data;
 
   return (
     <Shell>
@@ -216,6 +225,13 @@ export default function EmployeesPage() {
             )}
           </div>
         </div>
+
+        {/* Pagination */}
+        {paginationMeta && (
+          <div className="mt-4 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <Pagination pagination={paginationMeta} onPageChange={setPage} />
+          </div>
+        )}
 
         {/* Modal for Add/Edit */}
         <Modal

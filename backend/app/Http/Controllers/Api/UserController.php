@@ -12,12 +12,21 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 class UserController extends Controller
 {
     use AuthorizesRequests;
-    public function index()
+    public function index(Request $request)
     {
         if (!auth()->user()->hasRole('Super Admin') && !auth()->user()->can('manage users')) {
             abort(403, 'Unauthorized');
         }
-        return response()->json(User::with(['division', 'roles'])->get());
+        $query = User::with(['division', 'roles']);
+
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        return response()->json($query->latest()->paginate($request->query('per_page', 25)));
     }
 
     public function selectable()

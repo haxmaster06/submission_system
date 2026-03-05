@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
 
 const SubmissionDetailView = dynamic(() => import('@/components/submissions/SubmissionDetailView'), {
   ssr: false,
@@ -44,6 +45,8 @@ function SubmissionsPageContent() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [page, setPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState<PaginationMeta | null>(null);
   const { user } = useAuth();
 
   const hasRole = (roleName: string) => user?.roles.some(r => r.name === roleName);
@@ -116,14 +119,16 @@ function SubmissionsPageContent() {
 
   useEffect(() => {
     fetchData();
-  }, [debouncedSearch, activeTab, filters]);
+  }, [debouncedSearch, activeTab, filters, page]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const params = {
+      const params: any = {
         search: debouncedSearch,
         status: activeTab,
+        page,
+        per_page: 25,
         ...filters
       };
 
@@ -131,7 +136,16 @@ function SubmissionsPageContent() {
         api.get('/submissions', { params }),
         api.get('/lookups')
       ]);
-      setSubmissions(submissionsRes.data.submissions.data);
+      const paginatedData = submissionsRes.data.submissions;
+      setSubmissions(paginatedData.data);
+      setPaginationMeta({
+        current_page: paginatedData.current_page,
+        last_page: paginatedData.last_page,
+        from: paginatedData.from,
+        to: paginatedData.to,
+        total: paginatedData.total,
+        per_page: paginatedData.per_page,
+      });
       setCounts(submissionsRes.data.counts);
       setLookups(lookupsRes.data);
     } catch (err) {
@@ -509,7 +523,14 @@ function SubmissionsPageContent() {
           )}
         </AnimatePresence>
 
-        <Tabs tabs={tabs} defaultTab="all" onChange={setActiveTab} />
+        <Tabs tabs={tabs} defaultTab="all" onChange={(tab: string) => { setActiveTab(tab); setPage(1); }} />
+
+        {/* Pagination */}
+        {paginationMeta && (
+          <div className="mt-4 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <Pagination pagination={paginationMeta} onPageChange={setPage} />
+          </div>
+        )}
 
         {/* Filter Toolbar removed from here */}
 
