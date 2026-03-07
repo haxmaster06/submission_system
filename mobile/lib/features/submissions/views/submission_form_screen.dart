@@ -27,7 +27,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
   int? _jenisPengajuanId;
   int? _divisionId;
   int? _jenisPerjalananId;
-  String _statusUrgent = 'Normal';
+  String _statusUrgent = 'normal';
   DateTime? _startDate;
   DateTime? _endDate;
 
@@ -61,7 +61,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
     _descriptionController.text = sub.description ?? '';
     _notesController.text = sub.notes;
     // We set IDs during _fetchData so they match lookup items
-    _statusUrgent = sub.isUrgent ? 'urgent' : 'Normal';
+    _statusUrgent = sub.isUrgent ? 'urgent' : 'normal';
 
     if (sub.payload != null && sub.payload!['type'] == 'salary') {
       try {
@@ -409,6 +409,11 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
           payload: payload,
           total: total,
         );
+
+        // If editing a draft and clicking 'Terbitkan' (isDraftInput == false), publish it now
+        if (!isDraftInput && widget.submission!.status == 'draf') {
+          await repo.publishSubmission(widget.submission!.id);
+        }
       } else {
         await repo.createSubmission(
           divisionId: _divisionId ?? user.divisionId ?? 1,
@@ -576,7 +581,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
                                 .toList()
                           : const [
                               DropdownMenuItem(
-                                value: 'Normal',
+                                value: 'normal',
                                 child: Text('Normal'),
                               ),
                               DropdownMenuItem(
@@ -634,9 +639,12 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
                                 borderRadius: BorderRadius.circular(15),
                               ),
                             ),
-                            child: const Text(
-                              'AJUKAN PENGAJUAN',
-                              style: TextStyle(
+                            child: Text(
+                              (widget.submission != null &&
+                                      widget.submission!.status == 'draf')
+                                  ? 'TERBITKAN'
+                                  : 'AJUKAN PENGAJUAN',
+                              style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
                               ),

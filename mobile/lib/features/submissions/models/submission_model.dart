@@ -26,7 +26,10 @@ bool _readSubmissionIsUrgent(Map<dynamic, dynamic> json, String key) {
     if (val is int) return val == 1;
     return val.toString() == 'true' || val.toString() == '1';
   }
-  if (json['status_urgent'] != null) return json['status_urgent'] != 'NRM';
+  if (json['status_urgent'] != null) {
+    final status = json['status_urgent'].toString().toLowerCase();
+    return status == 'urg' || status == 'urgent';
+  }
   return false;
 }
 

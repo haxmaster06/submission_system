@@ -36,6 +36,7 @@ function NewSubmissionContent() {
     status_urgent: 'Normal',
     description: '',
     notes: '',
+    final_status: '',
   });
 
   const [items, setItems] = useState([{
@@ -62,6 +63,7 @@ function NewSubmissionContent() {
           status_urgent: d.status_urgent || 'Normal',
           description: d.description || '',
           notes: d.notes || '',
+          final_status: d.final_status || '',
         });
         
         if (d.items && d.items.length > 0) {
@@ -135,6 +137,7 @@ function NewSubmissionContent() {
     setSubmitting(true);
     try {
       let payload: any = { ...form };
+      delete payload.final_status; // Remove pure UI state
       payload.items = items.map(({ id, ...item }) => item);
       payload.total = standardTotal;
       payload.is_draft = isDraft;
@@ -144,6 +147,11 @@ function NewSubmissionContent() {
         : await api.post('/submissions', payload);
       
       const newSubmissionId = res.data.id || editId;
+
+      // If user is editing a draft and clicking 'Simpan & Ajukan'/'Terbitkan'
+      if (editId && form.final_status === 'draf' && !isDraft) {
+        await api.post(`/submissions/${editId}/publish`);
+      }
 
       if (files.length > 0) {
         for (const file of files) {
@@ -483,7 +491,9 @@ function NewSubmissionContent() {
               className="w-full sm:w-auto px-10 py-3 rounded-xl bg-sky-500 text-white font-bold hover:bg-sky-600 shadow-xl shadow-sky-100 flex items-center justify-center gap-2 disabled:opacity-70 transition-all"
             >
               {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
-              {editId ? 'Simpan & Ajukan' : 'Submit Pengajuan'}
+              {editId 
+                ? (form.final_status === 'draf' ? 'TERBITKAN' : 'Simpan Perubahan') 
+                : 'Submit Pengajuan'}
             </button>
           </div>
         </form>

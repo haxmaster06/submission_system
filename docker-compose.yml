@@ -10,6 +10,8 @@ services:
     volumes:
       - ./backend:/var/www
       - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
     environment:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production
@@ -45,6 +47,8 @@ services:
     volumes:
       - ./backend:/var/www
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
     networks:
       - hbm-network
     depends_on:
@@ -147,6 +151,8 @@ services:
     working_dir: /var/www
     volumes:
       - ./backend:/var/www
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
     environment:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production
