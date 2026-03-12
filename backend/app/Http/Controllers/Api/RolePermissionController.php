@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -47,11 +47,16 @@ class RolePermissionController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|unique:roles,name|max:255',
+            'data_scope' => 'required|string|in:corporate,division,personal',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $role = Role::create(['name' => $validated['name'], 'guard_name' => 'web']);
+        $role = Role::create([
+            'name' => $validated['name'],
+            'data_scope' => $validated['data_scope'],
+            'guard_name' => 'web'
+        ]);
 
         if (!empty($validated['permissions'])) {
             $role->syncPermissions($validated['permissions']);
@@ -62,7 +67,7 @@ class RolePermissionController extends Controller
             get_class($role),
             $role->id,
             null,
-            ['name' => $role->name, 'permissions' => $validated['permissions'] ?? []]
+            ['name' => $role->name, 'data_scope' => $role->data_scope, 'permissions' => $validated['permissions'] ?? []]
         );
 
         return response()->json([
@@ -92,6 +97,7 @@ class RolePermissionController extends Controller
 
         $oldData = [
             'name' => $role->name,
+            'data_scope' => $role->data_scope,
             'permissions' => $role->permissions->pluck('name')->toArray()
         ];
 
@@ -122,24 +128,34 @@ class RolePermissionController extends Controller
         }
 
         $validated = $request->validate([
+            'data_scope' => 'required|string|in:corporate,division,personal',
             'permissions' => 'required|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $oldPermissions = $role->permissions->pluck('name')->toArray();
+        $oldData = [
+            'data_scope' => $role->data_scope,
+            'permissions' => $role->permissions->pluck('name')->toArray()
+        ];
+
+        // Update data_scope
+        $role->update(['data_scope' => $validated['data_scope']]);
 
         // Sync permissions
         $role->syncPermissions($validated['permissions']);
 
-        $newPermissions = $validated['permissions'];
+        $newData = [
+            'data_scope' => $role->data_scope,
+            'permissions' => $validated['permissions']
+        ];
 
         // Create audit log
         AuditTrailService::log(
             'update_role_permissions',
             get_class($role),
             $role->id,
-        ['permissions' => $oldPermissions],
-        ['permissions' => $newPermissions]
+            $oldData,
+            $newData
         );
 
         // Clear lookup cache

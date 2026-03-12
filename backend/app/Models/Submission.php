@@ -99,6 +99,33 @@ class Submission extends Model
         return $this->hasMany(RealizationHeader::class);
     }
 
+    public function scopeAccessibleBy($query, $user)
+    {
+        $userScopes = $user->roles->pluck('data_scope')->toArray();
+        if (empty($userScopes)) $userScopes = ['personal'];
+
+        if (in_array('corporate', $userScopes)) {
+            // Corporate scope: see all non-drafts, or own drafts
+            return $query->where(function($q) use ($user) {
+                $q->whereIn('final_status', ['pending', 'approved', 'rejected', 'on_hold'])
+                  ->orWhere('user_id', $user->id);
+            });
+        }
+
+        if (in_array('division', $userScopes)) {
+            // Division scope: see all non-drafts in same division, or own drafts
+            return $query->where(function($q) use ($user) {
+                $q->where(function($subq) use ($user) {
+                    $subq->where('division_id', $user->division_id)
+                         ->whereIn('final_status', ['pending', 'approved', 'rejected', 'on_hold']);
+                })->orWhere('user_id', $user->id);
+            });
+        }
+
+        // Personal scope: only see own submissions
+        return $query->where('user_id', $user->id);
+    }
+
     public function attachmentRequests(): HasMany
     {
         return $this->hasMany(AttachmentRequest::class);

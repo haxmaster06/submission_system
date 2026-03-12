@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import Shell from '@/components/layout/Shell';
 import api from '@/lib/api';
 import { motion } from 'framer-motion';
-import { Save, Send, Loader2, Info, Users, CalendarDays, Check, FileText, Trash2, Zap, Copy, UploadCloud, File, X } from 'lucide-react';
+import { Save, Send, Loader2, Info, Users, CalendarDays, Check, FileText, Trash2, Zap, Copy, UploadCloud, File, X, Search as SearchIcon } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
@@ -19,6 +19,10 @@ function NewSalarySubmissionContent() {
   const duplicateId = searchParams.get('duplicate');
   
   const [employees, setEmployees] = useState<any[]>([]);
+  const [selectionMode, setSelectionMode] = useState<'all' | 'manual'>('all');
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<Set<number>>(new Set());
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
   const [excludedDates, setExcludedDates] = useState<string[]>([]);
   const [matrixData, setMatrixData] = useState<Record<number, Record<string, number | ''>>>({});
@@ -41,6 +45,7 @@ function NewSalarySubmissionContent() {
     status_urgent: 'Normal',
     description: '',
     notes: '',
+    final_status: '',
   });
   
   const [duplicateResData, setDuplicateResData] = useState<any>(null);
@@ -54,12 +59,16 @@ function NewSalarySubmissionContent() {
   useEffect(() => {
     Promise.all([
       api.get('/lookups'),
-      api.get('/master/employees').catch(() => ({ data: [] })),
+      api.get('/master/employees?per_page=500').catch(() => ({ data: { data: [] } })),
       duplicateId ? api.get(`/submissions/${duplicateId}`) : Promise.resolve({ data: null })
     ]).then(([lookupsRes, empRes, duplicateRes]) => {
       setLookups(lookupsRes.data);
-      if (empRes.data.length > 0) {
-        setEmployees(empRes.data.filter((e: any) => e.is_active));
+      
+      // Handle both array and paginated response
+      const empData = Array.isArray(empRes.data) ? empRes.data : (empRes.data?.data || []);
+      
+      if (empData.length > 0) {
+        setEmployees(empData.filter((e: any) => e.is_active));
       }
       
       const salaryType = lookupsRes.data.jenis_pengajuan?.find((j: any) => j.name?.toLowerCase().includes('gaji karyawan harian'));
@@ -74,6 +83,7 @@ function NewSalarySubmissionContent() {
           status_urgent: d.status_urgent || 'Normal',
           description: d.description || '',
           notes: d.notes || '',
+          final_status: d.final_status || '',
         });
 
         if (d.payload) {
@@ -100,6 +110,10 @@ function NewSalarySubmissionContent() {
       }
       
       setLoading(false);
+       if (duplicateRes.data && duplicateRes.data.payload?.selected_employee_ids) {
+          setSelectionMode('manual');
+          setSelectedEmployeeIds(new Set(duplicateRes.data.payload.selected_employee_ids));
+       }
     }).catch(err => {
       console.error(err);
       setLoading(false);
@@ -138,6 +152,29 @@ function NewSalarySubmissionContent() {
   const activeDatesArray = useMemo(() => {
       return datesArray.filter(d => !excludedDates.includes(d));
   }, [datesArray, excludedDates]);
+
+  const filteredEmployees = useMemo(() => {
+      if (selectionMode === 'all') return employees;
+      return employees.filter(emp => selectedEmployeeIds.has(emp.id));
+  }, [employees, selectionMode, selectedEmployeeIds]);
+
+  const selectableEmployees = useMemo(() => {
+      if (!employeeSearch.trim()) return employees;
+      const q = employeeSearch.toLowerCase();
+      return employees.filter(emp => 
+          emp.name.toLowerCase().includes(q) || 
+          emp.department.toLowerCase().includes(q)
+      );
+  }, [employees, employeeSearch]);
+
+  const toggleEmployeeSelection = (id: number) => {
+      setSelectedEmployeeIds(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+      });
+  };
 
   const toggleExcludeDate = (date: string) => {
       setExcludedDates(prev => {
@@ -192,9 +229,9 @@ function NewSalarySubmissionContent() {
   const fillAllMatrix = () => {
     setMatrixData(prev => {
       const newMatrix = { ...prev };
-      employees.forEach(emp => {
+      filteredEmployees.forEach(emp => {
         if (!newMatrix[emp.id]) newMatrix[emp.id] = {};
-        const dailyRate = Math.round(parseFloat(emp.base_salary) / 25);
+        const dailyRate = Math.round((parseFloat(emp.base_salary) || 0) / 25);
         activeDatesArray.forEach(date => {
           newMatrix[emp.id][date] = dailyRate;
         });
@@ -213,8 +250,8 @@ function NewSalarySubmissionContent() {
     setMatrixData(prev => {
       const emp = employees.find(e => e.id === empId);
       if (!emp) return prev;
-      const dailyRate = Math.round(parseFloat(emp.base_salary) / 25);
-      const rowUpdates: Record<string, number> = {};
+      const dailyRate = Math.round((parseFloat(emp.base_salary) || 0) / 25);
+      const rowUpdates: Record<string, number | ''> = { ...(prev[empId] || {}) };
       activeDatesArray.forEach(d => rowUpdates[d] = dailyRate);
       return { ...prev, [empId]: rowUpdates };
     });
@@ -228,18 +265,22 @@ function NewSalarySubmissionContent() {
     });
   };
 
-  const matrixGrandTotal = useMemo(() => {
+   const matrixGrandTotal = useMemo(() => {
     let total = 0;
-    Object.values(matrixData).forEach(dates => {
+    Object.keys(matrixData).forEach(empIdStr => {
+      const empId = Number(empIdStr);
+      // Only count if employee is in current filtered list
+      if (selectionMode === 'manual' && !selectedEmployeeIds.has(empId)) return;
+      
+      const dates = matrixData[empId];
       Object.entries(dates).forEach(([dateStr, val]) => {
         if (activeDatesArray.includes(dateStr) && typeof val === 'number') total += val;
       });
     });
     return total;
-  }, [matrixData, activeDatesArray]);
+  }, [matrixData, activeDatesArray, selectionMode, selectedEmployeeIds]);
 
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
     e.preventDefault();
     if (datesArray.length === 0) {
       alert('Pilih rentang tanggal (Start Date & End Date) terlebih dahulu.');
@@ -249,8 +290,10 @@ function NewSalarySubmissionContent() {
     setSubmitting(true);
     try {
       let payload: any = { ...form };
+      delete payload.final_status;
+      payload.is_draft = isDraft;
       
-      const salaryItems = employees.map(emp => {
+      const salaryItems = filteredEmployees.map(emp => {
           const daysData = matrixData[emp.id] || {};
           const dailyFlags = activeDatesArray.map(date => ({
               date,
@@ -269,7 +312,7 @@ function NewSalarySubmissionContent() {
           };
       }).filter(emp => emp.total_days > 0); 
 
-      if(salaryItems.length === 0) {
+      if(!isDraft && salaryItems.length === 0) {
           alert('Belum ada karyawan yang dijadwalkan / dicentang dalam matrix gaji.');
           setSubmitting(false);
           return;
@@ -278,21 +321,30 @@ function NewSalarySubmissionContent() {
       payload.payload = {
           date_range: dateRange,
           employees: salaryItems,
-          total_amount: matrixGrandTotal
+          total_amount: matrixGrandTotal,
+          selection_mode: selectionMode,
+          selected_employee_ids: selectionMode === 'manual' ? Array.from(selectedEmployeeIds) : null
       };
       
       payload.items = [];
       payload.total = matrixGrandTotal;
 
-      const res = await api.post('/submissions', payload);
-      const newSubmissionId = res.data.id;
+      const editId = searchParams.get('edit');
+      let res;
+      if (editId) {
+          res = await api.put(`/submissions/${editId}`, payload);
+      } else {
+          res = await api.post('/submissions', payload);
+      }
+      
+      const submissionId = editId || res.data.id;
 
       if (files.length > 0) {
         for (const file of files) {
           const formData = new FormData();
           formData.append('file', file);
           try {
-             await api.post(`/submissions/${newSubmissionId}/attachments`, formData, {
+             await api.post(`/submissions/${submissionId}/attachments`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
              });
           } catch (uploadErr: any) {
@@ -300,6 +352,11 @@ function NewSalarySubmissionContent() {
              alert(`Gagal mengunggah file lampiran: ${file.name}. Error: ${uploadErr.response?.data?.message || uploadErr.message}`);
           }
         }
+      }
+
+      // If user is editing a draft and clicking published (not draf button)
+      if (editId && form.final_status === 'draf' && !isDraft) {
+        await api.post(`/submissions/${editId}/publish`);
       }
 
       router.push('/submissions');
@@ -406,17 +463,76 @@ function NewSalarySubmissionContent() {
             </div>
             
             <div className="p-4 sm:p-6 lg:p-8 space-y-8 flex-1">
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
                     Keterangan Pembayaran
-                </label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium h-24"
-                  placeholder="cth: Gaji Harian Karyawan Gudang Periode 1-7 Des 2024"
-                  required
-                />
+                  </label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium h-24"
+                    placeholder="cth: Gaji Harian Karyawan Gudang Periode 1-7 Des 2024"
+                    required
+                  />
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5">
+                  <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3">Tampilkan Karyawan</label>
+                  <div className="flex gap-2 p-1.5 bg-slate-100 rounded-xl mb-4">
+                    <button
+                      type="button"
+                      onClick={() => setSelectionMode('all')}
+                      className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all ${selectionMode === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Tampilkan Semua
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectionMode('manual')}
+                      className={`flex-1 py-2 px-4 rounded-lg text-xs font-bold transition-all ${selectionMode === 'manual' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                      Pilih Karyawan...
+                    </button>
+                  </div>
+
+                  {selectionMode === 'manual' && (
+                    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-3">
+                      <div className="relative">
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                        <input
+                          type="text"
+                          placeholder="Cari nama / departemen..."
+                          value={employeeSearch}
+                          onChange={(e) => setEmployeeSearch(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-400"
+                        />
+                      </div>
+                      <div className="max-h-[150px] overflow-y-auto px-1 space-y-1 custom-scrollbar">
+                        {selectableEmployees.map(emp => (
+                          <label key={emp.id} className="flex items-center gap-3 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors group">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${selectedEmployeeIds.has(emp.id) ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-white border-slate-300'}`}>
+                              {selectedEmployeeIds.has(emp.id) && <Check size={10} />}
+                            </div>
+                            <input
+                              type="checkbox"
+                              className="hidden"
+                              checked={selectedEmployeeIds.has(emp.id)}
+                              onChange={() => toggleEmployeeSelection(emp.id)}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-slate-700 truncate">{emp.name}</p>
+                              <p className="text-[10px] text-slate-400 font-medium truncate uppercase">{emp.department}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                      <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-[10px] font-bold">
+                        <span className="text-indigo-600">{selectedEmployeeIds.size} Terpilih</span>
+                        <button type="button" onClick={() => setSelectedEmployeeIds(new Set())} className="text-rose-500 hover:text-rose-600">Hapus Semua</button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </div>
 
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -484,9 +600,10 @@ function NewSalarySubmissionContent() {
                                <CalendarDays className="w-12 h-12 text-slate-200 mb-3" />
                                <p className="text-slate-500 font-bold text-sm">Pilih rentang tanggal dan hari aktif untuk memunculkan matrix absensi.</p>
                             </div>
-                         ) : employees.length === 0 ? (
-                            <div className="py-12 text-center text-slate-500 font-bold border-b border-indigo-50 bg-white m-0.5 rounded-b-xl">
-                               Tidak ada data karyawan aktif. Silakan tambahkan di Master Data.
+                         ) : filteredEmployees.length === 0 ? (
+                            <div className="py-12 text-center text-slate-500 font-bold border-b border-indigo-50 bg-white m-0.5 rounded-b-xl flex flex-col items-center">
+                               <Users className="w-12 h-12 text-slate-200 mb-3" />
+                               Tidak ada karyawan terpilih atau aktif dalam kriteria ini.
                             </div>
                          ) : (
                             <table className="w-full min-w-max text-left border-b border-slate-200">
@@ -495,7 +612,7 @@ function NewSalarySubmissionContent() {
                                    <th className="sticky left-0 z-20 bg-white border-r border-slate-200 px-4 py-3 w-64 min-w-[250px] shadow-[4px_0_12px_rgba(0,0,0,0.03)] border-b">
                                        <div className="flex flex-col">
                                           <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Karyawan</span>
-                                          <span className="text-[10px] font-medium text-slate-400">Total Karyawan: {employees.length}</span>
+                                          <span className="text-[10px] font-medium text-slate-400">Terpilih: {filteredEmployees.length}</span>
                                        </div>
                                    </th>
                                    {activeDatesArray.map(date => {
@@ -517,8 +634,8 @@ function NewSalarySubmissionContent() {
                                    </th>
                                  </tr>
                               </thead>
-                              <tbody className="divide-y divide-slate-100 bg-white">
-                                  {employees.map(emp => {
+                               <tbody className="divide-y divide-slate-100 bg-white">
+                                  {filteredEmployees.map(emp => {
                                       const daysData = matrixData[emp.id] || {};
                                       const rowDatas = activeDatesArray.map(d => typeof daysData[d] === 'number' ? daysData[d] : 0);
                                       const rowCheckedCount = rowDatas.filter((val: any) => val > 0).length;
@@ -647,12 +764,21 @@ function NewSalarySubmissionContent() {
               Batal
             </button>
             <button
+              type="button"
+              onClick={(e) => handleSubmit(new Event('submit') as any, true)}
+              disabled={submitting}
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-indigo-200 text-indigo-600 font-bold hover:bg-indigo-50 transition-all text-center flex items-center justify-center gap-2"
+            >
+              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
+              Simpan Draf
+            </button>
+            <button
               type="submit"
               disabled={submitting}
               className="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-lg"
             >
-              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
-              {submitting ? 'Menyimpan...' : 'Simpan & Ajukan Gaji'}
+              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
+              {submitting ? 'Menyimpan...' : (searchParams.get('edit') && form.final_status === 'draf' ? 'TERBITKAN' : 'Simpan & Ajukan Gaji')}
             </button>
           </div>
         </form>

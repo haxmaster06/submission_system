@@ -146,10 +146,15 @@ Jika menggunakan Docker, proses deployment jauh lebih sederhana.
 ### Langkah Deployment
 
 1. **Persiapan Server**
-   Pastikan Docker dan Docker Compose terinstall.
+   Pastikan Docker dan Docker Compose terinstall. Pastikan juga disk eksternal telah di-*mount*, contohnya untuk menyimpan lampiran ke `/mnt/raw-backup/app_data_storage`.
 
-2. **Konfigurasi**
-   Salin `.env.example` ke `.env` di folder backend dan atur kredensial database (DB_HOST=db).
+2. **Konfigurasi Lingkungan (Env & Bind Mounts)**
+   - Salin `.env.example` ke `.env` di folder backend dan atur kredensial database (`DB_HOST=db`).
+   - Buat struktur folder di disk ekstermal (opsional jika root permission mengatur otomatis):
+     ```bash
+     mkdir -p /mnt/raw-backup/app_data_storage/submission_attachments
+     mkdir -p /mnt/raw-backup/app_data_storage/mobile_app_releases
+     ```
 
    **Catatan Port (Mencegah Konflik):**
    - Frontend: **3030**

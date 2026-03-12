@@ -23,6 +23,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
   final _notesController = TextEditingController();
+  final _employeeSearchController = TextEditingController();
 
   int? _jenisPengajuanId;
   int? _divisionId;
@@ -46,6 +47,9 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
   bool _isSubmitting = false;
   bool _isLoadingEmployees = false;
   String? _employeeFetchError;
+
+  String _selectionMode = 'all'; // 'all' or 'manual'
+  final Set<int> _selectedEmployeeIds = {};
 
   @override
   void initState() {
@@ -71,8 +75,10 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
         _endDate = DateTime.parse(endStr);
 
         final List employees = sub.payload!['employees'] ?? [];
+        _selectionMode = 'manual';
         for (final emp in employees) {
           final empId = emp['employee_id'];
+          _selectedEmployeeIds.add(empId);
           final List dailyRecords = emp['daily_records'] ?? [];
           _salaryMatrix[empId] = {};
           for (final rec in dailyRecords) {
@@ -331,6 +337,10 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
             .toList();
 
         final employeesPayload = _salaryMatrix.entries
+            .where((e) {
+              if (_selectionMode == 'all') return true;
+              return _selectedEmployeeIds.contains(e.key);
+            })
             .map((e) {
               final emp = _employees.firstWhere((emp) => emp['id'] == e.key);
               final matrix = e.value;
@@ -643,7 +653,7 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
                               (widget.submission != null &&
                                       widget.submission!.status == 'draf')
                                   ? 'TERBITKAN'
-                                  : 'AJUKAN PENGAJUAN',
+                                  : 'SIMPAN & AJUKAN',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
@@ -697,7 +707,11 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
         .toList();
 
     setState(() {
-      for (final emp in _employees) {
+      final targetEmployees = _selectionMode == 'all' 
+          ? _employees 
+          : _employees.where((e) => _selectedEmployeeIds.contains(e['id']));
+          
+      for (final emp in targetEmployees) {
         final empId = emp['id'] as int;
         final baseSalary =
             double.tryParse(emp['base_salary'].toString()) ?? 0.0;
@@ -785,6 +799,142 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
             ),
           ],
         ),
+          const SizedBox(height: 24),
+          const Text('Tampilkan Karyawan', style: UiKit.heading3),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectionMode = 'all'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _selectionMode == 'all'
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: _selectionMode == 'all'
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Tampilkan Semua',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _selectionMode == 'all'
+                                ? UiKit.primaryBlue
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _selectionMode = 'manual'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _selectionMode == 'manual'
+                            ? Colors.white
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: _selectionMode == 'manual'
+                            ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Pilih Karyawan...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: _selectionMode == 'manual'
+                                ? UiKit.primaryBlue
+                                : Colors.grey,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_selectionMode == 'manual') ...[
+            const SizedBox(height: 16),
+            TextField(
+              controller: _employeeSearchController,
+              decoration: InputDecoration(
+                hintText: 'Cari nama / departemen...',
+                prefixIcon: const Icon(Icons.search, size: 20),
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onChanged: (v) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 200),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ListView(
+                shrinkWrap: true,
+                children: _employees.where((emp) {
+                  final search = _employeeSearchController.text.toLowerCase();
+                  if (search.isEmpty) return true;
+                  return emp['name'].toString().toLowerCase().contains(search) ||
+                      emp['division_name'].toString().toLowerCase().contains(search);
+                }).map((emp) {
+                  final empId = emp['id'] as int;
+                  final isSelected = _selectedEmployeeIds.contains(empId);
+                  return CheckboxListTile(
+                    value: isSelected,
+                    title: Text(emp['name'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    subtitle: Text(emp['division_name'] ?? '-', style: const TextStyle(fontSize: 10)),
+                    onChanged: (v) {
+                      setState(() {
+                        if (v == true) {
+                          _selectedEmployeeIds.add(empId);
+                        } else {
+                          _selectedEmployeeIds.remove(empId);
+                          _salaryMatrix.remove(empId);
+                        }
+                      });
+                    },
+                    controlAffinity: ListTileControlAffinity.leading,
+                    dense: true,
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
         if (dates.isNotEmpty) ...[
           const SizedBox(height: 24),
           Row(
@@ -1038,7 +1188,10 @@ class _SubmissionFormScreenState extends ConsumerState<SubmissionFormScreen> {
               ],
             ),
             // Rows
-            ..._employees.map((emp) {
+            ..._employees.where((emp) {
+              if (_selectionMode == 'all') return true;
+              return _selectedEmployeeIds.contains(emp['id']);
+            }).map((emp) {
               final empId = emp['id'] as int;
               final matrix = _salaryMatrix[empId] ?? {};
               double subtotal = 0;

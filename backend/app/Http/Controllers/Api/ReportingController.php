@@ -84,7 +84,8 @@ class ReportingController extends Controller
 
     protected function buildQuery(Request $request)
     {
-        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'realizations.details']);
+        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'realizations.details'])
+            ->accessibleBy(Auth::user());
 
         if ($request->filled('search')) {
             $search = $request->search;

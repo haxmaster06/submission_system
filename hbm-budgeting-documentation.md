@@ -52,6 +52,7 @@ Sistem ini dirancang untuk mendigitalisasi proses pengajuan dana/anggaran (Cash 
 ### B. Fitur Otorisasi dan Persetujuan (Approvals)
 
 - **Multi-Level Approval:** Dokumen harus disetujui secara berurutan (Step 1 -> Step 2 -> dst). Approver selanjutnya tidak akan ternotifikasi sebelum approver sebelumnya menyetujui.
+- **Tunda (Hold) Pengajuan:** Approver dapat mengembalikan dokumen ke pembuat untuk direvisi jika ada perbaikan data atau nominal. Setelah direvisi, dokumen dilanjutkan kembali ke approver.
 - **Digital Signatures:** Saat user (Approver) menyetujui dokumen, gambar tanda tangan mereka secara otomatis dibubuhkan ke dalam status log dan ekspor PDF.
 - **Super Admin Proxy (Override):** Super Admin memiliki wewenang untuk melihat seluruh dokumen dan memberikan _Approval Override_ (menyetujui atas nama user lain).
 

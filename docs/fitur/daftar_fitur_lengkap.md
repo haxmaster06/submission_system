@@ -54,10 +54,11 @@
 | --- | -------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------- |
 | 22  | Multi-Level Approval             | Web, Mobile | Persetujuan berurutan (Step 1 → Step 2 → dst). Approver berikutnya baru dinotifikasi setelah step sebelumnya selesai |
 | 23  | Approve Pengajuan                | Web, Mobile | Setujui pengajuan dengan tanda tangan digital                                                                        |
-| 24  | Reject Pengajuan                 | Web, Mobile | Tolak pengajuan (wajib isi alasan penolakan)                                                                         |
-| 25  | Riwayat Persetujuan              | Web, Mobile | Lihat log history approval yang sudah dilakukan                                                                      |
-| 26  | Proxy Director Signature         | Web         | Finance dapat menyetujui atas nama Direktur (dengan bukti kuasa)                                                     |
-| 27  | Cek Status Tanda Tangan Direktur | Web         | Endpoint khusus untuk cek apakah Direktur sudah punya tanda tangan                                                   |
+| 24  | Tunda Pengajuan (Hold)           | Web, Mobile | Kembalikan pengajuan ke pembuat untuk direvisi (wajib isi catatan revisi)                                            |
+| 25  | Reject Pengajuan                 | Web, Mobile | Tolak pengajuan secara permanen (wajib isi alasan penolakan)                                                         |
+| 26  | Riwayat Persetujuan              | Web, Mobile | Lihat log history approval yang sudah dilakukan                                                                      |
+| 27  | Proxy Director Signature         | Web         | Finance dapat menyetujui atas nama Direktur (dengan bukti kuasa)                                                     |
+| 28  | Cek Status Tanda Tangan Direktur | Web         | Endpoint khusus untuk cek apakah Direktur sudah punya tanda tangan                                                   |
 
 ---
 

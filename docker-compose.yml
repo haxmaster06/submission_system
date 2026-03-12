@@ -12,6 +12,7 @@ services:
       - ./docker/php/uploads.ini:/usr/local/etc/php/conf.d/uploads.ini
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/proofs:/var/www/storage/app/public/proofs
     environment:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production
@@ -49,6 +50,7 @@ services:
       - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/proofs:/var/www/storage/app/public/proofs
     networks:
       - hbm-network
     depends_on:
@@ -153,6 +155,7 @@ services:
       - ./backend:/var/www
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/attachments:/var/www/storage/app/public/attachments
       - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/releases:/var/www/storage/app/public/releases
+      - /mnt/raw-backup/app_data_storage/hbm-budgeting-system/proofs:/var/www/storage/app/public/proofs
     environment:
       APP_NAME: "HBM Budgeting"
       APP_ENV: production

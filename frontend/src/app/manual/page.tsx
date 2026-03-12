@@ -43,8 +43,12 @@ export default function ManualBook() {
           description: 'HBM Budgeting adalah sistem pengelolaan pengajuan anggaran dan realisasi dana terpusat untuk efisiensi dan transparansi operasional perusahaan.'
         },
         {
-          title: 'Navigasi Dasar',
-          description: 'Anda dapat menggunakan menu di sebelah kiri untuk berpindah halaman. "Beranda" untuk melihat ringkasan, "Buat Pengajuan Baru" untuk merancang pengajuan dana, dan "Pengajuan Saya" untuk memantau status pengajuan Anda.'
+          title: 'Navigasi Dasar & Paginasi',
+          description: 'Gunakan menu di sebelah kiri untuk berpindah halaman. Untuk daftar data yang panjang (seperti riwayat pengajuan), gunakan fitur Paginasi di bagian bawah tabel untuk berpindah antar halaman.'
+        },
+        {
+          title: 'Unduh Aplikasi Mobile',
+          description: 'Jika ada pembaruan aplikasi Mobile HBM, Anda akan melihat banner download di halaman Dashboard. Klik tombol tersebut untuk mengunduh versi terbaru dan ikuti instruksi instalasi di smartphone Anda.'
         }
       ]
     },
@@ -82,7 +86,11 @@ export default function ManualBook() {
         },
         {
           title: 'Bagi Pihak Penyetuju (Approver)',
-          description: 'Buka menu "Persetujuan". Anda akan melihat seluruh dokumen yang menunggu tanda tangan Anda. Klik tombol "Mata" untuk mengecek rincian pengajuan. Anda bida menekan tombol hijau untuk Menyetujui, atau tombol merah untuk Menolak (wajib menyertakan catatan penolakan).'
+          description: 'Buka menu "Persetujuan". Klik tombol "Mata" (Review) untuk mengecek rincian pengajuan. Anda memiliki tiga opsi:'
+        },
+        {
+          title: 'Opsi Persetujuan',
+          description: '1. Setujui (Hijau): Menyetujui dokumen secara final. \n2. Tunda (Kuning): Mengembalikan dokumen ke pembuat untuk direvisi / diperbaiki datanya secara spesifik. \n3. Tolak (Merah): Menolak pengajuan sepenuhnya (wajib alasan).'
         }
       ]
     },

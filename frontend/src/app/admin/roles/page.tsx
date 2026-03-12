@@ -18,12 +18,14 @@ export default function RolesPermissionsPage() {
   // Permission Editor Modal states
   const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<any>(null);
+  const [editingScope, setEditingScope] = useState('personal');
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Add Role Modal states
   const [isAddRoleModalOpen, setIsAddRoleModalOpen] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleScope, setNewRoleScope] = useState('personal');
   const [addingRole, setAddingRole] = useState(false);
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export default function RolesPermissionsPage() {
       return;
     }
     setEditingRole(role);
+    setEditingScope(role.data_scope || 'personal');
     setSelectedPermissions(role.permissions.map((p: any) => p.name));
     setIsPermissionModalOpen(true);
   };
@@ -81,6 +84,7 @@ export default function RolesPermissionsPage() {
     setSubmitting(true);
     try {
       await api.put(`/roles/${editingRole.id}/permissions`, {
+        data_scope: editingScope,
         permissions: selectedPermissions
       });
 
@@ -103,6 +107,7 @@ export default function RolesPermissionsPage() {
     try {
       await api.post('/roles-permissions', {
         name: newRoleName,
+        data_scope: newRoleScope,
         permissions: [] // Start as empty
       });
       await fetchRolesAndPermissions();
@@ -195,6 +200,9 @@ export default function RolesPermissionsPage() {
                           <Shield className="w-5 h-5" />
                         </div>
                         <span className="text-slate-900">{translateRole(role.name)}</span>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                          Scope: {role.data_scope || 'personal'}
+                        </div>
                         <div className="flex items-center gap-1.5 mt-1">
                           <button
                             onClick={() => openPermissionModal(role)}
@@ -372,15 +380,44 @@ export default function RolesPermissionsPage() {
         size="lg"
       >
         <form onSubmit={handlePermissionSubmit} className="space-y-6">
-          <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 flex items-start gap-3 mb-6">
-            <Info className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-sky-800">
-              <p className="font-semibold mb-1">Panduan Edit Permission:</p>
-              <ul className="list-disc list-inside space-y-1 text-sky-700">
-                <li>Centang permission yang ingin diberikan ke role ini</li>
-                <li>Minimal harus ada 1 permission yang dipilih</li>
-                <li>Perubahan akan dicatat dalam audit log</li>
-              </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 flex items-start gap-3">
+              <Info className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
+              <div className="text-sm text-sky-800">
+                <p className="font-semibold mb-1">Panduan Edit Permission:</p>
+                <ul className="list-disc list-inside space-y-1 text-sky-700">
+                  <li>Centang permission yang ingin diberikan ke role ini</li>
+                  <li>Tentukan cakupan akses data (Data Scope)</li>
+                  <li>Perubahan akan dicatat dalam audit log</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+              <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3">Cakupan Akses Data (Scope)</label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { value: 'corporate', label: 'Corporate', desc: 'Dapat melihat semua data pengajuan di sistem' },
+                  { value: 'division', label: 'Division', desc: 'Hanya melihat data pengajuan di divisinya saja' },
+                  { value: 'personal', label: 'Personal', desc: 'Hanya melihat data pengajuan miliknya sendiri' }
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setEditingScope(s.value)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${editingScope === s.value
+                        ? 'border-sky-500 bg-sky-50 shadow-sm'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
+                      }`}
+                  >
+                    <div className={`w-3 h-3 rounded-full border-2 ${editingScope === s.value ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`} />
+                    <div>
+                      <p className={`text-xs font-bold ${editingScope === s.value ? 'text-sky-900' : 'text-slate-700'}`}>{s.label}</p>
+                      <p className="text-[10px] text-slate-400">{s.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -489,8 +526,33 @@ export default function RolesPermissionsPage() {
               value={newRoleName}
               onChange={(e) => setNewRoleName(e.target.value)}
               placeholder="e.g. Compliance Officer"
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-sky-50 focus:border-sky-500 outline-none transition-all font-medium text-slate-900"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-sky-50 focus:border-sky-500 outline-none transition-all font-medium text-slate-900 mb-4"
             />
+
+            <label className="block text-sm font-semibold text-slate-700 mb-2">Cakupan Data Default</label>
+            <div className="grid grid-cols-1 gap-2">
+                {[
+                  { value: 'corporate', label: 'Corporate', desc: 'Semua Data' },
+                  { value: 'division', label: 'Division', desc: 'Satu Divisi' },
+                  { value: 'personal', label: 'Personal', desc: 'Data Pribadi' }
+                ].map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    onClick={() => setNewRoleScope(s.value)}
+                    className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${newRoleScope === s.value
+                        ? 'border-sky-500 bg-sky-50 shadow-sm'
+                        : 'border-slate-100 hover:border-slate-200 bg-white'
+                      }`}
+                  >
+                    <div className={`w-3 h-3 rounded-full border-2 ${newRoleScope === s.value ? 'bg-sky-500 border-sky-500' : 'border-slate-300'}`} />
+                    <div>
+                      <p className={`text-xs font-bold ${newRoleScope === s.value ? 'text-sky-900' : 'text-slate-700'}`}>{s.label}</p>
+                      <p className="text-[10px] text-slate-400">{s.desc}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

@@ -25,22 +25,8 @@ class SubmissionController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details', 'attachments']);
-
-        // Only Super Admin, Finance, GM, Director can see all submissions
-        // Only Super Admin or users with 'view reports' permission can see all submissions
-        $canSeeAll = $user->hasRole('Super Admin') || $user->can('view reports');
-
-        if (!$canSeeAll) {
-            $query->where('user_id', $user->id);
-        } else {
-            // Even privileged users should only see published/active submissions by default,
-            // or we add a filter. For now, let's say they only see drafts if they are the owner.
-            $query->where(function($q) use ($user) {
-                $q->whereIn('final_status', ['pending', 'approved', 'rejected'])
-                  ->orWhere('user_id', $user->id);
-            });
-        }
+        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details', 'attachments'])
+            ->accessibleBy($user);
 
         // Filtering Logic
         if ($request->filled('search')) {

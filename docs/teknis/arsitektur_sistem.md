@@ -19,8 +19,9 @@ HBM Budgeting dibangun menggunakan arsitektur **Monolithic Backend / Decoupled F
 
 ### Backend
 
-- **Framework:** Laravel 12.x (PHP 8.2)
+- **Backend:** Laravel 12.x (PHP 8.2)
 - **Database:** MySQL 8.0
+- **Storage:** Local Disk Storage dengan Docker Bind Mounts ke `/mnt/raw-backup` untuk memisahkan app logic dan persisten data media besar.
 - **Autentikasi API:** Laravel Sanctum (Token-Based Stateless Auth)
 - **Otorisasi (RBAC):** Spatie Laravel Permission
 - **Real-time WebSockets:** Laravel Reverb & Laravel Echo

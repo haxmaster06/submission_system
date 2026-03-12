@@ -34,17 +34,8 @@ class DashboardController extends Controller
 
     private function buildStats($user, bool $isManagement, bool $isDivisionHead): array
     {
-        // Base Query Scoping
-        $query = Submission::query();
-        if (!$isManagement) {
-            $query->where(function ($q) use ($user, $isDivisionHead) {
-                if ($isDivisionHead) {
-                    $q->where('division_id', $user->division_id);
-                } else {
-                    $q->where('user_id', $user->id);
-                }
-            });
-        }
+        // Base Query Scoping using centralized scope
+        $query = Submission::accessibleBy($user);
 
         // 1. Core Counters — Single query with conditional aggregation (was 4 separate queries)
         $counterRow = (clone $query)->select([
@@ -191,13 +182,10 @@ class DashboardController extends Controller
             ->pluck('count', 'status_urgent');
 
         // 7. Aging Analysis
-        $avgAging = Submission::where('final_status', 'approved')
-            ->when(!$isManagement, function ($q) use ($user, $isDivisionHead) {
-            if ($isDivisionHead)
-                return $q->where('division_id', $user->division_id);
-            return $q->where('user_id', $user->id);
-        })
+        $avgAging = Submission::accessibleBy($user)
+            ->where('final_status', 'approved')
             ->whereNotNull('updated_at')
+            // ...
             ->select(DB::raw('AVG(DATEDIFF(updated_at, created_at)) as avg_days'))
             ->first()
             ->avg_days ?: 0;
@@ -275,7 +263,8 @@ class DashboardController extends Controller
                 'absorption_rate' => $totalBudgetSum > 0 ? round(($totalRealizationSum / $totalBudgetSum) * 100, 1) : 0,
             ],
             'division_ranking' => $divisionRanking,
-            'high_value_pending' => $isManagement ? \App\Models\Submission::where('final_status', 'pending')
+            'high_value_pending' => $isManagement ? Submission::accessibleBy($user)
+                ->where('final_status', 'pending')
                 ->with('division')
                 ->orderByDesc('total')
                 ->limit(5)

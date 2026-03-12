@@ -37,14 +37,33 @@ class RoleAndPermissionSeeder extends Seeder
         }
 
         // Create roles and assign permissions
-        Role::findOrCreate('Staff', 'web')->givePermissionTo(['create submissions', 'view submissions', 'manage signatures', 'request attachments']);
-        Role::findOrCreate('HRD', 'web')->givePermissionTo(['create submissions', 'view submissions', 'approve submissions', 'reject submissions', 'manage signatures', 'manage employees']);
-        Role::findOrCreate('GA Legal', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'manage employees']);
-        Role::findOrCreate('Finance', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'proxy director signature', 'view reports', 'request attachments']);
-        Role::findOrCreate('GM', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions']);
-        Role::findOrCreate('Director', 'web')->givePermissionTo(['view submissions', 'approve submissions', 'reject submissions', 'view reports']);
+        $staff = \App\Models\Role::findOrCreate('Staff', 'web');
+        $staff->update(['data_scope' => 'personal']);
+        $staff->syncPermissions(['create submissions', 'view submissions', 'manage signatures', 'request attachments']);
+
+        $hrd = \App\Models\Role::findOrCreate('HRD', 'web');
+        $hrd->update(['data_scope' => 'division']);
+        $hrd->syncPermissions(['create submissions', 'view submissions', 'approve submissions', 'reject submissions', 'manage signatures', 'manage employees']);
+
+        $ga = \App\Models\Role::findOrCreate('GA Legal', 'web');
+        $ga->update(['data_scope' => 'division']);
+        $ga->syncPermissions(['view submissions', 'approve submissions', 'reject submissions', 'manage employees']);
+
+        $finance = \App\Models\Role::findOrCreate('Finance', 'web');
+        $finance->update(['data_scope' => 'corporate']);
+        $finance->syncPermissions(['view submissions', 'approve submissions', 'reject submissions', 'proxy director signature', 'view reports', 'request attachments']);
+
+        $gm = \App\Models\Role::findOrCreate('GM', 'web');
+        $gm->update(['data_scope' => 'corporate']);
+        $gm->syncPermissions(['view submissions', 'approve submissions', 'reject submissions']);
+
+        $director = \App\Models\Role::findOrCreate('Director', 'web');
+        $director->update(['data_scope' => 'corporate']);
+        $director->syncPermissions(['view submissions', 'approve submissions', 'reject submissions', 'view reports']);
 
         // Super Admin - Has all permissions
-        Role::findOrCreate('Super Admin', 'web')->givePermissionTo(Permission::all());
+        $superAdmin = \App\Models\Role::findOrCreate('Super Admin', 'web');
+        $superAdmin->update(['data_scope' => 'corporate']);
+        $superAdmin->syncPermissions(Permission::all());
     }
 }

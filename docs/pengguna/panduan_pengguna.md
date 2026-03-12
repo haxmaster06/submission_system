@@ -42,16 +42,18 @@ Jika Anda adalah approver (Manager/Director):
 
 1. Anda akan menerima notifikasi (Lonceng di pojok kanan atas) saat ada pengajuan masuk.
 2. Buka menu **Persetujuan (Approvals)**.
-3. Klik tombol **Review** pada item yang berstatus _Pending_.
-4. Periksa detail pengajuan.
-5. Klik **Approve** untuk menyetujui, atau **Reject** untuk menolak (Wajib isi alasan).
-6. Masukkan Tanda Tangan Digital Anda untuk konfirmasi.
+3. Klik tombol **Review** pada item yang berstatus _Pending_ atau _Direvisi_.
+4. Periksa detail pengajuan. Tersedia tiga opsi aksi:
+   - **Approve**: Untuk menyetujui pengajuan (wajib Tanda Tangan Digital).
+   - **Tunda (Hold)**: Untuk mengembalikan pengajuan ke pembuat agar diperbaiki/direvisi (wajib isi catatan). Pembuat akan mendapat notifikasi untuk memperbaiki draf dan mengajukan ulang.
+   - **Reject**: Untuk menolak pengajuan secara permanen (wajib isi alasan).
 
 ## 4. Melihat Status & Riwayat
 
 - Buka menu **Pengajuan -> Daftar Pengajuan**.
-- Gunakan filter status untuk melihat pengajuan yang _Approved_, _Rejected_, atau _Pending_.
-- Klik ikon mata (View) untuk melihat detail progress approval.
+- Gunakan filter status untuk melihat pengajuan yang _Approved_, _Rejected_, _Pending_, atau _Ditunda_.
+- Fitur **Paginasi** tersedia di bagian bawah layar untuk menavigasi halaman jika data terlalu banyak.
+- Klik ikon mata (View) untuk melihat detail progress approval, termasuk revisi jika sebelumnya ditunda.
 - Anda dapat mengunduh dokumen pengajuan dalam format **PDF** melalui tombol di halaman detail.
 
 ## 5. Tanda Tangan Digital
@@ -70,3 +72,8 @@ Khusus Direktur yang sedang berhalangan:
 2. Saat approval, pilih opsi **"Tanda Tangan sebagai Proxy"**.
 3. Sistem akan meminta upload **Bukti Kuasa** (Surat/Chat persetujuan).
 4. **Info**: Direktur akan menerima notifikasi _realtime_ setiap kali fitur ini digunakan untuk keamanan.
+
+## 7. Download & Kelola Aplikasi Mobile
+
+- **Untuk Pengguna**: Jika ada versi terbaru Aplikasi Mobile HBM, sebuah _banner_ akan muncul di bagian atas halaman Dashboard Web. Klik "Download APK" untuk mengunduh aplikasinya.
+- **Untuk Super Admin**: Kunjungi menu **Mobile Apps** di bawah panel administrasi. Anda bisa melihat daftar rilis, mengunggah versi APK/IPA terbaru lengkap dengan _progress bar_ saat proses unggah, dan mengaktifkan rilis tersebut agar muncul di Dashboard para pengguna.

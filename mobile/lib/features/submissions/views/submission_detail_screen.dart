@@ -241,6 +241,10 @@ class SubmissionDetailScreen extends ConsumerWidget {
             'Tanggal',
             DateFormat('dd MMMM yyyy').format(submission.createdAt),
           ),
+          if (submission.notes.isNotEmpty) ...[
+            const Divider(height: 32),
+            _buildInfoRow('Catatan', submission.notes),
+          ],
         ],
       ),
     );

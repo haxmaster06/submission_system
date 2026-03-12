@@ -9,6 +9,7 @@ Aplikasi ini dibangun menggunakan **Laravel 12 (Backend)** dan **Next.js 16 (Fro
 - **Sistem Role & Permission Fleksibel**: Dukungan multi-role per user dan manajemen Role CRUD (Create/Read/Update/Delete) oleh Super Admin.
 - **Manajemen Pengajuan**: Create, Read, Update, Delete (CRUD) pengajuan anggaran.
 - **Approval Workflow**: Persetujuan bertingkat (Manager -> Senior Manager -> Director).
+- **Tunda (Hold) Approval**: Approver dapat mengembalikan pengajuan ('Tunda') ke pembuat dengan menyertakan catatan untuk direvisi perbaikannya.
 - **Mobile-First Excellence**: Antarmuka premium yang dioptimalkan untuk smartphone (Portrait & Landscape) dengan komponen _glassmorphism_ dan _data-density_ tinggi.
 - **Table-to-Card Transformation**: Konversi otomatis tabel data menjadi _card layout_ pada layar kecil untuk kenyamanan navigasi satu tangan.
 - **Notifikasi Realtime**: Menggunakan Laravel Reverb & Echo untuk update status instan.
