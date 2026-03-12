@@ -69,6 +69,9 @@ class FcmChannel
                     // If the token is unregistered or invalid, remove it from the database
                     if (
                         str_contains($errorMessage, 'UNREGISTERED') ||
+                        str_contains($errorMessage, 'NOT_REGISTERED') ||
+                        str_contains($errorMessage, 'INVALID_REGISTRATION') ||
+                        str_contains($errorMessage, 'MISSING_REGISTRATION') ||
                         str_contains($errorMessage, 'INVALID_ARGUMENT') ||
                         str_contains($errorMessage, 'NOT FOUND') ||
                         str_contains($errorMessage, 'NOT_FOUND') ||

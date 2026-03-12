@@ -23,7 +23,11 @@ class FcmTokenController extends Controller
 
         $user = Auth::user();
 
-        // Update or create based on token itself since it's unique per device
+        // 1. Ensure token uniqueness across users (A token belongs to only one user at a time)
+        // This handles cases where user uninstalls without logout or shared devices
+        \App\Models\FcmToken::where('token', $request->token)->delete();
+
+        // 2. Register/Update for current user
         $user->fcmTokens()->updateOrCreate(
             ['token' => $request->token],
             ['device_name' => $request->device_name ?? $request->device_type]
