@@ -177,6 +177,9 @@ class SubmissionController extends Controller
                 }
             }
 
+            // Force touch updated_at to reflect latest save regardless of data diff
+            $submission->touch();
+
             // If submission was on_hold, mark as revised and notify approver
             if ($isOnHold) {
                 $submission->update(['final_status' => 'pending']);

@@ -227,7 +227,11 @@ class _SubmissionItem extends StatelessWidget {
               children: [
                 _buildStatusBadge(submission),
                 Text(
-                  DateFormat('dd MMM yyyy').format(submission.createdAt),
+                  DateFormat('dd MMM yyyy').format(
+                    (submission.status.toLowerCase() == 'draf' && submission.updatedAt != null
+                        ? submission.updatedAt!
+                        : submission.createdAt).toLocal(),
+                  ),
                   style: UiKit.caption,
                 ),
               ],

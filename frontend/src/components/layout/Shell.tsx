@@ -85,7 +85,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const isMasterDataAdmin = user?.permissions.some(p => p.name === 'manage master data') || isSuperAdmin;
   const isEmployeeAdmin = user?.permissions.some(p => p.name === 'manage employees') || isSuperAdmin;
-  const showManajemenData = isMasterDataAdmin || isEmployeeAdmin;
+  const canManageApprovalFlows = user?.permissions.some(p => p.name === 'manage approval flows') || isSuperAdmin;
+  const canMonitorRealizations = user?.permissions.some(p => p.name === 'monitor realizations') || user?.permissions.some(p => p.name === 'manage realizations') || isSuperAdmin;
+  const canViewReports = user?.permissions.some(p => p.name === 'view reports') || isSuperAdmin;
+  const showManajemenData = isMasterDataAdmin || isEmployeeAdmin || canManageApprovalFlows || canMonitorRealizations;
 
   const navGroups = [
     {
@@ -114,11 +117,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       items: [
         (isMasterDataAdmin && { name: 'Master Data', href: '/admin/master', icon: Database }),
         (isEmployeeAdmin && { name: 'Data Karyawan', href: '/admin/employees', icon: Users }),
-        (isMasterDataAdmin && { name: 'Alur Persetujuan', href: '/admin/approval-flow', icon: GitBranch }),
-        (isMasterDataAdmin && { name: 'Monitoring Realisasi', href: '/realizations', icon: Receipt }),
+        (canManageApprovalFlows && { name: 'Alur Persetujuan', href: '/admin/approval-flow', icon: GitBranch }),
+        (canMonitorRealizations && { name: 'Monitoring Realisasi', href: '/realizations', icon: Receipt }),
       ].filter(Boolean)
     },
-    isMasterDataAdmin && {
+    canViewReports && {
       group: 'LAPORAN',
       items: [
         { name: 'Reporting', href: '/reporting', icon: BarChart3 },

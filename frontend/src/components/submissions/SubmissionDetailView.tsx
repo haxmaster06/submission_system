@@ -387,7 +387,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                   </div>
                   <div>
                     <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Tanggal</p>
-                    <p className="text-[11px] font-black text-slate-900">{new Date(submission.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
+                    <p className="text-[11px] font-black text-slate-900">{new Date(submission.final_status === 'draf' && submission.updated_at ? submission.updated_at : submission.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
               </div>

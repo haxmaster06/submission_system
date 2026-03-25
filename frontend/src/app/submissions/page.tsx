@@ -953,7 +953,7 @@ function SubmissionsList({
                   <div className="flex items-center gap-3 text-right">
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tanggal</p>
-                      <p className="font-bold text-slate-600 text-[11px]">{new Date(sub.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="font-bold text-slate-600 text-[11px]">{new Date(sub.final_status === 'draf' && sub.updated_at ? sub.updated_at : sub.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
                       <Calendar size={14} />

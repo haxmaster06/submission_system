@@ -86,6 +86,7 @@ class Submission with _$Submission {
     @JsonKey(name: 'is_urgent', readValue: _readSubmissionIsUrgent)
     required bool isUrgent,
     @JsonKey(name: 'created_at') required DateTime createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
     @JsonKey(readValue: _readSubmissionTotal) @Default(0.0) double total,
     @JsonKey(name: 'current_approval_step')
     @Default(1)

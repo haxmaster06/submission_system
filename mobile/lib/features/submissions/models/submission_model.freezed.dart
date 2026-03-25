@@ -36,6 +36,8 @@ mixin _$Submission {
   bool get isUrgent => throw _privateConstructorUsedError;
   @JsonKey(name: 'created_at')
   DateTime get createdAt => throw _privateConstructorUsedError;
+  @JsonKey(name: 'updated_at')
+  DateTime? get updatedAt => throw _privateConstructorUsedError;
   @JsonKey(readValue: _readSubmissionTotal)
   double get total => throw _privateConstructorUsedError;
   @JsonKey(name: 'current_approval_step')
@@ -83,6 +85,7 @@ abstract class $SubmissionCopyWith<$Res> {
     @JsonKey(name: 'is_urgent', readValue: _readSubmissionIsUrgent)
     bool isUrgent,
     @JsonKey(name: 'created_at') DateTime createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
     @JsonKey(readValue: _readSubmissionTotal) double total,
     @JsonKey(name: 'current_approval_step') int current_approval_step,
     @JsonKey(name: 'current_step_role') String? current_step_role,
@@ -122,6 +125,7 @@ class _$SubmissionCopyWithImpl<$Res, $Val extends Submission>
     Object? status = null,
     Object? isUrgent = null,
     Object? createdAt = null,
+    Object? updatedAt = freezed,
     Object? total = null,
     Object? current_approval_step = null,
     Object? current_step_role = freezed,
@@ -168,6 +172,10 @@ class _$SubmissionCopyWithImpl<$Res, $Val extends Submission>
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
                       as DateTime,
+            updatedAt: freezed == updatedAt
+                ? _value.updatedAt
+                : updatedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
             total: null == total
                 ? _value.total
                 : total // ignore: cast_nullable_to_non_nullable
@@ -237,6 +245,7 @@ abstract class _$$SubmissionImplCopyWith<$Res>
     @JsonKey(name: 'is_urgent', readValue: _readSubmissionIsUrgent)
     bool isUrgent,
     @JsonKey(name: 'created_at') DateTime createdAt,
+    @JsonKey(name: 'updated_at') DateTime? updatedAt,
     @JsonKey(readValue: _readSubmissionTotal) double total,
     @JsonKey(name: 'current_approval_step') int current_approval_step,
     @JsonKey(name: 'current_step_role') String? current_step_role,
@@ -275,6 +284,7 @@ class __$$SubmissionImplCopyWithImpl<$Res>
     Object? status = null,
     Object? isUrgent = null,
     Object? createdAt = null,
+    Object? updatedAt = freezed,
     Object? total = null,
     Object? current_approval_step = null,
     Object? current_step_role = freezed,
@@ -321,6 +331,10 @@ class __$$SubmissionImplCopyWithImpl<$Res>
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
                   as DateTime,
+        updatedAt: freezed == updatedAt
+            ? _value.updatedAt
+            : updatedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
         total: null == total
             ? _value.total
             : total // ignore: cast_nullable_to_non_nullable
@@ -383,6 +397,7 @@ class _$SubmissionImpl implements _Submission {
     @JsonKey(name: 'is_urgent', readValue: _readSubmissionIsUrgent)
     required this.isUrgent,
     @JsonKey(name: 'created_at') required this.createdAt,
+    @JsonKey(name: 'updated_at') this.updatedAt,
     @JsonKey(readValue: _readSubmissionTotal) this.total = 0.0,
     @JsonKey(name: 'current_approval_step') this.current_approval_step = 1,
     @JsonKey(name: 'current_step_role') this.current_step_role,
@@ -429,6 +444,9 @@ class _$SubmissionImpl implements _Submission {
   @override
   @JsonKey(name: 'created_at')
   final DateTime createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  final DateTime? updatedAt;
   @override
   @JsonKey(readValue: _readSubmissionTotal)
   final double total;
@@ -496,7 +514,7 @@ class _$SubmissionImpl implements _Submission {
 
   @override
   String toString() {
-    return 'Submission(id: $id, userId: $userId, divisionId: $divisionId, type: $type, notes: $notes, status: $status, isUrgent: $isUrgent, createdAt: $createdAt, total: $total, current_approval_step: $current_approval_step, current_step_role: $current_step_role, description: $description, user_name: $user_name, division_name: $division_name, details: $details, approval_stages: $approval_stages, attachments: $attachments, attachmentRequests: $attachmentRequests, payload: $payload)';
+    return 'Submission(id: $id, userId: $userId, divisionId: $divisionId, type: $type, notes: $notes, status: $status, isUrgent: $isUrgent, createdAt: $createdAt, updatedAt: $updatedAt, total: $total, current_approval_step: $current_approval_step, current_step_role: $current_step_role, description: $description, user_name: $user_name, division_name: $division_name, details: $details, approval_stages: $approval_stages, attachments: $attachments, attachmentRequests: $attachmentRequests, payload: $payload)';
   }
 
   @override
@@ -515,6 +533,8 @@ class _$SubmissionImpl implements _Submission {
                 other.isUrgent == isUrgent) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
             (identical(other.total, total) || other.total == total) &&
             (identical(other.current_approval_step, current_approval_step) ||
                 other.current_approval_step == current_approval_step) &&
@@ -554,6 +574,7 @@ class _$SubmissionImpl implements _Submission {
     status,
     isUrgent,
     createdAt,
+    updatedAt,
     total,
     current_approval_step,
     current_step_role,
@@ -592,6 +613,7 @@ abstract class _Submission implements Submission {
     @JsonKey(name: 'is_urgent', readValue: _readSubmissionIsUrgent)
     required final bool isUrgent,
     @JsonKey(name: 'created_at') required final DateTime createdAt,
+    @JsonKey(name: 'updated_at') final DateTime? updatedAt,
     @JsonKey(readValue: _readSubmissionTotal) final double total,
     @JsonKey(name: 'current_approval_step') final int current_approval_step,
     @JsonKey(name: 'current_step_role') final String? current_step_role,
@@ -635,6 +657,9 @@ abstract class _Submission implements Submission {
   @override
   @JsonKey(name: 'created_at')
   DateTime get createdAt;
+  @override
+  @JsonKey(name: 'updated_at')
+  DateTime? get updatedAt;
   @override
   @JsonKey(readValue: _readSubmissionTotal)
   double get total;

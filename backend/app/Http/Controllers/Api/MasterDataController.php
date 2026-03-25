@@ -205,4 +205,46 @@ class MasterDataController extends Controller
         $jenisPerjalanan->delete();
         return response()->json(null, 204);
     }
+
+    public function quickAddUom(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $name = trim($validated['name']);
+
+        // Cek apakah UoM sudah ada (case-insensitive)
+        $existing = Uom::whereRaw('LOWER(name) = ?', [strtolower($name)])->first();
+
+        if ($existing) {
+            return response()->json([
+                'exists'  => true,
+                'message' => "Satuan \"{$existing->name}\" sudah ada di sistem.",
+                'uom'     => $existing,
+            ], 200);
+        }
+
+        // Generate code dari name (uppercase abbreviation)
+        $code = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $name), 0, 10));
+
+        // Pastikan code unik
+        $baseCode = $code;
+        $counter = 1;
+        while (Uom::where('code', $code)->exists()) {
+            $code = $baseCode . $counter;
+            $counter++;
+        }
+
+        $uom = Uom::create(['name' => $name, 'code' => $code]);
+
+        // Clear lookup cache
+        Uom::clearLookupCache();
+
+        return response()->json([
+            'exists'  => false,
+            'message' => "Satuan \"{$uom->name}\" berhasil ditambahkan.",
+            'uom'     => $uom,
+        ], 201);
+    }
 }

@@ -589,10 +589,12 @@ function groupPermissions(permissions: string[]) {
     ],
     'Persetujuan (Approvals)': [
       'approve submissions',
-      'reject submissions'
+      'reject submissions',
+      'manage approval flows'
     ],
     'Keuangan & Realisasi (Finance)': [
       'manage realizations',
+      'monitor realizations',
       'view reports',
       'proxy director signature'
     ],
@@ -665,6 +667,8 @@ function translatePermission(permission: string): string {
     'manage master data': 'Kelola Data Master',
     'manage employees': 'Kelola Data Karyawan',
     'manage realizations': 'Kelola Realisasi',
+    'monitor realizations': 'Monitoring Realisasi',
+    'manage approval flows': 'Kelola Alur Persetujuan',
     'complete submissions': 'Selesaikan Pengajuan',
     'delete submissions': 'Hapus Pengajuan',
     'request attachments': 'Minta Lampiran'
@@ -685,6 +689,8 @@ function getPermissionDescription(permission: string): string {
     'manage master data': 'Mengelola Data Master (Divisi, Jenis, UOM, dll)',
     'manage employees': 'Mengelola Data Karyawan',
     'manage realizations': 'Mencatat dan mengelola realisasi anggaran hasil pengajuan',
+    'monitor realizations': 'Memonitor dan melihat status realisasi anggaran lintas divisi',
+    'manage approval flows': 'Mengelola konfigurasi alur persetujuan (steps, conditions, reorder)',
     'complete submissions': 'Menandai pengajuan selesai secara manual',
     'delete submissions': 'Menghapus data pengajuan (Super Admin Only)',
     'request attachments': 'Meminta lampiran tambahan kepada user tertentu'

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class UiKit {
-  // 1. Colors - Modern Corporate Indigo Palette
-  static const Color primaryBlue = Color(0xFF3F3D9E); // Deep Indigo
-  static const Color primaryIndigo = Color(0xFF3F3D9E);
-  static const Color primaryGradientStart = Color(0xFF302E82);
-  static const Color primaryGradientEnd = Color(0xFF3F3D9E);
+  // 1. Colors - Modern Corporate Purple Palette
+  static const Color primaryBlue = Color(0xFF6A1B9A); // Deep Purple
+  static const Color primaryIndigo = Color(0xFF6A1B9A);
+  static const Color primaryGradientStart = Color(0xFF4A148C);
+  static const Color primaryGradientEnd = Color(0xFF7B1FA2);
 
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,

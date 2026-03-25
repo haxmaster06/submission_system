@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme/ui_kit.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/core/providers/app_mode_provider.dart';
 
 class MainWrapper extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
@@ -20,116 +21,112 @@ class MainWrapper extends ConsumerWidget {
             role == 'director' ||
             role == 'finance' ||
             role == 'gm' ||
+            role == 'hrd' ||
             role == 'super admin';
       },
       orElse: () => false,
     );
 
-    // Map visible indices to branch indices
-    final List<int> visibleToBranch = [0, 1];
-    if (isApprover) visibleToBranch.add(2);
-    visibleToBranch.add(3); // Profile is branch 3
+    final appMode = ref.watch(appModeProvider);
+    final isApproveOnly = isApprover && appMode == AppMode.approveOnly;
 
-    // Map branch index to visible index
-    int selectedIndex = 0;
+    // Map visible indices to branch indices
+    // Branches in app_router:
+    // 0 = Dashboard, 1 = Submissions, 2 = Approvals, 3 = Profile, 4 = Notifications (not in nav), 5 = Budget (new)
+    
+    List<int> visibleToBranch;
+    int selectedIndex;
     final currentBranch = navigationShell.currentIndex;
-    if (currentBranch == 0)
-      selectedIndex = 0;
-    else if (currentBranch == 1)
-      selectedIndex = 1;
-    else if (currentBranch == 2)
-      selectedIndex = 2; // Approvals
-    else if (currentBranch == 3)
-      selectedIndex = isApprover ? 3 : 2; // Profile
-    else
-      selectedIndex = 0; // Fallback for notifications or others
+
+    if (isApproveOnly) {
+      visibleToBranch = [2, 3]; // 2: Approvals, 3: Profile
+      if (currentBranch == 2) selectedIndex = 0;
+      else if (currentBranch == 3) selectedIndex = 1;
+      else selectedIndex = 0; // Fallback
+    } else {
+      visibleToBranch = [0, 1, 5, 3]; // 0: Dashboard, 1: Submissions, 5: Budget, 3: Profile
+      if (currentBranch == 0) selectedIndex = 0;
+      else if (currentBranch == 1) selectedIndex = 1;
+      else if (currentBranch == 5) selectedIndex = 2; // Budget
+      else if (currentBranch == 3) selectedIndex = 3; // Profile
+      else selectedIndex = 0; // Fallback
+    }
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: UiKit.backgroundWhite,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
+      floatingActionButton: isApproveOnly ? null : FloatingActionButton(
+        onPressed: () => context.push('/submissions/new'),
+        backgroundColor: UiKit.primaryBlue,
+        shape: const CircleBorder(),
+        elevation: 4,
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8,
+        color: UiKit.backgroundWhite,
+        elevation: 10,
+        height: 70,
+        padding: EdgeInsets.zero,
+        child: isApproveOnly 
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(0, selectedIndex, Icons.fact_check_outlined, Icons.fact_check, 'Persetujuan', () => _goBranch(0, visibleToBranch)),
+                _buildNavItem(1, selectedIndex, Icons.person_outline, Icons.person, 'Profil', () => _goBranch(1, visibleToBranch)),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(0, selectedIndex, Icons.home_outlined, Icons.home, 'Beranda', () => _goBranch(0, visibleToBranch)),
+                _buildNavItem(1, selectedIndex, Icons.list_alt_outlined, Icons.list_alt, 'Aktivitas', () => _goBranch(1, visibleToBranch)),
+                const SizedBox(width: 48), // Space for FAB
+                _buildNavItem(2, selectedIndex, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'Anggaran', () => _goBranch(2, visibleToBranch)),
+                _buildNavItem(3, selectedIndex, Icons.person_outline, Icons.person, 'Profil', () => _goBranch(3, visibleToBranch)),
+              ],
+            ),
+      ),
+    );
+  }
+
+  void _goBranch(int index, List<int> visibleToBranch) {
+    if (index >= visibleToBranch.length) return;
+    navigationShell.goBranch(
+      visibleToBranch[index],
+      initialLocation: visibleToBranch[index] == navigationShell.currentIndex,
+    );
+  }
+
+  Widget _buildNavItem(int index, int selectedIndex, IconData iconOutlined, IconData iconFilled, String label, VoidCallback onTap) {
+    final isSelected = index == selectedIndex;
+    return InkWell(
+      onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      child: SizedBox(
+        width: 70,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isSelected ? iconFilled : iconOutlined,
+              color: isSelected ? UiKit.primaryBlue : UiKit.textLightGray,
+              size: isSelected ? 26 : 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                color: isSelected ? UiKit.primaryBlue : UiKit.textLightGray,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
-        ),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-          child: NavigationBar(
-            height: 75,
-            elevation: 0,
-            backgroundColor: UiKit.backgroundWhite,
-            selectedIndex: selectedIndex,
-            indicatorColor: UiKit.primaryBlue.withValues(alpha: 0.1),
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            onDestinationSelected: (int index) {
-              navigationShell.goBranch(
-                visibleToBranch[index],
-                initialLocation:
-                    visibleToBranch[index] == navigationShell.currentIndex,
-              );
-            },
-            destinations: [
-              NavigationDestination(
-                icon: const Icon(
-                  Icons.dashboard_outlined,
-                  size: 24,
-                  color: UiKit.textGray,
-                ),
-                selectedIcon: const Icon(
-                  Icons.dashboard,
-                  size: 28,
-                  color: UiKit.primaryBlue,
-                ),
-                label: 'Beranda',
-              ),
-              NavigationDestination(
-                icon: const Icon(
-                  Icons.assignment_outlined,
-                  size: 24,
-                  color: UiKit.textGray,
-                ),
-                selectedIcon: const Icon(
-                  Icons.assignment,
-                  size: 28,
-                  color: UiKit.primaryBlue,
-                ),
-                label: 'Pengajuan',
-              ),
-              if (isApprover)
-                NavigationDestination(
-                  icon: const Icon(
-                    Icons.fact_check_outlined,
-                    size: 24,
-                    color: UiKit.textGray,
-                  ),
-                  selectedIcon: const Icon(
-                    Icons.fact_check,
-                    size: 28,
-                    color: UiKit.primaryBlue,
-                  ),
-                  label: 'Persetujuan',
-                ),
-              NavigationDestination(
-                icon: const Icon(
-                  Icons.person_outline,
-                  size: 24,
-                  color: UiKit.textGray,
-                ),
-                selectedIcon: const Icon(
-                  Icons.person,
-                  size: 28,
-                  color: UiKit.primaryBlue,
-                ),
-                label: 'Profil',
-              ),
-            ],
-          ),
         ),
       ),
     );

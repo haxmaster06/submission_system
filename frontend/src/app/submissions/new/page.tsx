@@ -26,6 +26,11 @@ function NewSubmissionContent() {
     uoms: [],
     urgency_statuses: []
   });
+  
+  const [showUomInput, setShowUomInput] = useState(false);
+  const [newUomName, setNewUomName] = useState('');
+  const [uomAdding, setUomAdding] = useState(false);
+  const [uomMessage, setUomMessage] = useState<{text: string, type: 'success'|'info'|'error'} | null>(null);
 
   const isSuperAdmin = user?.roles?.some(role => role.name === 'Super Admin');
 
@@ -106,6 +111,41 @@ function NewSubmissionContent() {
 
   const updateItem = (id: number, field: string, value: any) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  const handleQuickAddUom = async (itemId: number) => {
+    if (!newUomName.trim()) return;
+    
+    setUomAdding(true);
+    setUomMessage(null);
+    try {
+      const res = await api.post('/uoms/quick-add', { name: newUomName });
+      const { exists, message, uom } = res.data;
+      
+      setUomMessage({ text: message, type: exists ? 'info' : 'success' });
+      
+      // Refresh lookups to get the latest UOMs
+      const lookupsRes = await api.get('/lookups');
+      setLookups(lookupsRes.data);
+      
+      // Auto-select the UOM for the current item
+      updateItem(itemId, 'uom_id', String(uom.id));
+      
+      if (!exists) {
+        setNewUomName('');
+        setShowUomInput(false);
+      }
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setUomMessage(null), 3000);
+    } catch (err: any) {
+      setUomMessage({ 
+        text: err.response?.data?.message || 'Gagal menambah satuan.', 
+        type: 'error' 
+      });
+    } finally {
+      setUomAdding(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -359,15 +399,57 @@ function NewSubmissionContent() {
                             />
                           </td>
                           <td className="px-4 py-3">
-                            <select
-                              value={item.uom_id}
-                              onChange={(e) => updateItem(item.id, 'uom_id', e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
-                              required
-                            >
-                              <option value="">Pilih</option>
-                              {lookups.uoms.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                            </select>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-1.5">
+                                <select
+                                  value={item.uom_id}
+                                  onChange={(e) => updateItem(item.id, 'uom_id', e.target.value)}
+                                  className="flex-1 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 text-sm"
+                                  required
+                                >
+                                  <option value="">Pilih</option>
+                                  {lookups.uoms.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowUomInput(!showUomInput)}
+                                  className={`p-2 rounded-lg border transition-all ${showUomInput ? 'bg-amber-50 border-amber-200 text-amber-600' : 'bg-slate-50 border-slate-200 text-slate-400 hover:text-sky-600 hover:border-sky-200'}`}
+                                  title="Tambah Satuan Baru"
+                                >
+                                  {showUomInput ? <X size={16} /> : <Plus size={16} />}
+                                </button>
+                              </div>
+                              
+                              {showUomInput && (
+                                <motion.div 
+                                  initial={{ opacity: 0, y: -10 }} 
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="bg-slate-50 p-2 rounded-lg border border-slate-200 space-y-2"
+                                >
+                                  <input
+                                    type="text"
+                                    placeholder="Nama satuan (misal: Rim, Box)"
+                                    value={newUomName}
+                                    onChange={(e) => setNewUomName(e.target.value)}
+                                    className="w-full px-2 py-1.5 text-xs rounded border border-slate-200 outline-none focus:ring-2 focus:ring-sky-400"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleQuickAddUom(item.id)}
+                                    disabled={uomAdding || !newUomName.trim()}
+                                    className="w-full py-1.5 bg-sky-500 text-white rounded text-[10px] font-bold hover:bg-sky-600 disabled:opacity-50 flex items-center justify-center gap-1"
+                                  >
+                                    {uomAdding ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
+                                    Tambah
+                                  </button>
+                                  {uomMessage && (
+                                    <p className={`text-[9px] font-bold text-center ${uomMessage.type === 'error' ? 'text-rose-500' : uomMessage.type === 'info' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                      {uomMessage.text}
+                                    </p>
+                                  )}
+                                </motion.div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-3">
                             <input

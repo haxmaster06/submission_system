@@ -60,6 +60,9 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::get('/mobile-apps/download/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'download']);
     Route::get('/mobile-apps', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'index']);
     
+    // Quick-Add UoM (accessible by all authenticated users)
+    Route::post('/uoms/quick-add', [MasterDataController::class, 'quickAddUom']);
+
     // Submissions
     Route::apiResource('submissions', SubmissionController::class);
     Route::post('/submissions/bulk-delete', [SubmissionController::class , 'bulkDelete']);
@@ -106,12 +109,12 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\NotificationController::class , 'destroy']);
 
     // Approval Flow Management (Finance & Master Data Managers)
-    Route::middleware('permission:approve submissions|manage master data')->group(function () {
+    Route::middleware('permission:approve submissions|manage master data|manage approval flows')->group(function () {
             Route::get('/approval-flows', [\App\Http\Controllers\Api\ApprovalFlowController::class , 'index']);
         }
         );
 
-        Route::middleware('can:manage master data')->group(function () {
+        Route::middleware('permission:manage master data|manage approval flows')->group(function () {
             // Steps
             Route::post('/approval-flows/{flow}/steps', [\App\Http\Controllers\Api\ApprovalFlowController::class , 'storeStep']);
             Route::put('/approval-flows/{flow}/steps/{step}', [\App\Http\Controllers\Api\ApprovalFlowController::class , 'updateStep']);

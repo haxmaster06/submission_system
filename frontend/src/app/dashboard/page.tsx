@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [activeApps, setActiveApps] = useState<MobileAppRelease[]>([]);
 
   const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
+  const [maintenanceActive, setMaintenanceActive] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -50,6 +51,17 @@ export default function DashboardPage() {
       setData(null);
     }
   }, [user, isSuperAdmin]); // Dependency to re-fetch if role loads or user changes
+
+  // Poll maintenance status independently so banner stays in sync with sidebar toggle
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    const checkMaintenance = () => {
+      api.get('/maintenance-status').then((res: any) => setMaintenanceActive(res.data.maintenance)).catch(() => {});
+    };
+    checkMaintenance();
+    const interval = setInterval(checkMaintenance, 30000);
+    return () => clearInterval(interval);
+  }, [isSuperAdmin]);
 
   const fetchActiveApps = async () => {
     try {
@@ -122,7 +134,7 @@ export default function DashboardPage() {
               </h1>
               <p className="text-slate-500 font-semibold text-sm">Metrik keseluruhan sistem HBM Budgeting.</p>
             </div>
-            {data?.maintenance && (
+            {maintenanceActive && (
               <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-2xl flex items-center gap-3">
                 <AlertCircle size={20} className="animate-pulse" />
                 <span className="text-xs font-bold uppercase tracking-widest">Maintenance Mode Active</span>

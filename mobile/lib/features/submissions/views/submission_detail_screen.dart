@@ -239,7 +239,11 @@ class SubmissionDetailScreen extends ConsumerWidget {
           const Divider(height: 32),
           _buildInfoRow(
             'Tanggal',
-            DateFormat('dd MMMM yyyy').format(submission.createdAt),
+            DateFormat('dd MMMM yyyy').format(
+              (submission.status.toLowerCase() == 'draf' && submission.updatedAt != null
+                  ? submission.updatedAt!
+                  : submission.createdAt).toLocal(),
+            ),
           ),
           if (submission.notes.isNotEmpty) ...[
             const Divider(height: 32),

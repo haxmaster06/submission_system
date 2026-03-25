@@ -15,6 +15,10 @@ import 'package:mobile/features/approvals/views/approvals_screen.dart';
 import 'package:mobile/features/notifications/views/notification_screen.dart';
 import 'package:mobile/features/submissions/models/submission_model.dart';
 import 'package:mobile/shared/widgets/main_wrapper.dart';
+import 'package:mobile/features/budget/views/budget_screen.dart';
+import 'package:mobile/features/submissions/views/activity_history_screen.dart';
+import 'package:mobile/features/realizations/views/realization_list_screen.dart';
+import 'package:mobile/features/submissions/views/salary_form_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
@@ -70,6 +74,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/maintenance',
         builder: (context, state) => const MaintenanceScreen(),
       ),
+      GoRoute(
+        path: '/activity-history',
+        builder: (context, state) => const ActivityHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/realizations',
+        builder: (context, state) => const RealizationListScreen(),
+      ),
       // App Shell that contains the Bottom Navigation Bar
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -109,6 +121,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       final submission = state.extra as Submission?;
                       return SubmissionFormScreen(submission: submission);
                     },
+                  ),
+                  GoRoute(
+                    path: 'salary/new',
+                    builder: (context, state) => const SalaryFormScreen(),
                   ),
                   GoRoute(
                     path: ':id',
@@ -165,6 +181,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/notifications',
                 builder: (context, state) => const NotificationScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/budget',
+                builder: (context, state) => const BudgetScreen(),
               ),
             ],
           ),

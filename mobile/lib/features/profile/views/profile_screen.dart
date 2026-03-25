@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:mobile/core/theme/ui_kit.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
+import 'package:mobile/core/providers/app_mode_provider.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -46,15 +49,27 @@ class ProfileScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
+    final role = user.roleName?.toLowerCase() ?? '';
+    final isApprover = [
+      'manager', 'director', 'finance', 'gm', 'hrd', 'super admin'
+    ].contains(role);
+
+    final dashboardData = ref.watch(dashboardSummaryProvider);
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp',
+      decimalDigits: 0,
+    );
+
     return Scaffold(
       backgroundColor: UiKit.backgroundGray,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Indigo Hero Section
+            // 1. Purple Hero Section
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(24, 60, 24, 40),
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 30),
               decoration: const BoxDecoration(
                 gradient: UiKit.primaryGradient,
                 borderRadius: BorderRadius.vertical(
@@ -64,8 +79,8 @@ class ProfileScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   Container(
-                    width: 100,
-                    height: 100,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
@@ -75,7 +90,7 @@ class ProfileScreen extends ConsumerWidget {
                       child: Text(
                         user.name.substring(0, 1).toUpperCase(),
                         style: UiKit.heading1.copyWith(
-                          fontSize: 40,
+                          fontSize: 36,
                           color: Colors.white,
                         ),
                       ),
@@ -90,10 +105,30 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    user.roleName?.toUpperCase() ?? 'KARYAWAN',
-                    style: UiKit.caption.copyWith(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
+                    user.email,
+                    style: UiKit.caption.copyWith(color: Colors.white70),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.roleName?.toUpperCase() ?? 'KARYAWAN',
+                          style: UiKit.caption.copyWith(
+                            color: Colors.amber,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -104,59 +139,140 @@ class ProfileScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
-                  // Profile Info Card
+                  // 2. Grid Menu
                   _buildMenuCard(
-                    title: 'Informasi Akun',
+                    title: 'Menu Utama',
                     children: [
-                      _buildMenuItem(Icons.email_outlined, 'Email', user.email),
-                      const Divider(height: 32, color: UiKit.surfaceGray),
-                      _buildMenuItem(
-                        Icons.work_outline,
-                        'Jabatan',
-                        user.roleName ?? '-',
-                      ),
-                      const Divider(height: 32, color: UiKit.surfaceGray),
-                      _buildMenuItem(
-                        Icons.business_outlined,
-                        'Divisi',
-                        user.divisionName ?? '-',
+                      GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: 3,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.9,
+                        children: [
+                          _buildGridItem(context, Icons.account_balance_wallet, 'Anggaran', Colors.purple, '/budget'),
+                          _buildGridItem(context, Icons.receipt_long, 'Pengajuan', Colors.blue, '/submissions'),
+                          _buildGridItem(context, Icons.history, 'Aktivitas', Colors.orange, '/activity-history'),
+                          _buildGridItem(context, Icons.verified, 'Riwayat', Colors.brown, '/submissions?filter=approved'),
+                        ],
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  // Settings Card
-                  _buildMenuCard(
-                    title: 'Pengaturan',
-                    children: [
-                      _buildMenuItem(
-                        Icons.lock_reset_outlined,
-                        'Ganti Password',
-                        'Amankan akun Anda',
-                        onTap: () => context.push('/profile/change-password'),
-                        showArrow: true,
-                      ),
-                      const Divider(height: 32, color: UiKit.surfaceGray),
-                      _buildMenuItem(
-                        Icons.info_outline,
-                        'Bantuan',
-                        'Setup & Informasi lainnya',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Silakan akses versi Website untuk pengaturan lanjut.',
-                              ),
+                  // 3. Income / Expense Summary
+                  dashboardData.when(
+                    data: (data) {
+                      final approved = data['budget']?['total_approved'] ?? 0;
+                      final realized = data['budget']?['total_realized'] ?? 0;
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryBox(
+                              'Disetujui',
+                              formatter.format(approved),
+                              Icons.arrow_upward,
+                              Colors.green,
                             ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildSummaryBox(
+                              'Realisasi',
+                              formatter.format(realized),
+                              Icons.arrow_downward,
+                              Colors.red,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                    loading: () => const SizedBox(height: 80, child: Center(child: CircularProgressIndicator())),
+                    error: (_, __) => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // 4. Mode Switcher (KHUSUS APPROVER)
+                  if (isApprover) ...[
+                    _buildMenuCard(
+                      title: 'Pengaturan Aplikasi',
+                      children: [
+                        Consumer(
+                          builder: (context, ref, _) {
+                            final appMode = ref.watch(appModeProvider);
+                            final isApproveOnly = appMode == AppMode.approveOnly;
+                            return SwitchListTile(
+                              contentPadding: EdgeInsets.zero,
+                              title: const Text('Mode Approve Only', style: UiKit.bodyTextBold),
+                              subtitle: Text(
+                                isApproveOnly 
+                                  ? 'Mode ringkas: hanya tampilkan persetujuan'
+                                  : 'Mode lengkap: semua fitur tersedia',
+                                style: UiKit.caption,
+                              ),
+                              value: isApproveOnly,
+                              activeColor: UiKit.primaryBlue,
+                              onChanged: (val) {
+                                ref.read(appModeProvider.notifier).toggle();
+                                // Optional snippet to show snackbar
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text(val ? 'Mode Approve Only diaktifkan' : 'Mode Lengkap diaktifkan')),
+                                );
+                              },
+                              secondary: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: UiKit.primaryBlue.withValues(alpha: 0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.swap_horiz, color: UiKit.primaryBlue),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  // 5. Settings List
+                  _buildMenuCard(
+                    title: 'Lainnya',
+                    children: [
+                      _buildListMenuItem(context, Icons.list_alt, 'Pengajuan Saya', onTap: () => context.push('/submissions')),
+                      const Divider(height: 1, color: UiKit.surfaceGray),
+                      _buildListMenuItem(context, Icons.notifications_none, 'Notifikasi', onTap: () => context.push('/notifications')),
+                      const Divider(height: 1, color: UiKit.surfaceGray),
+                      _buildListMenuItem(context, Icons.lock_outline, 'Ganti Password', onTap: () => context.push('/profile/change-password')),
+                      const Divider(height: 1, color: UiKit.surfaceGray),
+                      _buildListMenuItem(
+                        context, 
+                        Icons.info_outline, 
+                        'Informasi Umum', 
+                        onTap: () {
+                          showAboutDialog(
+                            context: context,
+                            applicationName: 'HBM Budgeting',
+                            applicationVersion: 'v1.0.0',
+                            applicationIcon: Image.asset(
+                              'assets/images/logo.png', // Or whatever logo asset is suitable
+                              width: 50,
+                              errorBuilder: (context, error, stackTrace) => 
+                                  const Icon(Icons.account_balance_wallet, size: 50, color: UiKit.primaryBlue),
+                            ),
+                            children: const [
+                              SizedBox(height: 16),
+                              Text('Aplikasi untuk manajemen pengajuan anggaran dan realisasi di lingkungan perusahaan HBM.'),
+                            ],
                           );
                         },
-                        showArrow: true,
                       ),
                     ],
                   ),
                   const SizedBox(height: 40),
 
-                  // Logout Button (Red Outline)
+                  // 6. Logout Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -175,7 +291,7 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -185,10 +301,7 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildMenuCard({
-    required String title,
-    required List<Widget> children,
-  }) {
+  Widget _buildMenuCard({required String title, required List<Widget> children}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -201,49 +314,103 @@ class ProfileScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: UiKit.heading2.copyWith(color: UiKit.primaryBlue)),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           ...children,
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    IconData icon,
-    String title,
-    String value, {
-    VoidCallback? onTap,
-    bool showArrow = false,
-  }) {
+  Widget _buildGridItem(BuildContext context, IconData icon, String label, Color color, String route) {
     return InkWell(
-      onTap: onTap,
-      child: Row(
+      onTap: () {
+        if (route.isNotEmpty) {
+          try {
+            context.push(route);
+          } catch (_) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur dalam pengembangan')));
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur dalam pengembangan')));
+        }
+      },
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: UiKit.primaryBlue.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: UiKit.primaryBlue, size: 22),
+            child: Icon(icon, color: color, size: 28),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: UiKit.caption.copyWith(color: UiKit.textGray),
-                ),
-                const SizedBox(height: 2),
-                Text(value, style: UiKit.bodyTextBold),
-              ],
-            ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: UiKit.textBlack),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          if (showArrow)
-            const Icon(Icons.chevron_right, color: UiKit.textLightGray),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryBox(String label, String amount, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: UiKit.borderRadiusCard,
+        boxShadow: UiKit.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 4),
+              Text(label, style: UiKit.caption),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            amount,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color == Colors.green ? Colors.green.shade700 : Colors.red.shade700,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildListMenuItem(BuildContext context, IconData icon, String title, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: UiKit.primaryBlue.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: UiKit.primaryBlue, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(child: Text(title, style: UiKit.bodyTextBold)),
+            const Icon(Icons.chevron_right, color: UiKit.textLightGray),
+          ],
+        ),
       ),
     );
   }

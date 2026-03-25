@@ -16,6 +16,9 @@ _$SubmissionImpl _$$SubmissionImplFromJson(Map<String, dynamic> json) =>
       status: _readSubmissionStatus(json, 'status') as String,
       isUrgent: _readSubmissionIsUrgent(json, 'is_urgent') as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
+      updatedAt: json['updated_at'] == null
+          ? null
+          : DateTime.parse(json['updated_at'] as String),
       total: (_readSubmissionTotal(json, 'total') as num?)?.toDouble() ?? 0.0,
       current_approval_step:
           (json['current_approval_step'] as num?)?.toInt() ?? 1,
@@ -59,6 +62,7 @@ Map<String, dynamic> _$$SubmissionImplToJson(_$SubmissionImpl instance) =>
       'status': instance.status,
       'is_urgent': instance.isUrgent,
       'created_at': instance.createdAt.toIso8601String(),
+      'updated_at': instance.updatedAt?.toIso8601String(),
       'total': instance.total,
       'current_approval_step': instance.current_approval_step,
       'current_step_role': instance.current_step_role,
