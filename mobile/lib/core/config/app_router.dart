@@ -78,6 +78,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/activity-history',
         builder: (context, state) => const ActivityHistoryScreen(),
       ),
+      // Standalone detail route for screens OUTSIDE the shell (e.g. ActivityHistory)
+      GoRoute(
+        path: '/submission-detail/:id',
+        builder: (context, state) {
+          final id = int.parse(state.pathParameters['id']!);
+          return SubmissionDetailScreen(submissionId: id);
+        },
+      ),
       GoRoute(
         path: '/realizations',
         builder: (context, state) => const RealizationListScreen(),

@@ -5,6 +5,7 @@ export const STORAGE_URL = API_URL.replace('/api', '/storage');
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 600000, // 10 minutes
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

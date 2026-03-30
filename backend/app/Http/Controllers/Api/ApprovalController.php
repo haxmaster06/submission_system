@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\SubmissionApproval;
 use App\Services\ApprovalService;
+use App\Http\Resources\ApprovalResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -25,17 +26,17 @@ class ApprovalController extends Controller
         $user = Auth::user();
 
         $query = SubmissionApproval::with([
-            'submission.user',
-            'submission.division',
-            'submission.uom',
-            'submission.items.uom',
-            'submission.attachments',
-            'submission.approvals.approver' // Load timeline data
+            'submission' => function($q) {
+                $q->addSelect([
+                    'submissions.*',
+                    'current_step_role' => SubmissionApproval::select('role_name')
+                        ->whereColumn('submission_id', 'submissions.id')
+                        ->whereColumn('step_order', 'submissions.current_approval_step')
+                        ->limit(1)
+                ])->with(['user:id,name', 'division:id,name', 'items:id,submission_id,description,qty,uom_id,nominal', 'items.uom:id,name']);
+            }
         ])
-            ->whereIn('status', ['pending', 'revised'])
-            ->whereHas('submission', function ($q) {
-            $q->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
-        });
+            ->whereIn('status', ['pending', 'revised']);
 
         // Super Admin sees ALL pending approvals
         if ($user->hasRole('Super Admin')) {
@@ -52,10 +53,23 @@ class ApprovalController extends Controller
             $query->where('approver_id', $user->id);
         }
 
-        $approvals = $query->latest()
-            ->paginate(25);
+        $query->whereHas('submission', function ($q) {
+            $q->where(function ($sub) {
+                // Normal: hanya step aktif
+                $sub->where('status_urgent', '!=', 'urgent')
+                    ->whereColumn('submissions.current_approval_step', 'submission_approvals.step_order');
+            })->orWhere(function ($sub) {
+                // Urgent: tampilkan semua step yang masih pending
+                $sub->where('status_urgent', 'urgent');
+            });
+        });
 
-        return response()->json($approvals);
+        $approvals = $query->latest()
+            ->paginate($request->query('per_page', 25));
+
+        return response()->json(
+            ApprovalResource::collection($approvals)->response()->getData(true)
+        );
     }
 
     /**
@@ -66,12 +80,15 @@ class ApprovalController extends Controller
         $user = Auth::user();
 
         $query = SubmissionApproval::with([
-            'submission.user',
-            'submission.division',
-            'submission.uom',
-            'submission.items.uom',
-            'submission.attachments',
-            'submission.approvals.approver' // Load timeline data
+            'submission' => function($q) {
+                $q->addSelect([
+                    'submissions.*',
+                    'current_step_role' => SubmissionApproval::select('role_name')
+                        ->whereColumn('submission_id', 'submissions.id')
+                        ->whereColumn('step_order', 'submissions.current_approval_step')
+                        ->limit(1)
+                ])->with(['user:id,name', 'division:id,name', 'items:id,submission_id,description,qty,uom_id,nominal', 'items.uom:id,name']);
+            }
         ])
             ->where('status', '!=', 'pending');
 
@@ -90,10 +107,12 @@ class ApprovalController extends Controller
             $query->where('approver_id', $user->id);
         }
 
-        $approvals = $query->latest('updated_at')
-            ->paginate(25);
+        $history = $query->latest('updated_at')
+            ->paginate($request->query('per_page', 25));
 
-        return response()->json($approvals);
+        return response()->json(
+            ApprovalResource::collection($history)->response()->getData(true)
+        );
     }
 
     public function approve(Request $request, SubmissionApproval $approval)
@@ -163,8 +182,16 @@ class ApprovalController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        if ($approval->submission->current_approval_step !== $approval->step_order) {
-            abort(400, 'It is not your turn to approve this submission.');
+        // Untuk URGENT: skip step-order check
+        if ($approval->submission->status_urgent !== 'urgent') {
+            if ($approval->submission->current_approval_step !== $approval->step_order) {
+                abort(400, 'It is not your turn to approve this submission.');
+            }
+        }
+
+        // Cek apakah approval sudah diproses
+        if ($approval->status !== 'pending' && $approval->status !== 'revised') {
+            abort(400, 'This approval has already been processed.');
         }
     }
 

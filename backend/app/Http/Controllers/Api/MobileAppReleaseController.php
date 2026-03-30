@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MobileAppRelease;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 
 class MobileAppReleaseController extends Controller
@@ -31,10 +32,7 @@ class MobileAppReleaseController extends Controller
         }
 
         // Admin view — paginated
-        return response()->json([
-            'success' => true,
-            'data'    => $query->paginate($request->query('per_page', 25))
-        ]);
+        return response()->json($query->paginate($request->query('per_page', 25)));
     }
 
     /**
@@ -162,6 +160,66 @@ class MobileAppReleaseController extends Controller
 
         $path = Storage::disk('public')->path($release->file_path);
         
-        return response()->download($path, $release->filename);
+    }
+
+    /**
+     * Store a newly created resource from a merged chunked upload.
+     */
+    public function storeFromChunked(Request $request)
+    {
+        $request->validate([
+            'platform'        => ['required', Rule::in(['android', 'ios'])],
+            'version'         => 'required|string|max:50',
+            'temp_path'       => 'required|string',
+            'filename'        => 'required|string',
+            'description'     => 'nullable|string',
+            'is_active'       => 'boolean',
+        ]);
+
+        $tempFile = storage_path('app/public/releases/temp_chunks/' . $request->temp_path);
+        
+        if (!File::exists($tempFile)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File sementara tidak ditemukan.',
+            ], 404);
+        }
+
+        try {
+            $originalName = $request->filename;
+            $newPath = 'releases/' . uniqid() . '_' . $originalName;
+            
+            // Move from temp to public storage
+            Storage::disk('public')->put($newPath, File::get($tempFile));
+            File::delete($tempFile);
+
+            $isActive = filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN);
+
+            if ($isActive) {
+                MobileAppRelease::where('platform', $request->platform)
+                    ->update(['is_active' => false]);
+            }
+
+            $release = MobileAppRelease::create([
+                'platform'    => $request->platform,
+                'version'     => $request->version,
+                'filename'    => $originalName,
+                'file_path'   => $newPath,
+                'description' => $request->description,
+                'is_active'   => $isActive,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Rilis aplikasi berhasil dikompletasi',
+                'data'    => $release
+            ], 201);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses file rilis. ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

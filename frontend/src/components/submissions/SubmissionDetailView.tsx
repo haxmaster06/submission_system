@@ -345,85 +345,112 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
       </div>
 
       {activeTab === 'detail' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Upper Section: Info & Timeline */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-10">
-              <div className="flex flex-col md:flex-row justify-between items-start mb-8 gap-6">
-                <div className="space-y-1">
-                  <h1 className="text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+            <div className="bg-white rounded-2xl sm:rounded-[32px] border border-slate-100 shadow-sm p-4 sm:p-6 md:p-10">
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-6 sm:mb-8 gap-4 sm:gap-6">
+                <div className="space-y-1 min-w-0">
+                  <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight uppercase leading-none truncate">
                     {submission.no_pengajuan || <span className="text-slate-300 tracking-widest">[ DRAF ]</span>}
                   </h1>
-                  <p className="text-[10px] font-black text-sky-500 uppercase tracking-widest">{submission.jenis_pengajuan?.name}</p>
+                  <p className="text-[9px] sm:text-[10px] font-black text-sky-500 uppercase tracking-widest">{submission.jenis_pengajuan?.name}</p>
                 </div>
-                <div className="md:text-right w-full md:w-auto p-4 md:p-0 bg-slate-50 md:bg-transparent rounded-2xl border border-slate-100 md:border-0 shadow-inner md:shadow-none">
-                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-[0.3em] mb-2 leading-none">TOTAL ANGGARAN</p>
-                  <p className="text-3xl font-black text-sky-600 font-mono tracking-tighter leading-none whitespace-nowrap">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4 py-6 border-y border-slate-50">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm border border-white">
-                    <User className="text-slate-400 w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Pengaju</p>
-                    <p className="text-[11px] font-black text-slate-900 line-clamp-1">{submission.user?.name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm border border-white">
-                    <CreditCard className="text-slate-400 w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Divisi</p>
-                    <p className="text-[11px] font-black text-slate-900 line-clamp-1">{submission.division?.name || '-'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center shadow-sm border border-white">
-                    <Calendar className="text-slate-400 w-4 h-4" />
-                  </div>
-                  <div>
-                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">Tanggal</p>
-                    <p className="text-[11px] font-black text-slate-900">{new Date(submission.final_status === 'draf' && submission.updated_at ? submission.updated_at : submission.tanggal_pengajuan).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
+                <div className="sm:text-right w-full sm:w-auto p-3 sm:p-4 md:p-0 bg-slate-50 md:bg-transparent rounded-xl sm:rounded-2xl border border-slate-100 md:border-0 shadow-inner md:shadow-none shrink-0">
+                  <p className="text-[8px] sm:text-[9px] text-slate-400 uppercase font-black tracking-[0.2em] sm:tracking-[0.3em] mb-1 sm:mb-2 leading-none">TOTAL ANGGARAN</p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-black text-sky-600 font-mono tracking-tighter leading-none">
+                    Rp {(!isNaN(parseFloat(submission.total)) ? parseFloat(submission.total).toLocaleString('id-ID') : '0')}
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-8 space-y-3">
-                <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] ml-1">Judul Pengajuan</h3>
-                <div className="bg-slate-50/50 p-5 rounded-[24px] text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-50 shadow-inner">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 py-4 sm:py-6 border-y border-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm border border-white shrink-0">
+                    <User className="text-slate-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5 sm:mb-1">Pengaju</p>
+                    <p className="text-[10px] sm:text-[11px] font-black text-slate-900 truncate">{submission.user?.name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm border border-white shrink-0">
+                    <CreditCard className="text-slate-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5 sm:mb-1">Divisi</p>
+                    <p className="text-[10px] sm:text-[11px] font-black text-slate-900 truncate">{submission.division?.name || '-'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-slate-50 rounded-lg sm:rounded-xl flex items-center justify-center shadow-sm border border-white shrink-0">
+                    <Calendar className="text-slate-400 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[8px] sm:text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none mb-0.5 sm:mb-1">Tanggal</p>
+                    <p className="text-[10px] sm:text-[11px] font-black text-slate-900">
+                      {(() => {
+                        const dateVal = submission.final_status === 'draf' && submission.updated_at ? submission.updated_at : (submission.tanggal_pengajuan || submission.created_at);
+                        const dateObj = dateVal ? new Date(dateVal) : null;
+                        return dateObj && !isNaN(dateObj.getTime()) 
+                          ? dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })
+                          : '-';
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {submission.status_urgent === 'urgent' && (
+                <div className="mt-4 sm:mt-6 flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-rose-50 rounded-xl sm:rounded-2xl border border-rose-100">
+                  <AlertCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-500 shrink-0" />
+                  <p className="text-[9px] sm:text-[10px] font-black text-rose-600 uppercase tracking-widest">Pengajuan Mendesak (Urgent)</p>
+                </div>
+              )}
+
+              <div className="mt-6 sm:mt-8 space-y-2 sm:space-y-3">
+                <h3 className="text-[8px] sm:text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] sm:tracking-[0.3em] ml-1">Judul Pengajuan</h3>
+                <div className="bg-slate-50/50 p-3 sm:p-5 rounded-xl sm:rounded-[24px] text-[11px] sm:text-xs font-bold text-slate-700 leading-relaxed whitespace-pre-wrap border border-slate-50 shadow-inner">
                   {submission.description}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-8 h-fit">
-              <h3 className="text-[9px] font-black text-slate-300 uppercase tracking-[0.3em] mb-8 ml-1">Approval Timeline</h3>
+          <div className="space-y-4 sm:space-y-6">
+            <div className="bg-white rounded-2xl sm:rounded-[32px] border border-slate-100 shadow-sm p-4 sm:p-6 md:p-8 h-fit">
+              <h3 className="text-[8px] sm:text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-6 sm:mb-8 ml-1">Approval Timeline</h3>
               <div className="space-y-6 relative">
                 <div className="absolute left-[9px] top-1.5 bottom-1.5 w-0.5 bg-slate-50" />
                 {submission.approvals?.length > 0 ? submission.approvals?.sort((a: any, b: any) => a.step_order - b.step_order).map((approval: any) => {
                   const isCurrent = submission.current_approval_step === approval.step_order && ['pending', 'on_hold'].includes(submission.final_status);
                   const isDone = approval.status !== 'pending';
-                  return (
-                    <div key={approval.id} className="relative flex gap-4">
-                      <div className="bg-white relative z-10 p-0.5 scale-75 -ml-1">
-                        {getStepStatusIcon(approval.status, isCurrent)}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={`text-[11px] font-black uppercase tracking-tight ${isCurrent ? 'text-amber-600' : 'text-slate-900'}`}>{approval.role_name}</p>
-                          {approval.approved_at && (
-                            <p className="text-[8px] text-slate-300 font-black uppercase tracking-widest">
-                              {new Date(approval.approved_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          )}
+                    const isAutoApproved = approval.notes?.includes('Auto-approved');
+                    return (
+                      <div key={approval.id} className="relative flex gap-4">
+                        <div className="bg-white relative z-10 p-0.5 scale-75 -ml-1">
+                          {getStepStatusIcon(approval.status, isCurrent)}
                         </div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">{isDone ? `By ${approval.approver?.name.split(' ')[0]}` : 'Waiting...'}</p>
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-[11px] font-black uppercase tracking-tight ${isCurrent ? 'text-amber-600' : 'text-slate-900'}`}>{approval.role_name}</p>
+                              {isAutoApproved && (
+                                <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-600 rounded text-[8px] font-black uppercase tracking-widest">
+                                  Auto-Approved
+                                </span>
+                              )}
+                            </div>
+                            {approval.approved_at && (
+                              <p className="text-[8px] text-slate-300 font-black uppercase tracking-widest">
+                                {new Date(approval.approved_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            )}
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none">
+                            {isAutoApproved ? 'Sistem (Auto)' : (isDone ? `By ${approval.approver?.name.split(' ')[0]}` : 'Waiting...')}
+                          </p>
                         {approval.is_director_proxy && approval.signed_proof_path && (
                           <div className="mt-2">
                             <a 
@@ -455,14 +482,14 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
           {/* Budget Items Breakdown - Full Width Area */}
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm p-6 md:p-10">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-sky-50 rounded-xl flex items-center justify-center border border-sky-100 text-sky-600"><CreditCard size={20} /></div>
-                    Budget Items Breakdown
+            <div className="bg-white rounded-2xl sm:rounded-[32px] border border-slate-100 shadow-sm p-4 sm:p-6 md:p-10">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-sky-50 rounded-lg sm:rounded-xl flex items-center justify-center border border-sky-100 text-sky-600 shrink-0"><CreditCard size={18} /></div>
+                    <span className="truncate">Budget Items Breakdown</span>
                   </h3>
-                  <p className="text-slate-400 text-xs mt-1 ml-13">Perincian item anggaran yang diajukan.</p>
+                  <p className="text-slate-400 text-[10px] sm:text-xs mt-1 ml-10 sm:ml-13">Perincian item anggaran yang diajukan.</p>
                 </div>
               </div>
 
@@ -593,27 +620,33 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               ) : (
                 <div className="max-w-xl">
                   <div className="flex items-center justify-between py-5 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Quantity ({submission.uom?.code})</span>
-                    <span className="text-slate-900 font-black text-lg">{parseFloat(submission.qty).toLocaleString('id-ID')}</span>
+                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Quantity ({submission.uom?.code || '-'})</span>
+                    <span className="text-slate-900 font-black text-lg">
+                      {!isNaN(parseFloat(submission.qty)) ? parseFloat(submission.qty).toLocaleString('id-ID') : '0'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between py-5 border-b border-slate-100">
                     <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Nominal per unit</span>
-                    <span className="text-slate-900 font-black text-xl">Rp {parseFloat(submission.nominal).toLocaleString('id-ID')}</span>
+                    <span className="text-slate-900 font-black text-xl">
+                      Rp {!isNaN(parseFloat(submission.nominal)) ? parseFloat(submission.nominal).toLocaleString('id-ID') : '0'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between py-8">
                     <span className="text-sky-600 font-black uppercase text-xs tracking-[0.3em]">Total Grand</span>
-                    <span className="text-sky-600 font-black text-3xl">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
+                    <span className="text-sky-600 font-black text-3xl">
+                      Rp {!isNaN(parseFloat(submission.total)) ? parseFloat(submission.total).toLocaleString('id-ID') : '0'}
+                    </span>
                   </div>
                 </div>
               )}
 
               {submission.notes && (
-                <div className="mt-8 pt-6 md:pt-8 border-t border-slate-100 space-y-3">
-                  <h3 className="text-[9px] font-black text-amber-600 uppercase tracking-[0.3em] ml-1 flex items-center gap-1.5">
-                    <AlertCircle size={14} />
+                <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 md:pt-8 border-t border-slate-100 space-y-2 sm:space-y-3">
+                  <h3 className="text-[8px] sm:text-[9px] font-black text-amber-600 uppercase tracking-[0.2em] sm:tracking-[0.3em] ml-1 flex items-center gap-1.5">
+                    <AlertCircle size={12} />
                     Catatan
                   </h3>
-                  <div className="bg-amber-50/50 p-6 md:p-8 rounded-[32px] text-sm font-bold text-amber-900 leading-relaxed whitespace-pre-wrap border border-amber-200 shadow-inner border-l-4 border-l-amber-500">
+                  <div className="bg-amber-50/50 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-[32px] text-[11px] sm:text-sm font-bold text-amber-900 leading-relaxed whitespace-pre-wrap border border-amber-200 shadow-inner border-l-4 border-l-amber-500">
                     {submission.notes}
                   </div>
                 </div>

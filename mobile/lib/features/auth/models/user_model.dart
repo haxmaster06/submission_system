@@ -29,6 +29,7 @@ class User with _$User {
     @JsonKey(name: 'division_name', readValue: _readDivisionName)
     String? divisionName,
     @JsonKey(name: 'signature_path') String? signaturePath,
+    @JsonKey(name: 'is_approver') @Default(false) bool isApproverFlag,
     @Default([]) List<Map<String, dynamic>> permissions,
   }) = _User;
 
@@ -41,4 +42,9 @@ extension UserX on User {
   }
 
   bool get isSuperAdmin => roleName == 'Super Admin';
+
+  /// Uses the `is_approver` flag returned by the backend API.
+  /// The backend checks: approval_flow_steps roles, direct submission_approvals
+  /// assignment, Super Admin role, and proxy director signature permission.
+  bool get isApprover => isApproverFlag;
 }

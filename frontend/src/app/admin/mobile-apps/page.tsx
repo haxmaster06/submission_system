@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import Shell from '@/components/layout/Shell';
 import Modal from '@/components/ui/Modal';
 import { mobileAppsApi, MobileAppRelease } from '@/lib/mobileApps';
@@ -12,7 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   Download,
-  AlertCircle
+  AlertCircle,
+  UploadCloud,
+  FileBox,
+  Check
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
@@ -38,14 +42,29 @@ export default function MobileAppsManagementPage() {
     filename: '',
   });
 
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const file = acceptedFiles[0];
+      setForm((prev) => ({ ...prev, file, filename: prev.filename || file.name }));
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+    onDrop,
+    accept: form.platform === 'android' 
+      ? { 'application/vnd.android.package-archive': ['.apk'] }
+      : { 'application/octet-stream': ['.ipa'] },
+    maxFiles: 1,
+    multiple: false
+  });
+
   useEffect(() => {
     fetchData();
   }, [page]);
 
   const fetchData = async () => {
     try {
-      const res = await mobileAppsApi.getAll(false, page);
-      const paginated = res.data;
+      const paginated = await mobileAppsApi.getAll(false, page);
       setReleases(paginated.data);
       setPaginationMeta({
         current_page: paginated.current_page,
@@ -97,20 +116,40 @@ export default function MobileAppsManagementPage() {
     setSubmitting(true);
     setUploadProgress(0);
     try {
-      const formData = new FormData();
-      formData.append('platform', form.platform);
-      formData.append('version', form.version);
-      if (form.description) formData.append('description', form.description);
-      if (form.filename) formData.append('custom_filename', form.filename);
-      formData.append('is_active', form.is_active ? '1' : '0');
-      formData.append('file', form.file);
+      const threshold = 5 * 1024 * 1024; // 5MB
+      let res;
 
-      const res = await mobileAppsApi.create(formData, (progressEvent: any) => {
-        if (progressEvent.total) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
+      if (form.file.size > threshold) {
+        // Use chunked upload for large files
+        res = await mobileAppsApi.createChunked(
+          form.file,
+          {
+            platform: form.platform,
+            version: form.version,
+            description: form.description,
+            is_active: form.is_active ? '1' : '0',
+          },
+          (progress) => {
+            setUploadProgress(progress);
+          }
+        );
+      } else {
+        // Traditional upload for small files
+        const formData = new FormData();
+        formData.append('platform', form.platform);
+        formData.append('version', form.version);
+        if (form.description) formData.append('description', form.description);
+        if (form.filename) formData.append('custom_filename', form.filename);
+        formData.append('is_active', form.is_active ? '1' : '0');
+        formData.append('file', form.file);
+
+        res = await mobileAppsApi.create(formData, (progressEvent: any) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(percentCompleted);
+          }
+        });
+      }
       
       // Refresh list to trigger is_active logic update across all items
       fetchData();
@@ -301,17 +340,59 @@ export default function MobileAppsManagementPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">File Instalasi <span className="text-red-500">*</span></label>
-              <input
-                type="file"
-                required
-                accept={form.platform === 'android' ? ".apk" : ".ipa"}
-                onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setForm({ ...form, file, filename: file ? file.name : '' });
-                }}
-                className="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 transition-all border border-slate-200 rounded-xl p-2"
-              />
+              <label className="block text-sm font-semibold text-slate-700 mb-3">File Instalasi <span className="text-red-500">*</span></label>
+              
+              {!form.file ? (
+                <div 
+                  {...getRootProps()} 
+                  className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 flex flex-col items-center justify-center min-h-[220px] group
+                    ${isDragActive ? 'border-sky-500 bg-sky-50 shadow-inner' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'}
+                    ${isDragReject ? 'border-red-500 bg-red-50' : ''}
+                  `}
+                >
+                  <input {...getInputProps()} />
+                  <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-5 transition-transform duration-300 ${isDragActive ? 'bg-sky-100 scale-110' : 'bg-white shadow group-hover:scale-110'}`}>
+                    <UploadCloud className={`w-8 h-8 ${isDragActive ? 'text-sky-500' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-800 mb-2">
+                    {isDragActive ? "Lepaskan file di sini..." : "Tarik & Lepas File Instalasi"}
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6 px-4">
+                    Pilih file APK untuk Android atau IPA untuk iOS. Ukuran file dapat mencapai ratusan MB berkat dukungan <i>chunked upload</i>.
+                  </p>
+                  <span className="bg-white border border-slate-200 text-slate-600 text-xs font-bold py-2 px-6 rounded-full shadow-sm group-hover:shadow transition-all">
+                    Pilih File Komputer
+                  </span>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-sky-50 to-indigo-50/50 border border-sky-100 rounded-3xl p-5 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-4 w-full overflow-hidden">
+                    <div className="w-14 h-14 rounded-2xl bg-white shadow-sm flex items-center justify-center shrink-0">
+                      <FileBox className="text-sky-500 w-7 h-7" />
+                    </div>
+                    <div className="overflow-hidden w-full">
+                      <div className="font-bold text-slate-800 truncate text-base" title={form.file.name}>{form.file.name}</div>
+                      <div className="text-sm font-semibold text-slate-500 flex items-center gap-2 mt-1">
+                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-emerald-100/50 text-emerald-600 text-xs">
+                           <Check className="w-3.5 h-3.5" />
+                           Siap Diunggah
+                        </span>
+                        <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                        {(form.file.size / (1024 * 1024)).toFixed(2)} MB
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, file: null, filename: '' }))}
+                    disabled={submitting}
+                    className="p-3 text-slate-400 bg-white border border-slate-200 hover:text-red-500 hover:bg-red-50 hover:border-red-100 rounded-xl transition-all shrink-0 w-full md:w-auto flex items-center justify-center disabled:opacity-50"
+                  >
+                    <XCircle size={20} className="mr-2 md:mr-0" />
+                    <span className="md:hidden font-bold">Ganti File</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -338,21 +419,29 @@ export default function MobileAppsManagementPage() {
               </label>
             </div>
 
-            {submitting && uploadProgress > 0 && (
+            {submitting && (
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm font-bold">
                   <span className={uploadProgress === 100 ? 'text-emerald-600' : 'text-sky-600'}>
-                    {uploadProgress === 100 ? 'Memproses File...' : 'Mengunggah File...'}
+                    {uploadProgress === 0 ? 'Memulai unggahan...' : uploadProgress === 100 ? 'Memproses File...' : 'Mengunggah File...'}
                   </span>
                   <span className={uploadProgress === 100 ? 'text-emerald-600' : 'text-sky-600'}>{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-slate-100 rounded-full h-3 overflow-hidden shadow-inner relative">
-                  <motion.div
-                    className={`h-full rounded-full transition-colors duration-300 ${uploadProgress === 100 ? 'bg-emerald-500' : 'bg-sky-500'}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${uploadProgress}%` }}
-                    transition={{ ease: "linear" }}
-                  />
+                  {uploadProgress === 0 ? (
+                    <motion.div
+                      className="h-full w-1/3 rounded-full bg-sky-400/60"
+                      animate={{ x: ['-100%', '300%'] }}
+                      transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+                    />
+                  ) : (
+                    <motion.div
+                      className={`h-full rounded-full transition-colors duration-300 ${uploadProgress === 100 ? 'bg-emerald-500' : 'bg-sky-500'}`}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                      transition={{ ease: "linear" }}
+                    />
+                  )}
                   {uploadProgress === 100 && (
                     <motion.div 
                       className="absolute inset-0 bg-white/30"

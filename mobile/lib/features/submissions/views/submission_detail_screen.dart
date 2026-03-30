@@ -34,100 +34,100 @@ class SubmissionDetailScreen extends ConsumerWidget {
       orElse: () => null,
     );
 
-    return Scaffold(
-      backgroundColor: UiKit.backgroundGray,
-      body: detailState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Gagal memuat detail: $err')),
-        data: (submission) {
-          final dio = ref.watch(dioProvider);
-          final String baseUrl = dio.options.baseUrl.replaceAll(
-            RegExp(r'/api/?$'),
-            '',
-          );
+    return detailState.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (err, stack) => Scaffold(
+        appBar: AppBar(title: const Text('Detail Pengajuan')),
+        body: Center(child: Text('Gagal memuat detail: $err')),
+      ),
+      data: (submission) {
+        final dio = ref.watch(dioProvider);
+        final String baseUrl = dio.options.baseUrl.replaceAll(
+          RegExp(r'/api/?$'),
+          '',
+        );
 
-          // Authorization Check for Displaying Action Buttons
-          final activeStage = submission.approval_stages.firstWhereOrNull(
-            (s) =>
-                s.status.toLowerCase() == 'pending' &&
-                s.step_order == submission.current_approval_step,
-          );
+        // Authorization Check for Displaying Action Buttons
+        final activeStage = submission.approval_stages.firstWhereOrNull(
+          (s) =>
+              s.status.toLowerCase() == 'pending' &&
+              s.step_order == submission.current_approval_step,
+        );
 
-          bool isAuthorizedApprover = false;
-          if (activeStage != null && user != null) {
-            final isApprover = user.id == activeStage.approver_id;
-            final isSuperAdmin = user.isSuperAdmin;
-            final isRoleMatch = user.roleName == activeStage.role_name;
-            final isProxy =
-                user.hasPermission('proxy director signature') &&
-                activeStage.role_name == 'Director';
+        bool isAuthorizedApprover = false;
+        if (activeStage != null && user != null) {
+          final isApprover = user.id == activeStage.approver_id;
+          final isSuperAdmin = user.isSuperAdmin;
+          final isRoleMatch = user.roleName == activeStage.role_name;
+          final isProxy =
+              user.hasPermission('proxy director signature') &&
+              activeStage.role_name == 'Director';
 
-            isAuthorizedApprover =
-                isApprover || isRoleMatch || isSuperAdmin || isProxy;
-          }
+          isAuthorizedApprover =
+              isApprover || isRoleMatch || isSuperAdmin || isProxy;
+        }
 
-          final bool isOwner = user?.id == submission.userId;
-          final bool isDraft = submission.status.toLowerCase() == 'draf';
+        final bool isOwner = user?.id == submission.userId;
+        final bool isDraft = submission.status.toLowerCase() == 'draf';
 
-          return Scaffold(
-            backgroundColor: UiKit.backgroundGray,
-            bottomNavigationBar: isAuthorizedApprover
-                ? _buildApprovalActions(context, ref, submission, activeStage!)
-                : (isOwner && isDraft
-                      ? _buildDraftActions(context, ref, submission)
-                      : null),
-            body: CustomScrollView(
-              slivers: [
-                _buildMiniHero(context, ref, submission),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: [
-                        _buildInfoCard(submission),
-                        const SizedBox(height: 24),
-                        Builder(
-                          builder: (context) {
-                            final isSalaryType = submission.type
-                                .toLowerCase()
-                                .contains('gaji');
-                            final hasSalaryPayload =
-                                submission.payload != null &&
-                                submission.payload!['type']
-                                        ?.toString()
-                                        .toLowerCase() ==
-                                    'salary';
+        return Scaffold(
+          backgroundColor: UiKit.backgroundGray,
+          bottomNavigationBar: isAuthorizedApprover
+              ? _buildApprovalActions(context, ref, submission, activeStage!)
+              : (isOwner && isDraft
+                    ? _buildDraftActions(context, ref, submission)
+                    : null),
+          body: CustomScrollView(
+            slivers: [
+              _buildMiniHero(context, ref, submission),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      _buildInfoCard(submission),
+                      const SizedBox(height: 24),
+                      Builder(
+                        builder: (context) {
+                          final isSalaryType = submission.type
+                              .toLowerCase()
+                              .contains('gaji');
+                          final hasSalaryPayload =
+                              submission.payload != null &&
+                              submission.payload!['type']
+                                      ?.toString()
+                                      .toLowerCase() ==
+                                  'salary';
 
-                            if (hasSalaryPayload ||
-                                (isSalaryType && submission.payload != null)) {
-                              return _buildSalarySection(submission);
-                            } else if (submission.details.isNotEmpty) {
-                              return _buildDetailsList(submission);
-                            } else {
-                              return _buildDetailsList(submission);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        _buildAttachmentsSection(
-                          context,
-                          ref,
-                          submission,
-                          user,
-                          baseUrl,
-                        ),
-                        const SizedBox(height: 24),
-                        _buildTimelineSection(submission),
-                        const SizedBox(height: 40),
-                      ],
-                    ),
+                          if (hasSalaryPayload ||
+                              (isSalaryType && submission.payload != null)) {
+                            return _buildSalarySection(submission);
+                          } else {
+                            return _buildDetailsList(submission);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _buildAttachmentsSection(
+                        context,
+                        ref,
+                        submission,
+                        user,
+                        baseUrl,
+                      ),
+                      const SizedBox(height: 24),
+                      _buildTimelineSection(submission),
+                      const SizedBox(height: 40),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          );
-        },
-      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -460,6 +460,8 @@ class SubmissionDetailScreen extends ConsumerWidget {
         break;
     }
 
+    final bool isAutoApproved = stage.notes?.contains('Auto-approved') ?? false;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -479,16 +481,52 @@ class SubmissionDetailScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                stage.role_name ?? 'Persetuju',
-                style: UiKit.bodyTextBold,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      stage.role_name ?? 'Persetuju',
+                      style: UiKit.bodyTextBold,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (isAutoApproved) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: Colors.green.shade100),
+                      ),
+                      child: Text(
+                        'AUTO',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               Text(
-                stage.status.toUpperCase(),
+                isAutoApproved ? 'SISTEM (AUTO)' : stage.status.toUpperCase(),
                 style: UiKit.caption.copyWith(color: color),
               ),
+              if (stage.notes != null && stage.notes!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  stage.notes!,
+                  style: UiKit.caption.copyWith(
+                    fontSize: 10,
+                    fontStyle: FontStyle.italic,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
             ],
           ),

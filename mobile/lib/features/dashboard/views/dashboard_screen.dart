@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 import 'package:mobile/core/theme/ui_kit.dart';
 import 'package:mobile/core/services/notification_service.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/auth/models/user_model.dart';
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 import 'package:mobile/features/notifications/providers/notification_provider.dart';
-import 'package:mobile/features/auth/models/user_model.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -114,34 +114,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 24),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildQuickAction(
-                                  icon: Icons.add_circle_outline,
-                                  label: 'Ajukan',
-                                  onTap: () => context.push('/submissions/new'),
-                                ),
-                                _buildQuickAction(
-                                  icon: Icons.fact_check_outlined,
-                                  label: 'Setujui',
-                                  onTap: () => context.push('/approvals'),
-                                ),
-                                _buildQuickAction(
-                                  icon: Icons.send_outlined,
-                                  label: 'Kirim',
-                                  onTap: () => context.push('/submissions?filter=draf'),
-                                ),
-                                _buildQuickAction(
-                                  icon: Icons.mail_outline,
-                                  label: 'Inbox',
-                                  onTap: () => context.push('/notifications'),
-                                  badgeCount: ref.watch(
-                                    unreadNotificationsCountProvider,
+                            Builder(builder: (context) {
+                              final isApprover = user.isApprover;
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildQuickAction(
+                                    icon: Icons.add_circle_outline,
+                                    label: 'Ajukan',
+                                    onTap: () => context.push('/submissions/new'),
                                   ),
-                                ),
-                              ],
-                            ),
+                                  if (isApprover)
+                                    _buildQuickAction(
+                                      icon: Icons.fact_check_outlined,
+                                      label: 'Setujui',
+                                      onTap: () => context.go('/approvals'),
+                                    ),
+                                  _buildQuickAction(
+                                    icon: Icons.send_outlined,
+                                    label: 'Kirim',
+                                    onTap: () => context.go('/submissions'),
+                                  ),
+                                  _buildQuickAction(
+                                    icon: Icons.mail_outline,
+                                    label: 'Inbox',
+                                    onTap: () => context.go('/notifications'),
+                                    badgeCount: ref.watch(
+                                      unreadNotificationsCountProvider,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
                           ],
                         );
                       },
@@ -266,12 +270,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildAdminToolsGrid(Map<String, dynamic> data, dynamic user) {
+  Widget _buildAdminToolsGrid(Map<String, dynamic> data, User user) {
     // Generate menu items based on roles/permissions
-    final role = user.roleName?.toLowerCase() ?? '';
-    final isApprover = [
-      'manager', 'director', 'finance', 'gm', 'hrd', 'super admin'
-    ].contains(role);
+    final isApprover = user.isApprover;
 
     List<Map<String, dynamic>> tools = [
       {
@@ -337,9 +338,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               return InkWell(
                 onTap: () {
                   if (tool['route'].isNotEmpty) {
-                    // Try to navigate, if route not implemented yet it might throw or redirect
                     try {
-                      context.push(tool['route']);
+                      final route = tool['route'] as String;
+                      // Use context.go for shell-internal routes to switch branches properly
+                      // Use context.push for overlay routes like /submissions/new
+                      if (route == '/submissions/new') {
+                        context.push(route);
+                      } else {
+                        context.go(route);
+                      }
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Fitur dalam pengembangan')),

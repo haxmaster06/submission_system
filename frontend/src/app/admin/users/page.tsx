@@ -52,16 +52,24 @@ export default function UserManagementPage() {
   });
 
   useEffect(() => {
+    // Initial static data fetch once on mount
+    Promise.all([
+      api.get('/roles-permissions'),
+      api.get('/lookups')
+    ]).then(([rolesRes, lookupsRes]) => {
+      setRoles(rolesRes.data.roles);
+      setPermissions(rolesRes.data.permissions);
+      setLookups(lookupsRes.data);
+    }).catch(console.error);
+  }, []);
+
+  useEffect(() => {
     fetchData();
   }, [page, search]);
 
   const fetchData = async () => {
     try {
-      const [usersRes, rolesRes, lookupsRes] = await Promise.all([
-        api.get('/users', { params: { page, per_page: 25, search } }),
-        api.get('/roles-permissions'),
-        api.get('/lookups')
-      ]);
+      const usersRes = await api.get('/users', { params: { page, per_page: 25, search } });
       const paginated = usersRes.data;
       setUsers(paginated.data);
       setPaginationMeta({
@@ -72,9 +80,6 @@ export default function UserManagementPage() {
         total: paginated.total,
         per_page: paginated.per_page,
       });
-      setRoles(rolesRes.data.roles);
-      setPermissions(rolesRes.data.permissions);
-      setLookups(lookupsRes.data);
     } catch (err) {
       console.error(err);
     } finally {

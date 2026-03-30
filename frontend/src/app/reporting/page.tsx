@@ -142,7 +142,7 @@ export default function ReportingPage() {
     setDetailLoading(true);
     try {
       const res = await api.get(`/submissions/${id}`);
-      setSelectedSubmission(res.data);
+      setSelectedSubmission(res.data.data || res.data);
     } catch (err) {
       console.error(err);
       alert('Gagal memuat detail pengajuan');
@@ -163,7 +163,10 @@ export default function ReportingPage() {
       if(!groupedSubmissions[divName]) groupedSubmissions[divName] = [];
       groupedSubmissions[divName].push(sub);
 
-      grandTotalPengajuan += parseFloat(sub.total);
+      // Hanya hitung ke budget jika sudah disetujui (Approved) ATAU jika filter status spesifik sedang aktif
+      if (filters.status !== 'all' || sub.final_status === 'approved') {
+          grandTotalPengajuan += parseFloat(sub.total);
+      }
       
       let realizationTotal = 0;
       if (sub.realizations && Array.isArray(sub.realizations)) {
@@ -355,7 +358,9 @@ export default function ReportingPage() {
                     let divTotalRealisasi = 0;
                     
                     divSubs.forEach(sub => {
-                        divTotalPengajuan += parseFloat(sub.total);
+                        if (filters.status !== 'all' || sub.final_status === 'approved') {
+                            divTotalPengajuan += parseFloat(sub.total);
+                        }
                         let realizationTotal = 0;
                         if (sub.realizations && Array.isArray(sub.realizations)) {
                             realizationTotal = sub.realizations
@@ -379,7 +384,7 @@ export default function ReportingPage() {
                             </div>
                             <div className="flex gap-6 text-right">
                                 <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5">Subtotal Pengajuan</p>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-0.5">Subtotal Budget (Approved)</p>
                                     <p className="font-mono font-bold text-sky-400 tracking-tight">Rp {divTotalPengajuan.toLocaleString('id-ID')}</p>
                                 </div>
                                 <div className="hidden sm:block">

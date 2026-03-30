@@ -58,7 +58,31 @@ class ApprovalCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    _buildStatusChip(item.status),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _buildStatusChip(item.status),
+                        if (sub.isUrgent) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'URGENT',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 8,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
                 if (sub.description != null && sub.description!.isNotEmpty) ...[

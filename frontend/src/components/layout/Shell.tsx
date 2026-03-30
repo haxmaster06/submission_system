@@ -223,7 +223,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Desktop Sidebar - Hidden on mobile/tablet */}
-      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 hidden xl:flex flex-col ${isSidebarOpen ? 'xl:w-56 2xl:w-64' : 'w-20'}`}>
+      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 hidden xl:flex flex-col sticky top-0 h-screen ${isSidebarOpen ? 'xl:w-56 2xl:w-64' : 'w-20'}`}>
         <div className="p-4 2xl:p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 overflow-hidden">
             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
@@ -290,9 +290,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Header */}
-        <header className="h-16 2xl:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between px-4 xl:px-6 2xl:px-8 shrink-0 sticky top-0 z-50">
+        <header className="h-16 2xl:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/50 flex items-center justify-between px-4 xl:px-6 2xl:px-8 sticky top-0 z-50">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
@@ -381,7 +381,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Page Body */}
-        <section className="flex-1 overflow-y-auto p-4 sm:p-6 xl:p-5 2xl:p-8 bg-slate-50/50">
+        <section className="flex-1 p-4 sm:p-6 xl:p-5 2xl:p-8 bg-slate-50/50">
           {!user?.signature_path && pathname !== '/profile' && (
             <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>

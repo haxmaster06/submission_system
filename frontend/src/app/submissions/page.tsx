@@ -58,6 +58,7 @@ function SubmissionsPageContent() {
   const [filters, setFilters] = useState({
     division_id: '',
     jenis_pengajuan_id: '',
+    status_urgent: '',
     date_from: '',
     date_to: '',
   });
@@ -110,12 +111,19 @@ function SubmissionsPageContent() {
       } else {
         // If not in list, fetch it (optional, but good for direct links)
         api.get(`/submissions/${viewId}`).then(res => {
-          setSelectedSubmission(res.data);
+          setSelectedSubmission(res.data.data || res.data);
           setViewModalOpen(true);
         }).catch(console.error);
       }
     }
   }, [viewId, submissions]);
+
+  useEffect(() => {
+    // Initial lookup fetch once on mount
+    api.get('/lookups')
+      .then(res => setLookups(res.data))
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetchData();
@@ -132,10 +140,7 @@ function SubmissionsPageContent() {
         ...filters
       };
 
-      const [submissionsRes, lookupsRes] = await Promise.all([
-        api.get('/submissions', { params }),
-        api.get('/lookups')
-      ]);
+      const submissionsRes = await api.get('/submissions', { params });
       const paginatedData = submissionsRes.data.submissions;
       setSubmissions(paginatedData.data);
       setPaginationMeta({
@@ -147,7 +152,6 @@ function SubmissionsPageContent() {
         per_page: paginatedData.per_page,
       });
       setCounts(submissionsRes.data.counts);
-      setLookups(lookupsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -429,7 +433,7 @@ function SubmissionsPageContent() {
                 exit={{ opacity: 0, height: 0 }}
                 className="overflow-hidden"
               >
-                <div className="pt-4 grid grid-cols-1 md:grid-cols-4 gap-4 border-t border-slate-100">
+                <div className="pt-4 grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-slate-100">
                   {canSeeAll && (
                     <div>
                       <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Divisi</label>
@@ -455,6 +459,18 @@ function SubmissionsPageContent() {
                     </select>
                   </div>
                   <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Urgensi</label>
+                    <select
+                      value={filters.status_urgent}
+                      onChange={(e) => setFilters({ ...filters, status_urgent: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
+                    >
+                      <option value="">Semua</option>
+                      <option value="normal">Normal</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                  <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Dari Tanggal</label>
                     <input
                       type="date"
@@ -476,7 +492,7 @@ function SubmissionsPageContent() {
                 <div className="flex justify-end pt-4">
                   <button
                     onClick={() => {
-                      setFilters({ division_id: '', jenis_pengajuan_id: '', date_from: '', date_to: '' });
+                    setFilters({ division_id: '', jenis_pengajuan_id: '', status_urgent: '', date_from: '', date_to: '' });
                       setSearch('');
                     }}
                     className="text-xs font-bold text-rose-500 hover:text-rose-600 uppercase tracking-widest flex items-center gap-2"

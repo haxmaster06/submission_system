@@ -14,6 +14,7 @@ use App\Notifications\SubmissionStatusNotification;
 use App\Notifications\NewSubmissionNotification;
 use App\Notifications\ProxySignedNotification;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Log;
 
 class ApprovalService
 {
@@ -42,11 +43,16 @@ class ApprovalService
                 ]);
             }
 
-            // Notify First Approver
-            $firstApproval = $submission->approvals->where('step_order', 1)->first();
-            if ($firstApproval) {
-                $approvers = $this->getApproversForRole($firstApproval->role_name);
-                Notification::send($approvers, new NewSubmissionNotification($submission));
+            if ($submission->status_urgent === 'urgent') {
+                // URGENT: Notifikasi ke SEMUA approver sekaligus
+                $this->notifyAllApprovers($submission);
+            } else {
+                // NORMAL: Notifikasi ke approver step 1 saja
+                $firstApproval = $submission->approvals->where('step_order', 1)->first();
+                if ($firstApproval) {
+                    $approvers = $this->getApproversForRole($firstApproval->role_name);
+                    Notification::send($approvers, new NewSubmissionNotification($submission));
+                }
             }
 
             return $submission->approvals;
@@ -131,31 +137,11 @@ class ApprovalService
             ]);
 
             $submission = $approval->submission;
-            $nextStep = $approval->step_order + 1;
-
-            $nextApproval = SubmissionApproval::where('submission_id', $submission->id)
-                ->where('step_order', $nextStep)
-                ->first();
-
-            if (!$nextApproval) {
-                $submission->update(['final_status' => 'approved']);
-
-                // Notify Requestor of Final Approval
-                $submission->user->notify(new SubmissionStatusNotification($submission, 'approved', $user->name));
-            }
-            else {
-                $submission->update(['current_approval_step' => $nextStep]);
-
-                // Notify user that it moved to next step (Optional, maybe too spammy? keeping it simple for now)
-
-                // Notify Next Approvers
-                $nextApprovers = $this->getApproversForRole($nextApproval->role_name);
-
-                if ($nextApprovers->isEmpty()) {
-                    \Illuminate\Support\Facades\Log::warning("No approvers found for role: {$nextApproval->role_name} in submission {$submission->code}");
-                }
-
-                Notification::send($nextApprovers, new NewSubmissionNotification($submission));
+            
+            if ($submission->status_urgent === 'urgent') {
+                $this->handleUrgentApproval($submission, $approval, $user);
+            } else {
+                $this->handleNormalApproval($submission, $approval, $user);
             }
 
             AuditTrailService::log(
@@ -168,6 +154,110 @@ class ApprovalService
 
             return $approval;
         });
+    }
+
+    /**
+     * Kirim notifikasi ke SEMUA approver pada pengajuan urgent.
+     */
+    public function notifyAllApprovers(Submission $submission)
+    {
+        $approvals = $submission->approvals()->whereIn('status', ['pending', 'revised', 'on_hold'])->get();
+        $notifiedUserIds = [];
+
+        foreach ($approvals as $approval) {
+            $approvers = $this->getApproversForRole($approval->role_name);
+            foreach ($approvers as $approver) {
+                if (!in_array($approver->id, $notifiedUserIds)) {
+                    $approver->notify(new NewSubmissionNotification($submission));
+                    $notifiedUserIds[] = $approver->id;
+                }
+            }
+        }
+    }
+
+    private function handleNormalApproval(Submission $submission, SubmissionApproval $approval, $user)
+    {
+        $nextStep = $approval->step_order + 1;
+
+        $nextApproval = SubmissionApproval::where('submission_id', $submission->id)
+            ->where('step_order', $nextStep)
+            ->first();
+
+        if (!$nextApproval) {
+            $submission->update(['final_status' => 'approved']);
+
+            // Notify Requestor of Final Approval
+            $submission->user->notify(new SubmissionStatusNotification($submission, 'approved', $user->name));
+        }
+        else {
+            $submission->update(['current_approval_step' => $nextStep]);
+
+            // Notify Next Approvers
+            $nextApprovers = $this->getApproversForRole($nextApproval->role_name);
+
+            if ($nextApprovers->isEmpty()) {
+                \Illuminate\Support\Facades\Log::warning("No approvers found for role: {$nextApproval->role_name} in submission {$submission->code}");
+            }
+
+            Notification::send($nextApprovers, new NewSubmissionNotification($submission));
+        }
+    }
+
+    /**
+     * Untuk mode Urgent:
+     * - Jika approver level X approve, semua step di BAWAH level X otomatis approved.
+     * - Jika SEMUA step sudah approved → final_status = approved.
+     */
+    private function handleUrgentApproval(Submission $submission, SubmissionApproval $currentApproval, $user)
+    {
+        $currentStepOrder = $currentApproval->step_order;
+
+
+        // Auto-approve semua step di BAWAH yang masih pending HANYA JIKA yang menyetujui adalah Direktur
+        if ($currentApproval->role_name === 'Director') {
+            $lowerSteps = SubmissionApproval::where('submission_id', $submission->id)
+                ->where('step_order', '<', $currentStepOrder)
+                ->whereIn('status', ['pending', 'revised'])
+                ->get();
+
+
+            foreach ($lowerSteps as $lowerApproval) {
+                $lowerApproval->update([
+                    'status' => 'approved',
+                    'approved_at' => now(),
+                    'notes' => 'Auto-approved (Urgent: disetujui oleh ' . $user->name . ' [' . $currentApproval->role_name . '])',
+                    'approver_id' => $lowerApproval->approver_id, // Tetap approver asli
+                ]);
+
+                AuditTrailService::log(
+                    'URGENT_AUTO_APPROVE',
+                    'SubmissionApproval',
+                    $lowerApproval->id,
+                    ['triggered_by' => $user->id, 'triggered_step' => $currentStepOrder],
+                    $lowerApproval->toArray()
+                );
+            }
+        }
+
+        // Cek apakah SEMUA step sudah approved
+        $remainingPending = SubmissionApproval::where('submission_id', $submission->id)
+            ->whereIn('status', ['pending', 'revised', 'on_hold'])
+            ->count();
+
+        if ($remainingPending === 0) {
+            $submission->update(['final_status' => 'approved']);
+            $submission->user->notify(new SubmissionStatusNotification($submission, 'approved', $user->name));
+        }
+
+        // Update current_approval_step ke step tertinggi yang masih pending (untuk kompatibilitas UI)
+        $highestPending = SubmissionApproval::where('submission_id', $submission->id)
+            ->whereIn('status', ['pending', 'revised', 'on_hold'])
+            ->orderBy('step_order')
+            ->first();
+
+        if ($highestPending) {
+            $submission->update(['current_approval_step' => $highestPending->step_order]);
+        }
     }
 
     private function getApproversForRole($roleName)

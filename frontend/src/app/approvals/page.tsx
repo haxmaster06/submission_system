@@ -339,6 +339,11 @@ export default function ApprovalsPage() {
                     <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-100 uppercase tracking-tight shadow-sm">
                       Step: {app.role_name}
                     </span>
+                    {app.submission.status_urgent === 'urgent' && (
+                      <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-xl border border-rose-100 uppercase tracking-tight shadow-sm animate-pulse">
+                        Mendesak (Urgent)
+                      </span>
+                    )}
                     {app.status === 'revised' && (
                       <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-xl border border-indigo-100 uppercase tracking-tight shadow-sm animate-pulse">
                         Sudah Direvisi

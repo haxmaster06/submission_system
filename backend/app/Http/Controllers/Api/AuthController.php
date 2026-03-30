@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\SubmissionApproval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
@@ -32,10 +34,13 @@ class AuthController extends Controller
         // Load ALL permissions (inherited from roles + direct)
         $user->setRelation('permissions', $user->getAllPermissions());
 
+        $userData = $user->toArray();
+        $userData['is_approver'] = $this->checkIsApprover($user);
+
         return response()->json([
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'user' => $user,
+            'user' => $userData,
         ]);
     }
 
@@ -53,7 +58,44 @@ class AuthController extends Controller
         // Load ALL permissions (inherited from roles + direct)
         $user->setRelation('permissions', $user->getAllPermissions());
         
-        return response()->json($user);
+        $userData = $user->toArray();
+        $userData['is_approver'] = $this->checkIsApprover($user);
+
+        return response()->json($userData);
+    }
+
+    /**
+     * Dynamically check if a user has approval access.
+     * Sources: Super Admin role, approval_flow_steps roles, or direct assignment in submission_approvals.
+     */
+    private function checkIsApprover(User $user): bool
+    {
+        // Super Admin always has approval access
+        if ($user->hasRole('Super Admin')) {
+            return true;
+        }
+
+        // Check if user's role is in any active approval flow step
+        $roleName = $user->roles->first()?->name;
+        if ($roleName) {
+            $inFlow = DB::table('approval_flow_steps')
+                ->join('approval_flows', 'approval_flows.id', '=', 'approval_flow_steps.flow_id')
+                ->where('approval_flows.is_active', true)
+                ->where('approval_flow_steps.role_name', $roleName)
+                ->exists();
+            if ($inFlow) return true;
+        }
+
+        // Check if user has ever been directly assigned as an approver
+        $directlyAssigned = SubmissionApproval::where('approver_id', $user->id)->exists();
+        if ($directlyAssigned) return true;
+
+        // Check proxy director signature permission
+        if ($user->hasPermissionTo('proxy director signature')) {
+            return true;
+        }
+
+        return false;
     }
 
     public function updatePassword(Request $request)

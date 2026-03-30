@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/theme/ui_kit.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/auth/models/user_model.dart';
 import 'package:mobile/core/providers/app_mode_provider.dart';
 
 class MainWrapper extends ConsumerWidget {
@@ -15,15 +16,7 @@ class MainWrapper extends ConsumerWidget {
     // Check role for dynamic navigation
     final authState = ref.watch(authProvider);
     final isApprover = authState.maybeWhen(
-      authenticated: (user) {
-        final role = user.roleName?.toLowerCase() ?? '';
-        return role == 'manager' ||
-            role == 'director' ||
-            role == 'finance' ||
-            role == 'gm' ||
-            role == 'hrd' ||
-            role == 'super admin';
-      },
+      authenticated: (user) => user.isApprover,
       orElse: () => false,
     );
 
@@ -81,7 +74,7 @@ class MainWrapper extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, selectedIndex, Icons.home_outlined, Icons.home, 'Beranda', () => _goBranch(0, visibleToBranch)),
-                _buildNavItem(1, selectedIndex, Icons.list_alt_outlined, Icons.list_alt, 'Aktivitas', () => _goBranch(1, visibleToBranch)),
+                _buildNavItem(1, selectedIndex, Icons.list_alt_outlined, Icons.list_alt, 'Pengajuan', () => _goBranch(1, visibleToBranch)),
                 const SizedBox(width: 48), // Space for FAB
                 _buildNavItem(2, selectedIndex, Icons.account_balance_wallet_outlined, Icons.account_balance_wallet, 'Anggaran', () => _goBranch(2, visibleToBranch)),
                 _buildNavItem(3, selectedIndex, Icons.person_outline, Icons.person, 'Profil', () => _goBranch(3, visibleToBranch)),
@@ -93,9 +86,11 @@ class MainWrapper extends ConsumerWidget {
 
   void _goBranch(int index, List<int> visibleToBranch) {
     if (index >= visibleToBranch.length) return;
+    final targetBranch = visibleToBranch[index];
+    debugPrint('[MainWrapper] _goBranch: visibleIndex=$index, targetBranch=$targetBranch, currentBranch=${navigationShell.currentIndex}');
     navigationShell.goBranch(
-      visibleToBranch[index],
-      initialLocation: visibleToBranch[index] == navigationShell.currentIndex,
+      targetBranch,
+      initialLocation: true,
     );
   }
 

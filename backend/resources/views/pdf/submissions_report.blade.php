@@ -182,14 +182,20 @@ return $item->division->name ?? 'Unknown Division';
         // Calculate Realization total for this submission by summing from details
         $realizationTotal = 0;
         if($sub->realizations && count($sub->realizations) > 0) {
-        foreach($sub->realizations as $r) {
-        if($r->details) {
-        $realizationTotal += $r->details->sum('total');
-        }
-        }
+            foreach($sub->realizations as $r) {
+                if($r->details) {
+                    $realizationTotal += $r->details->sum('total');
+                }
+            }
         }
 
-        $divTotalPengajuan += $sub->total;
+        $statusFilter = $filters['status'] ?? 'all';
+        if ($statusFilter === 'all') {
+            $divTotalPengajuan += ($sub->final_status === 'approved' ? $sub->total : 0);
+        } else {
+            $divTotalPengajuan += $sub->total;
+        }
+
         $divTotalRealisasi += $realizationTotal;
         $selisih = $sub->total - $realizationTotal;
         @endphp
@@ -236,17 +242,24 @@ return $item->division->name ?? 'Unknown Division';
 {{-- GRAND TOTAL --}}
 @if($submissions->count() > 0)
 @php
-$grandTotalPengajuan = $submissions->sum('total');
-$grandTotalRealisasi = 0;
-foreach($submissions as $s) {
-if($s->realizations && count($s->realizations) > 0) {
-foreach($s->realizations as $sr) {
-if($sr->details) {
-$grandTotalRealisasi += $sr->details->sum('total');
-}
-}
-}
-}
+    $statusFilter = $filters['status'] ?? 'all';
+    $grandTotalPengajuan = $submissions->reduce(function($carry, $item) use ($statusFilter) {
+        if ($statusFilter === 'all') {
+            return $carry + ($item->final_status === 'approved' ? $item->total : 0);
+        }
+        return $carry + $item->total;
+    }, 0);
+
+    $grandTotalRealisasi = 0;
+    foreach($submissions as $s) {
+        if($s->realizations && count($s->realizations) > 0) {
+            foreach($s->realizations as $sr) {
+                if($sr->details) {
+                    $grandTotalRealisasi += $sr->details->sum('total');
+                }
+            }
+        }
+    }
 @endphp
 <div style="margin-top: 30px; border: 2px solid #2a7ba5; padding: 10px; background: #f0f7fa;">
     <table style="width: 100%; border: none; margin: 0;">

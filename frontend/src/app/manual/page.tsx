@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Shell from '@/components/layout/Shell';
-import { BookOpen, CheckSquare, FileText, Settings, Download, Search, FileSignature, UserCircle } from 'lucide-react';
+import { BookOpen, CheckSquare, FileText, Settings, Download, Search, FileSignature, UserCircle, Filter, Zap, BarChart3, Bell, Receipt, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ManualBook() {
@@ -43,6 +43,10 @@ export default function ManualBook() {
           description: 'HBM Budgeting adalah sistem pengelolaan pengajuan anggaran dan realisasi dana terpusat untuk efisiensi dan transparansi operasional perusahaan.'
         },
         {
+          title: 'Dashboard Berdasarkan Peran',
+          description: 'Dashboard menyesuaikan peran Anda: Staff melihat ringkasan pengajuan pribadi. Management (GM/Director/Finance) melihat grafik tren anggaran vs realisasi, analisis kategori, ranking divisi, indikator urgensi, dan feed aktivitas real-time. Super Admin melihat statistik global sistem dan audit log.'
+        },
+        {
           title: 'Navigasi Dasar & Paginasi',
           description: 'Gunakan menu di sebelah kiri untuk berpindah halaman. Untuk daftar data yang panjang (seperti riwayat pengajuan), gunakan fitur Paginasi di bagian bawah tabel untuk berpindah antar halaman.'
         },
@@ -58,20 +62,70 @@ export default function ManualBook() {
       icon: <FileText size={20} />,
       content: [
         {
-          title: '1. Menyimpan sebagai Draf',
+          title: '1. Cara Membuat Pengajuan Reguler',
+          description: 'Klik menu "Buat Pengajuan Baru". Isi divisi, status urgensi (Normal/Urgent), jenis pengajuan, judul, dan catatan. Lalu tambahkan item barang/jasa (Deskripsi, Qty, Satuan, Harga Satuan). Klik "Kirim/Ajukan" jika data sudah final untuk memulai alur persetujuan.'
+        },
+        {
+          title: '2. Cara Membuat Pengajuan Gaji (Khusus HRD)',
+          description: 'Klik menu "Pengajuan Gaji". Anda dapat melampirkan daftar gaji karyawan lewat file Excel atau menginputnya secara manual per karyawan per hari. Sistem otomatis menghitung subtotal per karyawan dan grand total.'
+        },
+        {
+          title: '3. Menyimpan sebagai Draf',
           description: 'Jika Anda belum selesai mengisi data, klik "Simpan Draf". Pengajuan ini HANYA dapat dilihat oleh Anda dan belum masuk ke alur persetujuan. Anda dapat mengedit atau menghapusnya kapan saja dari menu "Pengajuan Saya" tab "Draf".'
         },
         {
-          title: '2. Cara Membuat Pengajuan Reguler',
-          description: 'Klik menu "Buat Pengajuan Baru". Isi formulir utama. Lalu tambahkan item barang/jasa. Klik "Kirim/Ajukan" jika data sudah final untuk memulai alur persetujuan.'
+          title: '4. Mengelola Draf & Penerbitan',
+          description: 'Buka tab "Draf" di halaman Pengajuan Saya. Anda bisa: Ubah Draf (edit data), Terbitkan (kirim ke alur approval — data tidak bisa diubah lagi), atau Hapus jika tidak diperlukan.'
         },
         {
-          title: '3. Cara Membuat Pengajuan Gaji (Khusus HRD)',
-          description: 'Klik menu "Pengajuan Gaji". Anda dapat melampirkan daftar gaji karyawan lewat file Excel atau menginputnya secara manual.'
+          title: '5. Duplikat Pengajuan',
+          description: 'Di halaman detail pengajuan, klik tombol "Duplikat" untuk membuat pengajuan baru dengan data yang sudah terisi dari pengajuan sebelumnya. Sangat berguna untuk pengajuan rutin/berulang.'
         },
         {
-          title: '4. Mengelola Draf Anda',
-          description: 'Buka menu "Pengajuan Saya" dan pilih tab "Draf". Di sini Anda dapat membuka kembali draf untuk diedit (Ubah Draf), menerbitkannya (Terbitkan), atau menghapusnya jika tidak lagi diperlukan.'
+          title: '6. Revisi Setelah Ditunda (Hold)',
+          description: 'Jika pengajuan ditunda oleh approver, status berubah menjadi "On Hold". Tombol "Revisi Pengajuan" akan muncul agar Anda bisa memperbaiki data lalu mengajukan ulang.'
+        }
+      ]
+    },
+    {
+      id: 'filter',
+      title: 'Filter & Pencarian',
+      icon: <Filter size={20} />,
+      content: [
+        {
+          title: 'Pencarian',
+          description: 'Gunakan kolom pencarian di halaman Pengajuan untuk mencari berdasarkan No. Pengajuan atau Deskripsi.'
+        },
+        {
+          title: 'Tab Status',
+          description: 'Gunakan tab status di bagian atas: Semua, Draf, Menunggu, Disetujui, dan Ditolak untuk menyaring pengajuan berdasarkan status.'
+        },
+        {
+          title: 'Filter Lanjutan',
+          description: 'Klik tombol "Filter" untuk membuka panel filter tambahan: Divisi (untuk Super Admin/Director/GM/Finance), Jenis Pengajuan, Urgensi (Semua/Normal/Urgent), dan Rentang Tanggal (Dari – Sampai). Klik "Reset" untuk menghapus semua filter.'
+        },
+        {
+          title: 'Filter di Aplikasi Mobile',
+          description: 'Di aplikasi mobile, filter status dan urgensi tersedia sebagai pill tabs di bagian atas layar untuk akses cepat.'
+        }
+      ]
+    },
+    {
+      id: 'urgent',
+      title: 'Pengajuan Mendesak (Urgent)',
+      icon: <Zap size={20} />,
+      content: [
+        {
+          title: 'Perbedaan Normal vs Urgent',
+          description: 'Pengajuan Normal mengikuti alur approval berurutan sesuai hierarki. Pengajuan Urgent mengirim notifikasi ke semua approver secara bersamaan dan setiap approver boleh menyetujui tanpa menunggu giliran.'
+        },
+        {
+          title: 'Auto-Approval Cascade (Khusus Direktur)',
+          description: 'Jika Direktur menyetujui pengajuan Urgent terlebih dahulu, maka semua step di bawahnya (GM, Finance, HRD/GA, Manager) akan otomatis disetujui oleh sistem. Approval oleh role selain Direktur pada pengajuan Urgent TIDAK memicu cascade otomatis.'
+        },
+        {
+          title: 'Indikator Visual',
+          description: 'Pengajuan Urgent ditandai dengan badge merah "URGENT" di daftar dan banner "Pengajuan Mendesak" di halaman detail. Step yang otomatis disetujui oleh cascade Direktur ditandai badge "Auto-Approved" di timeline.'
         }
       ]
     },
@@ -90,7 +144,53 @@ export default function ManualBook() {
         },
         {
           title: 'Opsi Persetujuan',
-          description: '1. Setujui (Hijau): Menyetujui dokumen secara final. \n2. Tunda (Kuning): Mengembalikan dokumen ke pembuat untuk direvisi / diperbaiki datanya secara spesifik. \n3. Tolak (Merah): Menolak pengajuan sepenuhnya (wajib alasan).'
+          description: '1. Setujui (Hijau): Menyetujui dokumen secara final — wajib Tanda Tangan Digital.\n2. Tunda (Kuning): Mengembalikan dokumen ke pembuat untuk direvisi — wajib isi catatan.\n3. Tolak (Merah): Menolak pengajuan sepenuhnya — wajib isi alasan.'
+        },
+        {
+          title: 'Fitur Proxy (Khusus Direktur)',
+          description: 'Jika Direktur berhalangan, Manager/Admin dapat menyetujui atas nama Direktur dengan memilih "Tanda Tangan sebagai Proxy" dan mengunggah Bukti Kuasa. Direktur menerima notifikasi realtime setiap kali fitur ini digunakan.'
+        },
+        {
+          title: 'Permintaan Lampiran',
+          description: 'Approver dapat meminta dokumen tambahan kepada pembuat sebelum menyetujui. Pembuat akan melihat banner notifikasi di halaman detail dan dapat langsung mengunggah berkas yang diminta.'
+        }
+      ]
+    },
+    {
+      id: 'realisasi',
+      title: 'Monitoring Realisasi',
+      icon: <Receipt size={20} />,
+      content: [
+        {
+          title: 'Apa itu Monitoring Realisasi?',
+          description: 'Menu Monitoring Realisasi menampilkan daftar pengajuan yang sudah disetujui beserta perbandingan Budget vs Realisasi Aktual. Tersedia untuk Finance, Super Admin, dan role terkait.'
+        },
+        {
+          title: 'Status Realisasi',
+          description: 'Setiap pengajuan ditandai statusnya: "Under Budget" (dana terpakai lebih sedikit), "Over Budget" (melebihi budget), atau "Sesuai Budget" (persis sama). Gunakan filter untuk menyaring berdasarkan status.'
+        },
+        {
+          title: 'Input Data Realisasi',
+          description: 'Klik kartu pengajuan untuk melihat detail dan memasukkan data realisasi. Tab "Realisasi Anggaran" juga tersedia di halaman detail setiap pengajuan.'
+        }
+      ]
+    },
+    {
+      id: 'laporan',
+      title: 'Laporan & Reporting',
+      icon: <BarChart3 size={20} />,
+      content: [
+        {
+          title: 'Halaman Laporan',
+          description: 'Menu "Laporan Realisasi & Budget" menampilkan laporan pengajuan yang dikelompokkan per Divisi dengan kolom: No. Pengajuan, Status, Deskripsi, Budget Awal, Realisasi (Actual), dan Sisa/Selisih.'
+        },
+        {
+          title: 'Kartu Ringkasan',
+          description: 'Di bagian atas, terdapat kartu ringkasan yang menampilkan Total Tiket, Total Pengajuan vs Realisasi, dan Selisih Keseluruhan.'
+        },
+        {
+          title: 'Cetak & Ekspor',
+          description: 'Gunakan tombol "Cetak Laporan" untuk mencetak langsung dari browser, atau tombol "Ekspor ke PDF" untuk mengunduh file PDF. Filter lanjutan tersedia: Status, Divisi, Jenis Pengajuan, dan Rentang Tanggal.'
         }
       ]
     },
@@ -117,6 +217,37 @@ export default function ManualBook() {
         {
           title: 'Mengganti Password',
           description: 'Di menu Profil yang sama, masukkan password lama Anda lalu masukkan password baru untuk mengamankan akun.'
+        },
+        {
+          title: 'Notifikasi & Aktivitas Real-Time',
+          description: 'Ikon Lonceng di pojok kanan atas menampilkan notifikasi terbaru (approval masuk, ditolak, permintaan lampiran). Dashboard memiliki feed Aktivitas Langsung yang menunjukkan siapa menyetujui/menolak/menunda pengajuan dengan timestamp. Di mobile, notifikasi push tersedia melalui FCM.'
+        }
+      ]
+    },
+    {
+      id: 'admin',
+      title: 'Panel Admin (Super Admin)',
+      icon: <Shield size={20} />,
+      content: [
+        {
+          title: 'Master Data',
+          description: 'Kelola data dasar sistem: Divisi (nama, kode, budget limit), Jenis Pengajuan (dengan flag Travel/Non-Travel), Status Urgensi (drag-and-drop urutan), Jenis Perjalanan, dan Satuan (UOM). Mendukung Bulk Create untuk menambah beberapa data sekaligus.'
+        },
+        {
+          title: 'Alur Persetujuan (Approval Flow)',
+          description: 'Konfigurasi alur persetujuan dinamis: atur step dasar (drag-and-drop urutan), tambahkan aturan kondisi untuk menyisipkan step tambahan berdasarkan divisi atau jenis perjalanan, dan lihat preview alur berdasarkan kombinasi kondisi aktif.'
+        },
+        {
+          title: 'Manajemen Pengguna & Roles',
+          description: 'Tambah, edit, hapus pengguna. Atur divisi, peran (roles), dan status aktif. Kelola peran dan hak akses di menu Roles.'
+        },
+        {
+          title: 'Audit Log & Data Karyawan',
+          description: 'Riwayat lengkap semua aktivitas sistem (siapa, apa, kapan). Menu Data Karyawan untuk mengelola database karyawan yang digunakan dalam pengajuan gaji.'
+        },
+        {
+          title: 'Mobile Apps & Maintenance',
+          description: 'Unggah dan kelola versi aplikasi mobile (APK/IPA) dengan progress bar. Aktifkan rilis agar muncul di Dashboard pengguna. Aktifkan/nonaktifkan Maintenance Mode untuk pemeliharaan sistem.'
         }
       ]
     }

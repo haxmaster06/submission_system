@@ -18,6 +18,18 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  // Filter state
+  String _filterStatus = 'Semua';
+  DateTimeRange? _filterDateRange;
+
+  static const List<String> _statusOptions = [
+    'Semua',
+    'Draf',
+    'Proses',
+    'Selesai',
+    'Batal',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -37,28 +49,253 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final state = ref.watch(submissionListProvider);
-    final notifier = ref.read(submissionListProvider.notifier);
+  bool get _hasActiveFilter => _filterStatus != 'Semua' || _filterDateRange != null;
 
-    // Filter by search query
-    var displayList = state.submissions;
+  void _clearFilters() {
+    setState(() {
+      _filterStatus = 'Semua';
+      _filterDateRange = null;
+    });
+  }
+
+  void _showFilterSheet() {
+    // Use temp variables so user can cancel
+    String tempStatus = _filterStatus;
+    DateTimeRange? tempDateRange = _filterDateRange;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Filter Aktivitas', style: UiKit.heading2),
+                      TextButton(
+                        onPressed: () {
+                          setSheetState(() {
+                            tempStatus = 'Semua';
+                            tempDateRange = null;
+                          });
+                        },
+                        child: const Text('Reset', style: TextStyle(color: Colors.redAccent)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Status filter
+                  const Text('Status', style: UiKit.bodyTextBold),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _statusOptions.map((status) {
+                      final isSelected = tempStatus == status;
+                      return GestureDetector(
+                        onTap: () => setSheetState(() => tempStatus = status),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSelected ? UiKit.primaryBlue : UiKit.backgroundGray,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? UiKit.primaryBlue : Colors.grey.shade300,
+                            ),
+                          ),
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isSelected ? Colors.white : UiKit.textGray,
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Date range filter
+                  const Text('Rentang Tanggal', style: UiKit.bodyTextBold),
+                  const SizedBox(height: 12),
+                  InkWell(
+                    onTap: () async {
+                      final now = DateTime.now();
+                      final picked = await showDateRangePicker(
+                        context: ctx,
+                        firstDate: DateTime(now.year - 2),
+                        lastDate: now,
+                        initialDateRange: tempDateRange,
+                        locale: const Locale('id', 'ID'),
+                        builder: (context, child) {
+                          return Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: UiKit.primaryBlue,
+                              ),
+                            ),
+                            child: child!,
+                          );
+                        },
+                      );
+                      if (picked != null) {
+                        setSheetState(() => tempDateRange = picked);
+                      }
+                    },
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: UiKit.backgroundGray,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 18, color: UiKit.primaryBlue),
+                          const SizedBox(width: 12),
+                          Text(
+                            tempDateRange != null
+                                ? '${DateFormat('dd MMM yyyy').format(tempDateRange!.start)} - ${DateFormat('dd MMM yyyy').format(tempDateRange!.end)}'
+                                : 'Pilih rentang tanggal',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: tempDateRange != null ? UiKit.textBlack : UiKit.textLightGray,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (tempDateRange != null)
+                            GestureDetector(
+                              onTap: () => setSheetState(() => tempDateRange = null),
+                              child: const Icon(Icons.close, size: 18, color: UiKit.textLightGray),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // Apply button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _filterStatus = tempStatus;
+                          _filterDateRange = tempDateRange;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: UiKit.primaryBlue,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Terapkan Filter',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  List<Submission> _applyFilters(List<Submission> list) {
+    var result = list;
+
+    // Search filter
     if (_searchQuery.isNotEmpty) {
-      displayList = displayList.where((s) =>
+      result = result.where((s) =>
           (s.id.toString().contains(_searchQuery.toLowerCase())) ||
           (s.description?.toLowerCase() ?? '').contains(_searchQuery.toLowerCase())
       ).toList();
     }
 
-    // Sort descending by date
-    displayList.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    // Status filter
+    if (_filterStatus != 'Semua') {
+      result = result.where((s) {
+        final status = s.status.toLowerCase();
+        switch (_filterStatus) {
+          case 'Draf':
+            return status == 'draf';
+          case 'Proses':
+            return status == 'pending' || status == 'submitted';
+          case 'Selesai':
+            return status == 'approved' || status == 'completed';
+          case 'Batal':
+            return status == 'rejected';
+          default:
+            return true;
+        }
+      }).toList();
+    }
 
-    // Calculate monthly summary
+    // Date range filter
+    if (_filterDateRange != null) {
+      final start = _filterDateRange!.start;
+      final end = _filterDateRange!.end.add(const Duration(days: 1)); // inclusive end
+      result = result.where((s) {
+        final d = s.createdAt.toLocal();
+        return d.isAfter(start.subtract(const Duration(seconds: 1))) && d.isBefore(end);
+      }).toList();
+    }
+
+    // Sort descending
+    result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return result;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(submissionListProvider);
+    final notifier = ref.read(submissionListProvider.notifier);
+
+    final displayList = _applyFilters(state.submissions);
+
+    // Calculate monthly summary (from filtered list)
     final now = DateTime.now();
     double monthlyTotal = 0;
     for (var s in displayList) {
-      if (s.createdAt.year == now.year && s.createdAt.month == now.month) {
+      if (s.createdAt.toLocal().year == now.year && s.createdAt.toLocal().month == now.month) {
         if (s.status.toLowerCase() == 'approved' || s.status.toLowerCase() == 'completed') {
           monthlyTotal += s.total;
         }
@@ -75,11 +312,26 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
         foregroundColor: UiKit.textBlack,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implement advanced filter
-            },
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: _showFilterSheet,
+              ),
+              if (_hasActiveFilter)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    width: 8,
+                    height: 8,
+                    decoration: const BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -109,6 +361,32 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
             ),
           ),
 
+          // Active filter chips
+          if (_hasActiveFilter)
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: Row(
+                children: [
+                  if (_filterStatus != 'Semua')
+                    _buildFilterChip(_filterStatus, () => setState(() => _filterStatus = 'Semua')),
+                  if (_filterDateRange != null)
+                    _buildFilterChip(
+                      '${DateFormat('dd/MM').format(_filterDateRange!.start)} - ${DateFormat('dd/MM').format(_filterDateRange!.end)}',
+                      () => setState(() => _filterDateRange = null),
+                    ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: _clearFilters,
+                    child: const Text(
+                      'Hapus Filter',
+                      style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           // Monthly Summary
           Container(
             width: double.infinity,
@@ -117,7 +395,10 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Bulan Ini', style: UiKit.caption),
+                Text(
+                  _filterDateRange != null ? 'Total Disetujui (Filter)' : 'Bulan Ini',
+                  style: UiKit.caption,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '- ${formatter.format(monthlyTotal)}',
@@ -134,7 +415,23 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
               child: displayList.isEmpty && state.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : displayList.isEmpty
-                      ? const Center(child: Text('Tidak ada riwayat aktivitas'))
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.search_off, size: 48, color: Colors.grey.shade400),
+                              const SizedBox(height: 12),
+                              const Text('Tidak ada riwayat aktivitas', style: UiKit.bodyText),
+                              if (_hasActiveFilter) ...[
+                                const SizedBox(height: 8),
+                                TextButton(
+                                  onPressed: _clearFilters,
+                                  child: const Text('Hapus Filter'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        )
                       : ListView.builder(
                           controller: _scrollController,
                           itemCount: displayList.length + (state.hasReachedMax ? 0 : 1),
@@ -155,11 +452,33 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
     );
   }
 
+  Widget _buildFilterChip(String label, VoidCallback onRemove) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: UiKit.primaryBlue.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: UiKit.primaryBlue.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: const TextStyle(fontSize: 12, color: UiKit.primaryBlue, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close, size: 14, color: UiKit.primaryBlue),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTransactionItem(BuildContext context, Submission sub, NumberFormat formatter) {
     IconData icon;
     Color color;
-    
-    // Assigning dummy map for activity types (in HBM it maps to Submission type/category)
+
     if (sub.type.toLowerCase().contains('gaji') || sub.type.toLowerCase() == 'salary') {
       icon = Icons.payments;
       color = Colors.blue;
@@ -171,11 +490,11 @@ class _ActivityHistoryScreenState extends ConsumerState<ActivityHistoryScreen> {
       color = Colors.purple;
     }
 
-    final isExpense = sub.status.toLowerCase() != 'rejected'; // All approved/pending are potential expenses
-    final dateStr = DateFormat('dd MMM yyyy • HH:mm').format(sub.createdAt);
+    final isExpense = sub.status.toLowerCase() != 'rejected';
+    final dateStr = DateFormat('dd MMM yyyy • HH:mm').format(sub.createdAt.toLocal());
 
     return InkWell(
-      onTap: () => context.push('/submissions/${sub.id}'),
+      onTap: () => context.push('/submission-detail/${sub.id}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: const BoxDecoration(

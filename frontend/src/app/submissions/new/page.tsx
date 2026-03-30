@@ -60,7 +60,7 @@ function NewSubmissionContent() {
       setLookups(lookupsRes.data);
       
       if (duplicateRes.data) {
-        const d = duplicateRes.data;
+        const d = duplicateRes.data.data || duplicateRes.data;
         setForm({
           division_id: String(d.division_id || ''),
           jenis_pengajuan_id: String(d.jenis_pengajuan_id || ''),

@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\ApprovalFlowController;
 use App\Http\Controllers\Api\RealizationController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AttachmentRequestController;
+use App\Http\Controllers\Api\ChunkedUploadController;
+use App\Http\Controllers\Api\MasterDataController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class , 'login']);
@@ -187,8 +189,14 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
             
             // Manage Mobile Apps
             Route::post('/mobile-apps', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'store']);
+            Route::post('/mobile-apps/chunked', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'storeFromChunked']);
             Route::put('/mobile-apps/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'update']);
             Route::delete('/mobile-apps/{id}', [\App\Http\Controllers\Api\MobileAppReleaseController::class, 'destroy']);
+            
+            // Chunked Upload Utility
+            Route::post('/chunked-upload/init', [ChunkedUploadController::class, 'init']);
+            Route::post('/chunked-upload/{uploadId}/chunk', [ChunkedUploadController::class, 'uploadChunk']);
+            Route::post('/chunked-upload/{uploadId}/complete', [ChunkedUploadController::class, 'complete']);
             
             Route::get('/admin/audit-logs', [\App\Http\Controllers\Api\AuditTrailController::class , 'all']);
             Route::get('/admin/users-with-signatures', function () {

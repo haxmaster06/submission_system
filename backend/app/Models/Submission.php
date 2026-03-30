@@ -30,21 +30,6 @@ class Submission extends Model
         'payload',
     ];
 
-    protected $appends = ['current_step_role'];
-
-    public function getCurrentStepRoleAttribute()
-    {
-        if ($this->final_status !== 'pending') {
-            return null;
-        }
-
-        $currentApproval = $this->approvals()
-            ->where('step_order', $this->current_approval_step)
-            ->first();
-
-        return $currentApproval ? $currentApproval->role_name : null;
-    }
-
     protected $casts = [
         'tanggal_pengajuan' => 'datetime',
         'qty' => 'decimal:2',

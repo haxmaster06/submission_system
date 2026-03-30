@@ -34,6 +34,8 @@ mixin _$User {
   String? get divisionName => throw _privateConstructorUsedError;
   @JsonKey(name: 'signature_path')
   String? get signaturePath => throw _privateConstructorUsedError;
+  @JsonKey(name: 'is_approver')
+  bool get isApproverFlag => throw _privateConstructorUsedError;
   List<Map<String, dynamic>> get permissions =>
       throw _privateConstructorUsedError;
 
@@ -61,6 +63,7 @@ abstract class $UserCopyWith<$Res> {
     @JsonKey(name: 'division_name', readValue: _readDivisionName)
     String? divisionName,
     @JsonKey(name: 'signature_path') String? signaturePath,
+    @JsonKey(name: 'is_approver') bool isApproverFlag,
     List<Map<String, dynamic>> permissions,
   });
 }
@@ -88,6 +91,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? roleName = freezed,
     Object? divisionName = freezed,
     Object? signaturePath = freezed,
+    Object? isApproverFlag = null,
     Object? permissions = null,
   }) {
     return _then(
@@ -124,6 +128,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
                 ? _value.signaturePath
                 : signaturePath // ignore: cast_nullable_to_non_nullable
                       as String?,
+            isApproverFlag: null == isApproverFlag
+                ? _value.isApproverFlag
+                : isApproverFlag // ignore: cast_nullable_to_non_nullable
+                      as bool,
             permissions: null == permissions
                 ? _value.permissions
                 : permissions // ignore: cast_nullable_to_non_nullable
@@ -152,6 +160,7 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
     @JsonKey(name: 'division_name', readValue: _readDivisionName)
     String? divisionName,
     @JsonKey(name: 'signature_path') String? signaturePath,
+    @JsonKey(name: 'is_approver') bool isApproverFlag,
     List<Map<String, dynamic>> permissions,
   });
 }
@@ -176,6 +185,7 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? roleName = freezed,
     Object? divisionName = freezed,
     Object? signaturePath = freezed,
+    Object? isApproverFlag = null,
     Object? permissions = null,
   }) {
     return _then(
@@ -212,6 +222,10 @@ class __$$UserImplCopyWithImpl<$Res>
             ? _value.signaturePath
             : signaturePath // ignore: cast_nullable_to_non_nullable
                   as String?,
+        isApproverFlag: null == isApproverFlag
+            ? _value.isApproverFlag
+            : isApproverFlag // ignore: cast_nullable_to_non_nullable
+                  as bool,
         permissions: null == permissions
             ? _value._permissions
             : permissions // ignore: cast_nullable_to_non_nullable
@@ -234,6 +248,7 @@ class _$UserImpl implements _User {
     @JsonKey(name: 'division_name', readValue: _readDivisionName)
     this.divisionName,
     @JsonKey(name: 'signature_path') this.signaturePath,
+    @JsonKey(name: 'is_approver') this.isApproverFlag = false,
     final List<Map<String, dynamic>> permissions = const [],
   }) : _permissions = permissions;
 
@@ -261,6 +276,9 @@ class _$UserImpl implements _User {
   @override
   @JsonKey(name: 'signature_path')
   final String? signaturePath;
+  @override
+  @JsonKey(name: 'is_approver')
+  final bool isApproverFlag;
   final List<Map<String, dynamic>> _permissions;
   @override
   @JsonKey()
@@ -272,7 +290,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, email: $email, roleId: $roleId, divisionId: $divisionId, roleName: $roleName, divisionName: $divisionName, signaturePath: $signaturePath, permissions: $permissions)';
+    return 'User(id: $id, name: $name, email: $email, roleId: $roleId, divisionId: $divisionId, roleName: $roleName, divisionName: $divisionName, signaturePath: $signaturePath, isApproverFlag: $isApproverFlag, permissions: $permissions)';
   }
 
   @override
@@ -292,6 +310,8 @@ class _$UserImpl implements _User {
                 other.divisionName == divisionName) &&
             (identical(other.signaturePath, signaturePath) ||
                 other.signaturePath == signaturePath) &&
+            (identical(other.isApproverFlag, isApproverFlag) ||
+                other.isApproverFlag == isApproverFlag) &&
             const DeepCollectionEquality().equals(
               other._permissions,
               _permissions,
@@ -310,6 +330,7 @@ class _$UserImpl implements _User {
     roleName,
     divisionName,
     signaturePath,
+    isApproverFlag,
     const DeepCollectionEquality().hash(_permissions),
   );
 
@@ -339,6 +360,7 @@ abstract class _User implements User {
     @JsonKey(name: 'division_name', readValue: _readDivisionName)
     final String? divisionName,
     @JsonKey(name: 'signature_path') final String? signaturePath,
+    @JsonKey(name: 'is_approver') final bool isApproverFlag,
     final List<Map<String, dynamic>> permissions,
   }) = _$UserImpl;
 
@@ -365,6 +387,9 @@ abstract class _User implements User {
   @override
   @JsonKey(name: 'signature_path')
   String? get signaturePath;
+  @override
+  @JsonKey(name: 'is_approver')
+  bool get isApproverFlag;
   @override
   List<Map<String, dynamic>> get permissions;
 

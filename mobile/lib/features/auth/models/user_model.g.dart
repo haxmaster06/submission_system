@@ -15,6 +15,7 @@ _$UserImpl _$$UserImplFromJson(Map<String, dynamic> json) => _$UserImpl(
   roleName: _readRoleName(json, 'role_name') as String?,
   divisionName: _readDivisionName(json, 'division_name') as String?,
   signaturePath: json['signature_path'] as String?,
+  isApproverFlag: json['is_approver'] as bool? ?? false,
   permissions:
       (json['permissions'] as List<dynamic>?)
           ?.map((e) => e as Map<String, dynamic>)
@@ -32,5 +33,6 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
       'role_name': instance.roleName,
       'division_name': instance.divisionName,
       'signature_path': instance.signaturePath,
+      'is_approver': instance.isApproverFlag,
       'permissions': instance.permissions,
     };

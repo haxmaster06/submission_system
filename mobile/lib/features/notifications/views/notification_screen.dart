@@ -162,13 +162,13 @@ class _NotificationTile extends ConsumerWidget {
         if (data != null && data.containsKey('submission_id')) {
           final submissionId = data['submission_id'];
           if (submissionId != null) {
-            context.push('/submissions/$submissionId');
+            context.push('/submission-detail/$submissionId');
           }
         } else if (data != null &&
             data.containsKey('id') &&
             data['type']?.toString().contains('Submission') == true) {
           final submissionId = data['id'];
-          context.push('/submissions/$submissionId');
+          context.push('/submission-detail/$submissionId');
         }
       },
       child: Container(

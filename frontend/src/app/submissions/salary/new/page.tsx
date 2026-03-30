@@ -74,7 +74,7 @@ function NewSalarySubmissionContent() {
       const salaryType = lookupsRes.data.jenis_pengajuan?.find((j: any) => j.name?.toLowerCase().includes('gaji karyawan harian'));
       
       if (duplicateRes.data) {
-        const d = duplicateRes.data;
+        const d = duplicateRes.data.data || duplicateRes.data;
         setDuplicateResData(d);
         setForm({
           division_id: String(d.division_id || ''),

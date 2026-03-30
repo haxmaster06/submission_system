@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/theme/ui_kit.dart';
 import 'package:mobile/features/auth/providers/auth_provider.dart';
+import 'package:mobile/features/auth/models/user_model.dart';
 import 'package:mobile/features/dashboard/providers/dashboard_provider.dart';
 import 'package:mobile/core/providers/app_mode_provider.dart';
 
@@ -49,10 +50,7 @@ class ProfileScreen extends ConsumerWidget {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final role = user.roleName?.toLowerCase() ?? '';
-    final isApprover = [
-      'manager', 'director', 'finance', 'gm', 'hrd', 'super admin'
-    ].contains(role);
+    final isApprover = user.isApprover;
 
     final dashboardData = ref.watch(dashboardSummaryProvider);
     final formatter = NumberFormat.currency(

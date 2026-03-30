@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Submission;
+use App\Models\SubmissionApproval;
 use App\Services\SubmissionService;
 use App\Services\ApprovalService;
 use App\Services\AuditTrailService;
+use App\Http\Requests\StoreSubmissionRequest;
+use App\Http\Requests\UpdateSubmissionRequest;
+use App\Http\Resources\SubmissionResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +29,23 @@ class SubmissionController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $query = Submission::with(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details', 'attachments'])
+        $query = Submission::query()
+            ->addSelect([
+                'submissions.*',
+                'current_step_role' => SubmissionApproval::select('role_name')
+                    ->whereColumn('submission_id', 'submissions.id')
+                    ->whereColumn('step_order', 'submissions.current_approval_step')
+                    ->limit(1)
+            ])
+            ->with([
+                'user:id,name',
+                'division:id,name,code',
+                'jenisPengajuan:id,name',
+                'items:id,submission_id,description,qty,uom_id,nominal',
+                'items.uom:id,name',
+                'approvals:id,submission_id,step_order,role_name,status,approver_id',
+                'approvals.approver:id,name'
+            ])
             ->accessibleBy($user);
 
         // Filtering Logic
@@ -45,6 +65,10 @@ class SubmissionController extends Controller
 
         if ($request->filled('jenis_pengajuan_id')) {
             $query->where('jenis_pengajuan_id', $request->jenis_pengajuan_id);
+        }
+
+        if ($request->filled('status_urgent')) {
+            $query->where('status_urgent', $request->status_urgent);
         }
 
         if ($request->filled('date_from')) {
@@ -76,49 +100,33 @@ class SubmissionController extends Controller
             $query->where('final_status', $request->status);
         }
 
-        $paginated = $query->latest()->paginate($request->get('per_page', 25));
+        $submissions = $query->latest()->paginate($request->get('per_page', 25));
+        
+        $submissions->getCollection()->transform(function($submission) {
+            return new SubmissionResource($submission);
+        });
 
         return response()->json([
-            'submissions' => $paginated,
+            'submissions' => $submissions,
             'counts' => $counts
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreSubmissionRequest $request)
     {
-        $request->validate([
-            'division_id' => 'required|exists:divisions,id',
-            'jenis_pengajuan_id' => 'required|exists:jenis_pengajuan,id',
-            'jenis_perjalanan_id' => 'nullable|exists:jenis_perjalanan,id',
-            'status_urgent' => 'required|exists:urgency_statuses,code',
-            'description' => 'required|string',
-            'notes' => 'nullable|string',
-            'payload' => 'nullable|array',
-            'total' => 'nullable|numeric',
-            'is_draft' => 'nullable|boolean',
-
-            // Items validation (conditional)
-            'items' => 'nullable|array|max:20',
-            'items.*.description' => 'required_with:items|string|max:500',
-            'items.*.qty' => 'required_with:items|numeric|min:0.01',
-            'items.*.uom_id' => 'required_with:items|exists:uoms,id',
-            'items.*.nominal' => 'required_with:items|numeric|min:0',
-        ]);
-
+        $user = Auth::user();
+        $validated = $request->validated();
+        
         $data = $request->except(['items', 'is_draft']);
-        $data['user_id'] = Auth::id();
+        $data['user_id'] = $user->id;
         $isDraft = $request->boolean('is_draft', false);
         $data['final_status'] = $isDraft ? 'draf' : 'pending';
 
         if ($request->has('payload') && !empty($request->payload)) {
-            $submission = $this->submissionService->createSubmission($data); // uses data['total']
+            $submission = $this->submissionService->createSubmission($data);
         }
         else {
-            // Validate items explicitly if no payload is present
-            if (!$request->has('items') || empty($request->items)) {
-                return response()->json(['message' => 'The items field is required when no payload is provided.'], 422);
-            }
-            $submission = $this->submissionService->createSubmissionWithItems($data, $request->items);
+            $submission = $this->submissionService->createSubmissionWithItems($data, $request->items ?? []);
         }
 
         if (!$isDraft) {
@@ -127,34 +135,18 @@ class SubmissionController extends Controller
 
         AuditTrailService::log('CREATED', 'Submission', $submission->id, null, $submission->toArray());
 
-        return response()->json($submission->load(['approvals', 'items.uom']), 201);
+        return new SubmissionResource($submission->load(['approvals', 'items.uom']));
     }
 
-    public function update(Request $request, Submission $submission)
+    public function update(UpdateSubmissionRequest $request, Submission $submission)
     {
-        $this->authorize('update', $submission);
-
-        $isOnHold = $submission->final_status === 'on_hold';
-
-        if ($submission->final_status !== 'draf' && !$isOnHold) {
-            return response()->json(['message' => 'Hanya pengajuan berstatus draf atau ditunda yang dapat diubah.'], 403);
+        // Only owner or admin can update
+        if (Auth::id() !== $submission->user_id && !Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $request->validate([
-            'division_id' => 'required|exists:divisions,id',
-            'jenis_pengajuan_id' => 'required|exists:jenis_pengajuan,id',
-            'jenis_perjalanan_id' => 'nullable|exists:jenis_perjalanan,id',
-            'status_urgent' => 'required|exists:urgency_statuses,code',
-            'description' => 'required|string',
-            'notes' => 'nullable|string',
-            'payload' => 'nullable|array',
-            'total' => 'nullable|numeric',
-            'items' => 'nullable|array|max:20',
-            'items.*.description' => 'required_with:items|string|max:500',
-            'items.*.qty' => 'required_with:items|numeric|min:0.01',
-            'items.*.uom_id' => 'required_with:items|exists:uoms,id',
-            'items.*.nominal' => 'required_with:items|numeric|min:0',
-        ]);
+        $validated = $request->validated();
+        $isOnHold = $submission->final_status === 'on_hold';
 
         return DB::transaction(function () use ($request, $submission, $isOnHold) {
             $data = $request->except('items');
@@ -179,6 +171,17 @@ class SubmissionController extends Controller
 
             // Force touch updated_at to reflect latest save regardless of data diff
             $submission->touch();
+
+            // Deteksi perubahan status ke Urgent
+            if (
+                $request->input('status_urgent') === 'urgent'
+                && $submission->getOriginal('status_urgent') === 'normal'
+                && $submission->final_status === 'pending'
+            ) {
+                // Kirim notifikasi ke semua approver yang masih pending
+                $this->approvalService->notifyAllApprovers($submission);
+                AuditTrailService::log('ESCALATED_TO_URGENT', 'Submission', $submission->id);
+            }
 
             // If submission was on_hold, mark as revised and notify approver
             if ($isOnHold) {
@@ -206,7 +209,7 @@ class SubmissionController extends Controller
                 AuditTrailService::log('UPDATED_DRAFT', 'Submission', $submission->id, null, $submission->toArray());
             }
 
-            return response()->json($submission->load('items.uom'));
+            return new SubmissionResource($submission->load('items.uom'));
         });
     }
 
@@ -239,7 +242,17 @@ class SubmissionController extends Controller
     public function show(Submission $submission)
     {
         $this->authorize('view', $submission);
-        return response()->json($submission->load(['user', 'division', 'jenisPengajuan', 'jenisPerjalanan', 'uom', 'items.uom', 'approvals.approver', 'attachments', 'attachmentRequests.targetUser', 'attachmentRequests.requester']));
+        
+        $submission->load(['user', 'division', 'jenisPengajuan', 'items.uom', 'approvals.approver', 'realizations.details', 'attachments', 'attachmentRequests.requestedBy', 'attachmentRequests.targetUser']);
+        
+        // Add current_step_role manually since it's now a subquery-only attribute for index,
+        // but for detail we can still compute it or just use the relation.
+        // Let's ensure it's there for the resource.
+        $submission->current_step_role = $submission->approvals()
+            ->where('step_order', $submission->current_approval_step)
+            ->first()?->role_name;
+
+        return new SubmissionResource($submission);
     }
 
     public function uploadAttachment(Request $request, Submission $submission)
