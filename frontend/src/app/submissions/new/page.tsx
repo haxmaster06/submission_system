@@ -38,10 +38,11 @@ function NewSubmissionContent() {
     division_id: '',
     jenis_pengajuan_id: '',
     jenis_perjalanan_id: '',
-    status_urgent: 'Normal',
+    status_urgent: 'normal',
     description: '',
     notes: '',
     final_status: '',
+    tanggal_pengajuan: new Date().toISOString().split('T')[0],
   });
 
   const [items, setItems] = useState([{
@@ -65,10 +66,11 @@ function NewSubmissionContent() {
           division_id: String(d.division_id || ''),
           jenis_pengajuan_id: String(d.jenis_pengajuan_id || ''),
           jenis_perjalanan_id: String(d.jenis_perjalanan_id || ''),
-          status_urgent: d.status_urgent || 'Normal',
+          status_urgent: d.status_urgent || 'normal',
           description: d.description || '',
           notes: d.notes || '',
           final_status: d.final_status || '',
+          tanggal_pengajuan: d.tanggal_pengajuan || new Date().toISOString().split('T')[0],
         });
         
         if (d.items && d.items.length > 0) {
@@ -89,7 +91,7 @@ function NewSubmissionContent() {
       console.error(err);
       setLoading(false);
     });
-  }, [duplicateId, user, isSuperAdmin]);
+  }, [duplicateId, editId, user, isSuperAdmin]);
 
   const selectedType = lookups.jenis_pengajuan.find((j: any) => j.id == form.jenis_pengajuan_id);
 
@@ -251,6 +253,20 @@ function NewSubmissionContent() {
               <h2 className="font-bold text-slate-800 text-sm uppercase tracking-wider">Informasi Umum</h2>
             </div>
             <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                  <Info className="w-4 h-4 text-sky-500" />
+                  Tanggal Pengajuan
+                </label>
+                <input
+                  type="date"
+                  value={form.tanggal_pengajuan}
+                  onChange={(e) => setForm({ ...form, tanggal_pengajuan: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-xl border ${!isSuperAdmin ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed font-bold opacity-75' : 'bg-white border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-sky-500 shadow-sm'} outline-none transition-all`}
+                  required
+                  disabled={!isSuperAdmin}
+                />
+              </div>
               {isSuperAdmin ? (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi</label>

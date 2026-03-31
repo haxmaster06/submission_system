@@ -70,6 +70,9 @@ function SubmissionsPageContent() {
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null); // New state for selected submission
   const [submitting, setSubmitting] = useState(false);
   const [lookups, setLookups] = useState<any>({
+    divisions: [],
+    jenis_pengajuan: [],
+    jenis_perjalanan: [],
     uoms: []
   });
   const [counts, setCounts] = useState<any>({
@@ -87,6 +90,7 @@ function SubmissionsPageContent() {
     status_urgent: 'normal',
     description: '',
     notes: '',
+    tanggal_pengajuan: new Date().toISOString().split('T')[0],
     items: [{ description: '', qty: 0, uom_id: '', nominal: 0 }]
   });
 
@@ -168,6 +172,7 @@ function SubmissionsPageContent() {
       status_urgent: 'normal',
       description: '',
       notes: '',
+      tanggal_pengajuan: new Date().toISOString().split('T')[0],
       items: [{ description: '', qty: 0, uom_id: '', nominal: 0 }]
     });
     setIsModalOpen(true);
@@ -443,7 +448,7 @@ function SubmissionsPageContent() {
                         className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                       >
                         <option value="">Semua Divisi</option>
-                        {lookups.divisions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        {lookups.divisions?.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
                     </div>
                   )}
@@ -455,7 +460,7 @@ function SubmissionsPageContent() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Jenis</option>
-                      {lookups.jenis_pengajuan.map((j: any) => <option key={j.id} value={j.id}>{j.name}</option>)}
+                      {lookups.jenis_pengajuan?.map((j: any) => <option key={j.id} value={j.id}>{j.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -569,6 +574,20 @@ function SubmissionsPageContent() {
                 <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">Informasi Umum</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-10 border-l-2 border-slate-100 ml-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <Calendar size={16} className="text-sky-500" />
+                    Tanggal Pengajuan
+                  </label>
+                  <input
+                    type="date"
+                    value={form.tanggal_pengajuan}
+                    onChange={(e) => setForm({ ...form, tanggal_pengajuan: e.target.value })}
+                    className={`w-full px-5 py-4 rounded-2xl border ${!hasRole('Super Admin') ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed font-bold opacity-75' : 'bg-white border-slate-200 text-slate-900 font-bold focus:ring-4 focus:ring-sky-50 shadow-sm'} outline-none transition-all`}
+                    required
+                    disabled={!hasRole('Super Admin')}
+                  />
+                </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-900 mb-3">Divisi</label>
                   <select
@@ -579,7 +598,7 @@ function SubmissionsPageContent() {
                     disabled={!!user?.division_id}
                   >
                     <option value="" className="text-slate-400">Pilih Divisi</option>
-                    {lookups.divisions.map((d: any) => <option key={d.id} value={d.id} className="text-slate-900">{d.name} ({d.code})</option>)}
+                    {lookups.divisions?.map((d: any) => <option key={d.id} value={d.id} className="text-slate-900">{d.name} ({d.code})</option>)}
                   </select>
                   {user?.division_id && (
                     <p className="mt-2 text-xs text-sky-600 font-bold flex items-center gap-1.5 px-1">
@@ -628,7 +647,7 @@ function SubmissionsPageContent() {
                     required
                   >
                     <option value="" className="text-slate-400 font-bold">Pilih Kategori</option>
-                    {lookups.jenis_pengajuan.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900 font-bold">{j.name}</option>)}
+                    {lookups.jenis_pengajuan?.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900 font-bold">{j.name}</option>)}
                   </select>
                 </div>
 
@@ -640,7 +659,7 @@ function SubmissionsPageContent() {
                     className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-white text-slate-900 focus:outline-none focus:ring-4 focus:ring-sky-50 transition-all font-bold shadow-sm"
                   >
                     <option value="" className="text-slate-400 font-bold">Tidak Ada</option>
-                    {lookups.jenis_perjalanan.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900 font-bold">{j.name}</option>)}
+                    {lookups.jenis_perjalanan?.map((j: any) => <option key={j.id} value={j.id} className="text-slate-900 font-bold">{j.name}</option>)}
                   </select>
                 </div>
 
@@ -736,7 +755,7 @@ function SubmissionsPageContent() {
                           required
                         >
                           <option value="">Pilih</option>
-                          {lookups.uoms.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                          {lookups.uoms?.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                         </select>
                       </div>
 
@@ -903,7 +922,7 @@ function SubmissionsList({
         </div>
       ) : (
         <div className="grid gap-5">
-          {submissions.map((sub: any, idx: number) => (
+          {submissions?.map((sub: any, idx: number) => (
             <motion.div
               key={sub.id}
               initial={{ opacity: 0, y: 15 }}
@@ -963,13 +982,13 @@ function SubmissionsList({
                     </div>
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total</p>
-                      <p className="font-black text-slate-900 text-sm">Rp {parseFloat(sub.total).toLocaleString('id-ID')}</p>
+                      <p className="font-black text-slate-900 text-sm">Rp {(parseFloat(sub.total) || 0).toLocaleString('id-ID')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-right">
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Tanggal</p>
-                      <p className="font-bold text-slate-600 text-[11px]">{new Date(sub.final_status === 'draf' && sub.updated_at ? sub.updated_at : sub.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="font-bold text-slate-600 text-[11px]">{new Date(sub.final_status === 'draf' && sub.updated_at ? sub.updated_at : (sub.tanggal_pengajuan || sub.created_at || new Date())).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
                     <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
                       <Calendar size={14} />

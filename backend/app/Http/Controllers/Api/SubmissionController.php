@@ -122,6 +122,16 @@ class SubmissionController extends Controller
         $isDraft = $request->boolean('is_draft', false);
         $data['final_status'] = $isDraft ? 'draf' : 'pending';
 
+        if ($request->has('total')) {
+            $data['total'] = $request->total;
+        } elseif ($request->has('items') && is_array($request->items) && count($request->items) > 0) {
+            $grandTotal = 0;
+            foreach ($request->items as $item) {
+                $grandTotal += ($item['qty'] * $item['nominal']);
+            }
+            $data['total'] = $grandTotal;
+        }
+
         if ($request->has('payload') && !empty($request->payload)) {
             $submission = $this->submissionService->createSubmission($data);
         }
@@ -151,8 +161,11 @@ class SubmissionController extends Controller
         return DB::transaction(function () use ($request, $submission, $isOnHold) {
             $data = $request->except('items');
             
-            // Recalculate total if items provided
-            if ($request->has('items')) {
+            // If total is explicitly provided (e.g. from Salary Matrix), use it.
+            // Otherwise, recalculate total ONLY if items are provided and not empty.
+            if ($request->has('total')) {
+                $data['total'] = $request->total;
+            } elseif ($request->has('items') && is_array($request->items) && count($request->items) > 0) {
                 $grandTotal = 0;
                 foreach ($request->items as $item) {
                     $grandTotal += ($item['qty'] * $item['nominal']);

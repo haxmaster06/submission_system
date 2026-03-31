@@ -25,7 +25,12 @@ export default function ReportingPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [printing, setPrinting] = useState(false);
-  const [lookups, setLookups] = useState<any>({ divisions: [], jenis_pengajuan: [] });
+  const [lookups, setLookups] = useState<any>({ 
+    divisions: [], 
+    jenis_pengajuan: [],
+    jenis_perjalanan: [],
+    uoms: [] 
+  });
 
   // Detail View States
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -165,7 +170,7 @@ export default function ReportingPage() {
 
       // Hanya hitung ke budget jika sudah disetujui (Approved) ATAU jika filter status spesifik sedang aktif
       if (filters.status !== 'all' || sub.final_status === 'approved') {
-          grandTotalPengajuan += parseFloat(sub.total);
+          grandTotalPengajuan += parseFloat(sub.total) || 0;
       }
       
       let realizationTotal = 0;
@@ -266,7 +271,7 @@ export default function ReportingPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Divisi</option>
-                      {lookups.divisions.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      {lookups.divisions?.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -277,7 +282,7 @@ export default function ReportingPage() {
                       className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     >
                       <option value="">Semua Jenis</option>
-                      {lookups.jenis_pengajuan.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      {lookups.jenis_pengajuan?.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -359,7 +364,7 @@ export default function ReportingPage() {
                     
                     divSubs.forEach(sub => {
                         if (filters.status !== 'all' || sub.final_status === 'approved') {
-                            divTotalPengajuan += parseFloat(sub.total);
+                            divTotalPengajuan += parseFloat(sub.total) || 0;
                         }
                         let realizationTotal = 0;
                         if (sub.realizations && Array.isArray(sub.realizations)) {
@@ -419,7 +424,7 @@ export default function ReportingPage() {
                                                 return sum + detailSum;
                                             }, 0);
                                     }
-                                    const nilaiPengajuan = parseFloat(sub.total);
+                                    const nilaiPengajuan = parseFloat(sub.total) || 0;
                                     const selisih = nilaiPengajuan - realizationTotal;
 
                                     return (
@@ -472,7 +477,7 @@ export default function ReportingPage() {
 
                         {/* Mobile View inside Loop */}
                         <div className="md:hidden divide-y divide-slate-100">
-                            {divSubs.map((sub) => {
+                            {divSubs?.map((sub: any) => {
                                 let realizationTotal = 0;
                                 if (sub.realizations && Array.isArray(sub.realizations)) {
                                     realizationTotal = sub.realizations
@@ -483,7 +488,7 @@ export default function ReportingPage() {
                                             return sum + detailSum;
                                         }, 0);
                                 }
-                                const nilaiPengajuan = parseFloat(sub.total);
+                                const nilaiPengajuan = parseFloat(sub.total) || 0;
                                 const selisih = nilaiPengajuan - realizationTotal;
 
                                 return (

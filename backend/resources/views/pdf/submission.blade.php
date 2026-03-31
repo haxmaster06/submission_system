@@ -143,7 +143,7 @@ default => 'badge-draft'
                 <td class="td-center td-muted">{{ optional($item->uom)->code ?? optional($item->uom)->name ??
                     '-' }}</td>
                 <td class="td-right td-mono">Rp {{ number_format($item->nominal, 0, ',', '.') }}</td>
-                <td class="td-right td-mono td-bold">Rp {{ number_format($item->total, 0, ',', '.') }}</td>
+                <td class="td-right td-mono td-bold">Rp {{ number_format($item->total ?? ($item->qty * $item->nominal), 0, ',', '.') }}</td>
             </tr>
             @endforeach
             @else

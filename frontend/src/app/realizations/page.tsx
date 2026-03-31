@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, ArrowRight, CornerDownRight, Receipt, AlertCircle, CheckCircle, ChevronRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import SubmissionDetailView from '@/components/submissions/SubmissionDetailView';
+import Pagination from '@/components/ui/Pagination';
 
 export default function RealizationsDashboard() {
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -14,6 +15,7 @@ export default function RealizationsDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'under' | 'over' | 'exact'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { user } = useAuth();
   const isFinance = user?.roles?.some((r: any) => r.name === 'Finance' || r.name === 'Super Admin');
@@ -22,14 +24,19 @@ export default function RealizationsDashboard() {
     fetchSubmissions();
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      // We fetch approved submissions which are targets for realization
-      const res = await api.get('/submissions', {
-        params: { status: 'approved', per_page: 100 }
+      // Menggunakan endpoint report yang sudah memuat relasi realizations.details
+      const res = await api.get('/reports/submissions', {
+        params: { status: 'approved' }
       });
-      setSubmissions(res.data.submissions?.data || []);
+      // Endpoint laporan mengembalikan array langsung, bukan format pagination
+      setSubmissions(res.data || []);
     } catch (err) {
       console.error(err);
     } finally {
@@ -58,6 +65,24 @@ export default function RealizationsDashboard() {
     const matchesFilter = filterStatus === 'all' || s.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
+
+  // Calculate frontend pagination
+  const perPage = 9;
+  const totalItems = filtered.length;
+  const lastPage = Math.ceil(totalItems / perPage) || 1;
+  const startIndex = (currentPage - 1) * perPage;
+  const endIndex = Math.min(startIndex + perPage, totalItems);
+  
+  const currentItems = filtered.slice(startIndex, endIndex);
+
+  const paginationMeta = {
+    current_page: currentPage,
+    last_page: lastPage,
+    from: totalItems === 0 ? null : startIndex + 1,
+    to: totalItems === 0 ? null : endIndex,
+    total: totalItems,
+    per_page: perPage,
+  };
 
   return (
     <Shell>
@@ -102,7 +127,7 @@ export default function RealizationsDashboard() {
             <Loader2 size={40} className="animate-spin mb-4" />
             <p className="font-bold">Memuat data realisasi...</p>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : currentItems.length === 0 ? (
           <div className="bg-white rounded-3xl p-20 text-center border border-slate-100 shadow-sm">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="text-slate-200" size={40} />
@@ -111,8 +136,9 @@ export default function RealizationsDashboard() {
             <p className="text-slate-400 text-sm mt-1">Coba sesuaikan filter atau kata kunci pencarian Anda.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map(s => (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {currentItems.map(s => (
               <motion.div
                 layout
                 key={s.id}
@@ -157,7 +183,13 @@ export default function RealizationsDashboard() {
                 </div>
               </motion.div>
             ))}
-          </div>
+            </div>
+            {totalItems > perPage && (
+              <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden mb-8">
+                <Pagination pagination={paginationMeta} onPageChange={setCurrentPage} />
+              </div>
+            )}
+          </>
         )}
 
         <AnimatePresence>

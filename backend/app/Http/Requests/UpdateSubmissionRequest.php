@@ -28,16 +28,18 @@ class UpdateSubmissionRequest extends FormRequest
             'status_urgent' => 'sometimes|required|in:normal,urgent',
             'description' => 'sometimes|required|string|max:255',
             'notes' => 'nullable|string',
-            'qty' => 'sometimes|required|numeric|min:0',
-            'uom_id' => 'sometimes|required|exists:uoms,id',
-            'nominal' => 'sometimes|required|numeric|min:0',
+            'qty' => 'required_without_all:payload,items|numeric|min:0',
+            'uom_id' => 'required_without_all:payload,items|exists:uoms,id',
+            'nominal' => 'required_without_all:payload,items|numeric|min:0',
             'tanggal_pengajuan' => 'sometimes|required|date',
-            'items' => 'sometimes|required|array|min:1',
+            'items' => 'required_without:payload|array',
             'items.*.id' => 'sometimes|exists:submission_items,id',
             'items.*.description' => 'required|string|max:255',
             'items.*.qty' => 'required|numeric|min:0',
             'items.*.uom_id' => 'required|exists:uoms,id',
             'items.*.nominal' => 'required|numeric|min:0',
+            'payload' => 'nullable|array',
+            'total' => 'nullable|numeric|min:0',
         ];
     }
 }

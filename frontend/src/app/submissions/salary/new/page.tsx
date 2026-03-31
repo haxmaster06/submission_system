@@ -16,6 +16,7 @@ function NewSalarySubmissionContent() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
+  const editId = searchParams.get('edit');
   const duplicateId = searchParams.get('duplicate');
   
   const [employees, setEmployees] = useState<any[]>([]);
@@ -46,6 +47,7 @@ function NewSalarySubmissionContent() {
     description: '',
     notes: '',
     final_status: '',
+    tanggal_pengajuan: new Date().toISOString().split('T')[0],
   });
   
   const [duplicateResData, setDuplicateResData] = useState<any>(null);
@@ -60,7 +62,7 @@ function NewSalarySubmissionContent() {
     Promise.all([
       api.get('/lookups'),
       api.get('/master/employees?per_page=500').catch(() => ({ data: { data: [] } })),
-      duplicateId ? api.get(`/submissions/${duplicateId}`) : Promise.resolve({ data: null })
+      (editId || duplicateId) ? api.get(`/submissions/${editId || duplicateId}`) : Promise.resolve({ data: null })
     ]).then(([lookupsRes, empRes, duplicateRes]) => {
       setLookups(lookupsRes.data);
       
@@ -72,9 +74,9 @@ function NewSalarySubmissionContent() {
       }
       
       const salaryType = lookupsRes.data.jenis_pengajuan?.find((j: any) => j.name?.toLowerCase().includes('gaji karyawan harian'));
+      const d = duplicateRes.data ? (duplicateRes.data.data || duplicateRes.data) : null;
       
-      if (duplicateRes.data) {
-        const d = duplicateRes.data.data || duplicateRes.data;
+      if (d) {
         setDuplicateResData(d);
         setForm({
           division_id: String(d.division_id || ''),
@@ -84,6 +86,7 @@ function NewSalarySubmissionContent() {
           description: d.description || '',
           notes: d.notes || '',
           final_status: d.final_status || '',
+          tanggal_pengajuan: d.tanggal_pengajuan || new Date().toISOString().split('T')[0],
         });
 
         if (d.payload) {
@@ -110,15 +113,15 @@ function NewSalarySubmissionContent() {
       }
       
       setLoading(false);
-       if (duplicateRes.data && duplicateRes.data.payload?.selected_employee_ids) {
+       if (d && d.payload?.selected_employee_ids) {
           setSelectionMode('manual');
-          setSelectedEmployeeIds(new Set(duplicateRes.data.payload.selected_employee_ids));
+          setSelectedEmployeeIds(new Set(d.payload.selected_employee_ids));
        }
     }).catch(err => {
       console.error(err);
       setLoading(false);
     });
-  }, [duplicateId]);
+  }, [duplicateId, editId]);
 
   useEffect(() => {
     if (user && !isSuperAdmin && user.division?.id) {
@@ -263,6 +266,13 @@ function NewSalarySubmissionContent() {
       delete newMatrix[empId];
       return newMatrix;
     });
+    if (selectionMode === 'manual') {
+      setSelectedEmployeeIds(prev => {
+        const next = new Set(prev);
+        next.delete(empId);
+        return next;
+      });
+    }
   };
 
    const matrixGrandTotal = useMemo(() => {
@@ -407,6 +417,20 @@ function NewSalarySubmissionContent() {
               <h2 className="font-bold text-indigo-900 text-sm uppercase tracking-wider">Informasi Umum</h2>
             </div>
             <div className="p-4 sm:p-6 lg:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                  <CalendarDays size={16} className="text-indigo-500" />
+                  Tanggal Pengajuan
+                </label>
+                <input
+                  type="date"
+                  value={form.tanggal_pengajuan}
+                  onChange={(e) => setForm({ ...form, tanggal_pengajuan: e.target.value })}
+                  className={`w-full px-4 py-3 rounded-xl border ${!isSuperAdmin ? 'bg-slate-50 border-slate-200 text-slate-500 cursor-not-allowed font-bold opacity-75' : 'bg-white border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-indigo-500 shadow-sm'} outline-none transition-all`}
+                  required
+                  disabled={!isSuperAdmin}
+                />
+              </div>
               {isSuperAdmin ? (
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Divisi Pembebanan</label>

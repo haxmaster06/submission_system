@@ -271,7 +271,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
               </button>
               <button
                 onClick={() => {
-                  router.push(`/submissions/new?edit=${submission.id}`);
+                  const isSalary = submission.payload && submission.payload.employees;
+                  const path = isSalary ? '/submissions/salary/new' : '/submissions/new';
+                  router.push(`${path}?edit=${submission.id}`);
                 }}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 font-bold rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm"
               >
@@ -292,7 +294,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
           {submission.final_status === 'on_hold' && user?.id === submission.user_id && (
             <button
               onClick={() => {
-                router.push(`/submissions/new?edit=${submission.id}`);
+                const isSalary = submission.payload && submission.payload.employees;
+                const path = isSalary ? '/submissions/salary/new' : '/submissions/new';
+                router.push(`${path}?edit=${submission.id}`);
               }}
               className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-600 font-bold rounded-lg hover:bg-amber-100 transition-colors border border-amber-200 shadow-sm animate-pulse"
             >
@@ -502,7 +506,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                                 <th className="sticky left-0 z-10 bg-indigo-50/90 backdrop-blur-sm border-r border-indigo-100 px-6 py-4 w-64 min-w-[250px] shadow-[4px_0_12px_rgba(0,0,0,0.03)] border-b text-[10px] font-black uppercase text-indigo-800 tracking-widest">
                                     Nama Karyawan
                                 </th>
-                                {submission.payload.employees[0]?.daily_records.map((d: any) => {
+                                {submission.payload?.employees?.[0]?.daily_records?.map((d: any) => {
                                     const dObj = new Date(d.date);
                                     return (
                                     <th key={d.date} className="px-3 py-4 border-l border-b border-indigo-100 bg-slate-50/50 text-center min-w-[60px]">
@@ -522,7 +526,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                              </tr>
                           </thead>
                           <tbody className="divide-y divide-indigo-50">
-                              {submission.payload.employees.map((emp: any) => (
+                              {submission.payload?.employees?.map((emp: any) => (
                                  <tr key={emp.employee_id} className="hover:bg-indigo-50/30 transition-colors">
                                      <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50/90 border-r border-indigo-50 px-6 py-4 shadow-[4px_0_12px_rgba(0,0,0,0.03)] transition-colors">
                                         <p className="font-bold text-sm text-slate-800 truncate block whitespace-nowrap overflow-hidden max-w-[200px]">{emp.employee_name}</p>
@@ -530,7 +534,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                                             {emp.department} • <span className="text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(parseFloat(emp.base_salary))}</span>/Bulan
                                          </p>
                                      </td>
-                                     {emp.daily_records.map((d: any) => (
+                                     {emp.daily_records?.map((d: any) => (
                                          <td key={d.date} className="px-2 py-4 border-l border-indigo-50 text-center">
                                              {d.nominal > 0 ? (
                                                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 inline-block shadow-sm">
@@ -580,13 +584,13 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {submission.items.map((item: any) => (
+                        {submission.items?.map((item: any) => (
                           <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="px-6 py-5 text-[14px] font-bold text-slate-700 leading-relaxed">{item.description}</td>
                             <td className="px-6 py-5 text-right font-black text-slate-900 text-[14px]">{parseFloat(item.qty).toLocaleString('id-ID')}</td>
                             <td className="px-6 py-5 text-center text-slate-500 font-bold text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
                             <td className="px-6 py-5 text-right font-bold text-slate-900 text-[14px] whitespace-nowrap">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-5 text-right font-black text-sky-600 text-[15px] whitespace-nowrap">Rp {parseFloat(item.total).toLocaleString('id-ID')}</td>
+                            <td className="px-6 py-5 text-right font-black text-sky-600 text-[15px] whitespace-nowrap">Rp {(parseFloat(item.qty) * parseFloat(item.nominal)).toLocaleString('id-ID')}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -600,14 +604,14 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                   </div>
                   {/* Mobile Compact Cards */}
                   <div className="md:hidden divide-y divide-slate-100">
-                    {submission.items.map((item: any) => (
+                    {submission.items?.map((item: any) => (
                       <div key={item.id} className="px-4 py-3 space-y-1">
                         <p className="text-xs font-bold text-slate-800 leading-snug">{item.description}</p>
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] text-slate-500">
                             {parseFloat(item.qty).toLocaleString('id-ID')} {item.uom?.code || item.uom?.name} × Rp {parseFloat(item.nominal).toLocaleString('id-ID')}
                           </p>
-                          <p className="text-sm font-black text-sky-600">Rp {parseFloat(item.total).toLocaleString('id-ID')}</p>
+                          <p className="text-sm font-black text-sky-600">Rp {(parseFloat(item.qty) * parseFloat(item.nominal)).toLocaleString('id-ID')}</p>
                         </div>
                       </div>
                     ))}
@@ -659,7 +663,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     Lampiran Pendukung ({submission.attachments.length})
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {submission.attachments.map((attachment: any, idx: number) => {
+                    {submission.attachments?.map((attachment: any, idx: number) => {
                        const fileType = attachment.file_type?.toLowerCase() || '';
                        const isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileType);
                        const isPdf = fileType === 'pdf';
@@ -751,7 +755,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
                 {submission.attachment_requests?.length > 0 ? (
                   <div className="space-y-4">
-                    {submission.attachment_requests.map((req: any) => {
+                    {submission.attachment_requests?.map((req: any) => {
                       const isTarget = user?.id === req.target_user_id;
                       const isPending = req.status === 'pending';
 
@@ -959,13 +963,13 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {(() => {
-                        const budgetedItems = submission.payload && submission.payload.employees
-                          ? submission.payload.employees.map((emp: any) => ({ name: emp.employee_name, budget: parseFloat(emp.total_salary) }))
-                          : (submission.items || []).map((item: any) => ({ name: item.description, budget: parseFloat(item.total) }));
+                        const budgetedItems = (submission.payload && submission.payload.employees)
+                          ? submission.payload.employees?.map((emp: any) => ({ name: emp.employee_name, budget: parseFloat(emp.total_salary) }))
+                          : (submission.items || [])?.map((item: any) => ({ name: item.description, budget: parseFloat(item.total) }));
 
-                        return budgetedItems.map((bItem: any, idx: number) => {
-                          const realizedAmount = realizations.reduce((acc: number, r: any) => 
-                            acc + r.details.filter((d: any) => d.item_name === bItem.name).reduce((sum: number, d: any) => sum + parseFloat(d.total), 0)
+                        return (budgetedItems || [])?.map((bItem: any, idx: number) => {
+                          const realizedAmount = (realizations || [])?.reduce((acc: number, r: any) => 
+                            acc + (r.details || [])?.filter((d: any) => d.item_name === bItem.name)?.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0)
                           , 0);
                           const selisih = bItem.budget - realizedAmount;
 
@@ -988,7 +992,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
 
               {/* LIST KARTU REALISASI PER TANGGAL */}
               <h3 className="font-black text-slate-900 text-sm uppercase tracking-tight mb-4 ml-1">Histori Kartu Realisasi</h3>
-              {realizations.map((r) => (
+              {realizations?.map((r) => (
                 <div key={r.id} className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-3">
@@ -1023,7 +1027,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                          {r.details.map((d: any) => (
+                          {r.details?.map((d: any) => (
                             <tr key={d.id} className="text-slate-600 hover:bg-slate-50 transition-colors">
                               <td className="px-6 py-4 font-bold text-slate-700">{d.item_name}</td>
                               <td className="px-6 py-4 text-center font-black text-slate-900">{parseFloat(d.qty).toLocaleString('id-ID')}</td>
@@ -1062,7 +1066,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </div>
           ) : (
             <div className="relative border-l-2 border-slate-100 ml-4 space-y-8 pl-8 py-2">
-              {logs.map((log, idx) => (
+              {logs?.map((log, idx) => (
                 <div key={log.id} className="relative">
                   <div className="absolute -left-[41px] top-0 w-6 h-6 rounded-full bg-white border-2 border-sky-500 flex items-center justify-center z-10">
                     <div className="w-2 h-2 rounded-full bg-sky-500" />
@@ -1087,7 +1091,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     {/* Changes Details */}
                     {log.details && (
                       <div className="mt-3 text-xs bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-1">
-                        {Object.entries(log.details).map(([key, val]: [string, any]) => (
+                        {Object.entries(log.details || {})?.map(([key, val]: [string, any]) => (
                           <div key={key} className="grid grid-cols-1 sm:grid-cols-3 gap-1">
                             <span className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">{key.replace('_', ' ')}</span>
                             <div className="sm:col-span-2 text-slate-700 font-medium break-all">
