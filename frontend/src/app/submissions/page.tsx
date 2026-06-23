@@ -22,7 +22,7 @@ import {
   Check,
   Info,
   Calendar,
-  DollarSign,
+  Banknote,
   Search,
   Filter,
   ChevronDown,
@@ -693,7 +693,7 @@ function SubmissionsPageContent() {
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-sky-50 flex items-center justify-center">
-                    <DollarSign size={16} className="text-sky-500" />
+                    <Banknote size={16} className="text-sky-500" />
                   </div>
                   <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">Rincian Anggaran</h3>
                 </div>
@@ -778,7 +778,7 @@ function SubmissionsPageContent() {
                       <div className="md:col-span-3 flex flex-col justify-end">
                         <label className="block text-xs font-black text-sky-400 uppercase tracking-widest mb-2 px-1 text-right">Subtotal</label>
                         <div className="bg-sky-50 border border-sky-100 px-5 py-4 rounded-2xl text-right">
-                          <span className="font-black text-sky-600">Rp {(item.qty * item.nominal).toLocaleString('id-ID')}</span>
+                          <span className="font-black text-sky-600">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(item.qty * item.nominal)}</span>
                         </div>
                       </div>
                     </div>
@@ -798,7 +798,7 @@ function SubmissionsPageContent() {
                     </div>
                     <div className="text-center sm:text-right">
                       <span className="text-sky-400 font-black text-5xl block font-mono tracking-tighter">
-                        Rp {total.toLocaleString('id-ID')}
+                        Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(total)}
                       </span>
                     </div>
                   </div>
@@ -978,11 +978,11 @@ function SubmissionsList({
                 <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-1">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-100">
-                      <DollarSign size={14} />
+                      <Banknote size={14} />
                     </div>
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total</p>
-                      <p className="font-black text-slate-900 text-sm">Rp {(parseFloat(sub.total) || 0).toLocaleString('id-ID')}</p>
+                      <p className="font-black text-slate-900 text-sm">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(sub.total) || 0)}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-right">

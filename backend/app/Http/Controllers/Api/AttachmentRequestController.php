@@ -19,7 +19,7 @@ class AttachmentRequestController extends Controller
      */
     public function myRequests()
     {
-        $requests = AttachmentRequest::with(['submission:id,no_pengajuan', 'requester:id,name'])
+        $requests = AttachmentRequest::with(['submission:id,no_pengajuan', 'requestedBy:id,name'])
             ->where(['target_user_id' => auth()->id()])
             ->where(['status' => 'pending'])
             ->latest()
@@ -44,9 +44,17 @@ class AttachmentRequestController extends Controller
         $submission = Submission::findOrFail($validated['submission_id']);
         $this->authorize('requestAttachment', $submission);
 
+        $user = auth()->user();
+
+        // If requester is NOT the submission owner (i.e. an Approver),
+        // force target_user_id to be the submission owner.
+        if ($user->id !== $submission->user_id) {
+            $validated['target_user_id'] = $submission->user_id;
+        }
+
         $attachmentRequest = AttachmentRequest::create([
             'submission_id' => $validated['submission_id'],
-            'requested_by' => auth()->id(),
+            'requested_by' => $user->id,
             'target_user_id' => $validated['target_user_id'],
             'file_description' => $validated['file_description'],
             'status' => 'pending',
@@ -74,7 +82,7 @@ class AttachmentRequestController extends Controller
         }
 
         $request->validate([
-            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx|max:10240',
         ]);
 
         try {
@@ -95,7 +103,7 @@ class AttachmentRequestController extends Controller
                     'attachment_id' => $attachment->id,
                 ]);
 
-                $attachmentRequest->requester->notify(new AttachmentFulfilledNotification($attachmentRequest));
+                $attachmentRequest->requestedBy->notify(new AttachmentFulfilledNotification($attachmentRequest));
 
                 return response()->json([
                     'message' => 'File berhasil diunggah.',

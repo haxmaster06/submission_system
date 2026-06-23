@@ -7,12 +7,21 @@ use App\Models\Division;
 use App\Models\JenisPengajuan;
 use App\Models\JenisPerjalanan;
 use App\Models\Uom;
+use App\Services\ExchangeRateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Role;
 
 class LookupController extends Controller
 {
+    public function exchangeRate(Request $request, ExchangeRateService $exchangeRateService)
+    {
+        $rate = $exchangeRateService->getUsdToIdrRate();
+        return response()->json([
+            'rate' => $rate,
+            'currency' => 'USD'
+        ]);
+    }
     public function divisions()
     {
         $data = Cache::remember('lookups_divisions', 3600, fn() => Division::all());

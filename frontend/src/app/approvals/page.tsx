@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Shell from '@/components/layout/Shell';
 import api, { STORAGE_URL } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText, Pause } from 'lucide-react';
+import { Check, X, Loader2, MessageSquare, ShieldCheck, Shield, Info, PenTool, Upload, FileText, Pause, Coins } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@/context/AuthContext';
 import Pagination, { PaginationMeta } from '@/components/ui/Pagination';
@@ -28,6 +28,12 @@ export default function ApprovalsPage() {
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
   const [historyPage, setHistoryPage] = useState(1);
   const [historyPaginationMeta, setHistoryPaginationMeta] = useState<PaginationMeta | null>(null);
+
+  // Bulk Approval State
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [bulkNotes, setBulkNotes] = useState('');
+  const [isProcessingBulk, setIsProcessingBulk] = useState(false);
 
   // Modal State
   const [notes, setNotes] = useState('');
@@ -108,6 +114,39 @@ export default function ApprovalsPage() {
       setOverrideUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch override users');
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (!savedSignature) {
+      alert("Anda belum memiliki Tanda Tangan Tersimpan. Silakan buat Tanda Tangan Anda secara individual pada pengajuan pertama atau di Profil Anda.");
+      setShowBulkModal(false);
+      return;
+    }
+    
+    setIsProcessingBulk(true);
+    try {
+      await api.post('/approvals/bulk-approve', {
+        approval_ids: selectedIds,
+        notes: bulkNotes.trim(),
+        signature_path: null,
+        is_director_proxy: false
+      });
+      
+      setSelectedIds([]);
+      setBulkNotes('');
+      setShowBulkModal(false);
+      
+      fetchApprovals();
+      fetchHistory();
+      
+      alert("Berhasil menyetujui pengajuan secara massal!");
+    } catch(err: any) {
+      console.error('Bulk approval failed:', err);
+      const errorMsg = err.response?.data?.message || 'Gagal memproses bulk approval. Silakan coba lagi.';
+      alert(`Error: ${errorMsg}`);
+    } finally {
+      setIsProcessingBulk(false);
     }
   };
 
@@ -323,6 +362,44 @@ export default function ApprovalsPage() {
           </button>
         </div>
 
+        {activeTab === 'pending' && approvals.length > 0 && (
+          <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="w-5 h-5 rounded-lg border-slate-300 text-sky-600 focus:ring-sky-500 transition-all cursor-pointer"
+                checked={selectedIds.length === approvals.length}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(approvals.map(a => a.id));
+                  } else {
+                    setSelectedIds([]);
+                  }
+                }}
+              />
+              <span className="text-sm font-bold text-slate-700">Pilih Semua ({approvals.length})</span>
+            </label>
+            
+            <AnimatePresence>
+              {selectedIds.length > 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <button
+                    onClick={() => setShowBulkModal(true)}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200 flex items-center gap-2 active:scale-95"
+                  >
+                    <Check size={16} />
+                    Setujui Terpilih ({selectedIds.length})
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 gap-6">
           {(activeTab === 'pending' ? approvals : history).map((app) => (
             <motion.div
@@ -331,6 +408,22 @@ export default function ApprovalsPage() {
               className="bg-white rounded-[28px] border border-slate-100 shadow-sm overflow-hidden hover:shadow-xl hover:shadow-slate-200/50 transition-all group"
             >
               <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6 md:gap-8">
+                {activeTab === 'pending' && (
+                  <div className="flex items-start pt-1">
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 rounded-lg border-slate-300 text-sky-600 focus:ring-sky-500 transition-all cursor-pointer"
+                      checked={selectedIds.includes(app.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds([...selectedIds, app.id]);
+                        } else {
+                          setSelectedIds(selectedIds.filter(id => id !== app.id));
+                        }
+                      }}
+                    />
+                  </div>
+                )}
                 <div className="flex-1 space-y-5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-[10px] font-black bg-sky-50 text-sky-600 px-3 py-1.5 rounded-xl uppercase tracking-widest border border-sky-100 italic shadow-sm">
@@ -347,6 +440,12 @@ export default function ApprovalsPage() {
                     {app.status === 'revised' && (
                       <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-xl border border-indigo-100 uppercase tracking-tight shadow-sm animate-pulse">
                         Sudah Direvisi
+                      </span>
+                    )}
+                    {app.submission.items?.some((item: any) => item.currency === 'USD') && (
+                      <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 uppercase tracking-tight shadow-sm flex items-center gap-1">
+                        <Coins size={12} className="text-amber-500" />
+                        Konversi USD
                       </span>
                     )}
                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-auto md:ml-0">{app.submission.user.name.split(' ')[0]}</span>
@@ -420,6 +519,66 @@ export default function ApprovalsPage() {
           )}
         </div>
       </div>
+
+      {/* Bulk Approval Modal */}
+      <AnimatePresence>
+        {showBulkModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-lg rounded-[28px] shadow-2xl flex flex-col overflow-hidden border border-white/20 p-8"
+            >
+              <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <ShieldCheck size={32} />
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 text-center mb-2">Konfirmasi Persetujuan Massal</h2>
+              <p className="text-slate-500 text-center mb-6">
+                Anda akan menyetujui <strong className="text-sky-600">{selectedIds.length} pengajuan</strong> sekaligus. 
+                Sistem akan menggunakan <strong>Tanda Tangan Tersimpan</strong> Anda secara otomatis.
+              </p>
+              
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4 mb-6">
+                <p className="text-xs font-bold text-amber-800 flex items-start gap-2">
+                  <Info size={16} className="shrink-0" />
+                  Peringatan: Semua catatan yang Anda tulis di bawah akan diterapkan ke seluruh pengajuan yang dipilih. Kosongkan jika tidak ada catatan khusus.
+                </p>
+              </div>
+
+              <div className="mb-8">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">
+                  Catatan (Opsional)
+                </label>
+                <textarea
+                  value={bulkNotes}
+                  onChange={(e) => setBulkNotes(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-sky-500 outline-none transition-all text-sm h-24"
+                  placeholder="Catatan untuk semua pengajuan..."
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowBulkModal(false)}
+                  disabled={isProcessingBulk}
+                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 font-black uppercase tracking-wider text-xs rounded-xl hover:bg-slate-200 transition-all disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleBulkApprove}
+                  disabled={isProcessingBulk}
+                  className="flex-1 py-3.5 bg-emerald-500 text-white font-black uppercase tracking-wider text-xs rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-200 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessingBulk ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                  Yakin, Setujui
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Approval Modal */}
       <AnimatePresence>

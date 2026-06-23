@@ -6,20 +6,29 @@ import api from '@/lib/api';
 
 interface RealizationFormProps {
   submission: any;
+  editData?: any;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function RealizationForm({ submission, onClose, onSuccess }: RealizationFormProps) {
+export default function RealizationForm({ submission, editData, onClose, onSuccess }: RealizationFormProps) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
-    realization_date: new Date().toISOString().split('T')[0],
-    notes: '',
-    items: submission.items.map((item: any) => ({
+    realization_date: editData ? editData.realization_date.split('T')[0] : new Date().toISOString().split('T')[0],
+    notes: editData ? (editData.notes || '') : '',
+    items: editData ? editData.details.map((item: any) => ({
+      item_name: item.item_name,
+      qty: item.qty,
+      nominal: item.nominal,
+    })) : (submission.items && submission.items.length > 0) ? submission.items.map((item: any) => ({
       item_name: item.description || '',
       qty: item.qty || 0,
       nominal: item.nominal || 0,
-    }))
+    })) : [{
+      item_name: `Anggaran ${submission.jenis_pengajuan || 'Global'}`,
+      qty: 1,
+      nominal: submission.total || 0,
+    }]
   });
 
   const totalRealization = form.items.reduce((acc: number, item: any) => acc + (parseFloat(item.qty as any) * parseFloat(item.nominal as any) || 0), 0);
@@ -49,10 +58,16 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
     e.preventDefault();
     try {
       setLoading(true);
-      await api.post('/realizations', {
-        submission_id: submission.id,
-        ...form
-      });
+      if (editData) {
+        await api.put(`/realizations/${editData.id}`, {
+          ...form
+        });
+      } else {
+        await api.post('/realizations', {
+          submission_id: submission.id,
+          ...form
+        });
+      }
       onSuccess();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Gagal menyimpan realisasi');
@@ -66,7 +81,7 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col">
         <div className="p-6 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white z-10">
           <div>
-             <h3 className="font-bold text-slate-800 text-lg">Input Realisasi Anggaran</h3>
+             <h3 className="font-bold text-slate-800 text-lg">{editData ? 'Edit Realisasi Anggaran' : 'Input Realisasi Anggaran'}</h3>
              <p className="text-xs text-slate-400">Pengajuan: {submission.no_pengajuan}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-lg text-slate-400">
@@ -155,12 +170,13 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
                                       className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-right text-slate-800 p-0 font-mono"
                                       required
                                       min="0"
+                                      step="0.00001"
                                    />
                                 </div>
                              </td>
                              <td className="px-4 py-3 text-right">
                                 <p className="text-sm font-bold text-slate-800 font-mono">
-                                   Rp {(parseFloat(item.qty as any) * parseFloat(item.nominal as any) || 0).toLocaleString('id-ID')}
+                                   Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.qty as any) * parseFloat(item.nominal as any) || 0)}
                                 </p>
                              </td>
                              <td className="px-4 py-3 text-center">
@@ -185,11 +201,11 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
               <div className="space-y-2">
                  <div className="flex items-center gap-2">
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Budget Disetujui</p>
-                    <p className="text-sm font-bold text-slate-700 font-mono">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</p>
+                    <p className="text-sm font-bold text-slate-700 font-mono">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.total))}</p>
                  </div>
                  <div className="flex items-center gap-2">
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Total Realisasi</p>
-                    <p className="text-sm font-bold text-sky-600 font-mono">Rp {totalRealization.toLocaleString('id-ID')}</p>
+                    <p className="text-sm font-bold text-sky-600 font-mono">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(totalRealization)}</p>
                  </div>
               </div>
               
@@ -210,7 +226,7 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
                        </div>
                     )}
                     <p className={`text-2xl font-black font-mono ${diff < 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                       Rp {Math.abs(diff).toLocaleString('id-ID')}
+                       Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(Math.abs(diff))}
                     </p>
                  </div>
               </div>
@@ -230,7 +246,7 @@ export default function RealizationForm({ submission, onClose, onSuccess }: Real
                 className="flex-[2] py-4 px-6 rounded-2xl bg-sky-500 text-white font-black tracking-wide text-sm hover:bg-sky-600 transition-all shadow-xl shadow-sky-100 uppercase flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-                Simpan Realisasi
+                {editData ? 'Perbarui Realisasi' : 'Simpan Realisasi'}
               </button>
            </div>
         </form>

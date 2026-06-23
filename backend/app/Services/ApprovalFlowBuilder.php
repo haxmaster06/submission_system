@@ -203,6 +203,7 @@ class ApprovalFlowBuilder
     private function resolveApprovers(array $steps, Submission $submission): array
     {
         $resolved = [];
+        $requesterId = $submission->user_id;
 
         // Map division codes to their Spatie role names
         $divisionRoleMap = [
@@ -223,11 +224,28 @@ class ApprovalFlowBuilder
                 $roleName = $divisionRoleMap[$divisionCode] ?? 'HRD';
             }
 
-            $approverId = $this->getApproverByRole($roleName);
-
-            // Skip optional steps without an approver
-            if (!$approverId && ($step['is_optional'] ?? false)) {
-                continue;
+            // --- SMART SKIP LOGIC ---
+            // Get all users who have this role
+            $usersWithRole = User::role($roleName)->get();
+            
+            if ($usersWithRole->isEmpty()) {
+                // No user found with this role
+                if ($step['is_optional'] ?? false) {
+                    continue;
+                }
+                $approverId = null;
+            } else {
+                // Filter out the person who made the submission
+                $otherUsers = $usersWithRole->filter(fn($u) => $u->id !== $requesterId);
+                
+                if ($otherUsers->isNotEmpty()) {
+                    // There are other users with this role, pick the first one
+                    $approverId = $otherUsers->first()->id;
+                } else {
+                    // The requester is the ONLY person with this role.
+                    // SMART SKIP: Skip this approval step entirely to avoid self-approval.
+                    continue;
+                }
             }
 
             $resolved[] = [
@@ -237,14 +255,5 @@ class ApprovalFlowBuilder
         }
 
         return $resolved;
-    }
-
-    /**
-     * Find a user with a specific role.
-     */
-    private function getApproverByRole(string $roleName): ?int
-    {
-        $user = User::role($roleName)->first();
-        return $user?->id;
     }
 }

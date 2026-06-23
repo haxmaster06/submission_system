@@ -222,9 +222,13 @@ class ApprovalService
 
 
             foreach ($lowerSteps as $lowerApproval) {
+                $approverUser = User::find($lowerApproval->approver_id);
+                $signaturePath = $approverUser ? $approverUser->signature_path : null;
+
                 $lowerApproval->update([
                     'status' => 'approved',
                     'approved_at' => now(),
+                    'signature_used' => $signaturePath,
                     'notes' => 'Auto-approved (Urgent: disetujui oleh ' . $user->name . ' [' . $currentApproval->role_name . '])',
                     'approver_id' => $lowerApproval->approver_id, // Tetap approver asli
                 ]);
@@ -325,10 +329,13 @@ class ApprovalService
         return DB::transaction(function () use ($approval, $data) {
             $user = Auth::user();
 
+            // Jika yang menunda adalah Super Admin, biarkan approver_id tetap pada PIC aslinya
+            $approverId = $user->hasRole('Super Admin') ? $approval->approver_id : $user->id;
+
             $approval->update([
                 'status' => 'on_hold',
                 'notes' => $data['notes'] ?? 'Ditunda',
-                'approver_id' => $user->id,
+                'approver_id' => $approverId,
             ]);
 
             $submission = $approval->submission;

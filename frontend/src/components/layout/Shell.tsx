@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import api from '@/lib/api';
 import {
   LayoutDashboard,
   PlusCircle,
@@ -25,21 +26,69 @@ import {
   ToggleLeft,
   ToggleRight,
   Loader2,
-  Smartphone
+  Smartphone,
+  Eye,
+  XCircle,
+  ChevronDown
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import NotificationDropdown from '@/components/ui/NotificationDropdown';
 import { useNotification } from '@/context/NotificationContext';
-import api from '@/lib/api';
+
+// Global formatter override to dynamically hide or show decimal numbers
+if (typeof window !== 'undefined' && !(window as any).__hbm_intl_overridden) {
+  (window as any).__hbm_intl_overridden = true;
+  const OriginalNumberFormat = window.Intl.NumberFormat;
+  
+  class CustomNumberFormat extends OriginalNumberFormat {
+    constructor(locales?: string | string[], options?: Intl.NumberFormatOptions) {
+      let modifiedOptions = options;
+      if (localStorage.getItem('hbm_show_decimals') === 'false') {
+        if (options) {
+          if (options.maximumFractionDigits !== undefined || options.minimumFractionDigits !== undefined || options.style === 'currency') {
+            modifiedOptions = {
+              ...options,
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+            };
+          }
+        } else {
+          modifiedOptions = {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+          };
+        }
+      }
+      super(locales, modifiedOptions);
+    }
+  }
+  
+  window.Intl.NumberFormat = CustomNumberFormat as any;
+}
 
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user, logout, activateSimulation, deactivateSimulation } = useAuth();
   const { isSupported, isSubscribed, permission, subscribeToPush } = useNotification();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showDecimals, setShowDecimals] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const val = localStorage.getItem('hbm_show_decimals');
+      setShowDecimals(val !== 'false');
+    }
+  }, []);
+
+  const handleToggleDecimals = () => {
+    const nextVal = !showDecimals;
+    localStorage.setItem('hbm_show_decimals', String(nextVal));
+    setShowDecimals(nextVal);
+    window.location.reload();
+  };
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
@@ -57,9 +106,62 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const isApprover = user?.permissions.some(p => p.name === 'view submissions') ||
     user?.roles.some(r => ['HRD', 'GA Legal', 'Finance', 'GM', 'Director'].includes(r.name));
 
-  const isSuperAdmin = user?.roles.some(r => r.name === 'Super Admin');
+  const isSuperAdmin = user?.roles.some(r => r.name === 'Super Admin') || (user as any)?.original_role === 'Super Admin';
+  const isSimulating = (user as any)?.is_simulating === true;
   const [isMaintenance, setIsMaintenance] = useState(false);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+
+  // Simulation states
+  const [showSimDropdown, setShowSimDropdown] = useState(false);
+  const [simRoles, setSimRoles] = useState<any[]>([]);
+  const [simDivisions, setSimDivisions] = useState<any[]>([]);
+  const [simSelectedRole, setSimSelectedRole] = useState('');
+  const [simSelectedDivision, setSimSelectedDivision] = useState('');
+  const [simLoading, setSimLoading] = useState(false);
+  const simRef = useRef<HTMLDivElement>(null);
+
+  // Close sim dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (simRef.current && !simRef.current.contains(e.target as Node)) setShowSimDropdown(false);
+    };
+    if (showSimDropdown) document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showSimDropdown]);
+
+  // Fetch simulation options when dropdown opens
+  useEffect(() => {
+    if (showSimDropdown && simRoles.length === 0) {
+      api.get('/simulation/available-roles').then(res => {
+        setSimRoles(res.data.roles || []);
+        setSimDivisions(res.data.divisions || []);
+      }).catch(console.error);
+    }
+  }, [showSimDropdown]);
+
+  const handleActivateSimulation = async () => {
+    if (!simSelectedRole) return;
+    setSimLoading(true);
+    try {
+      await activateSimulation(simSelectedRole, simSelectedDivision ? parseInt(simSelectedDivision) : undefined);
+      setShowSimDropdown(false);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal mengaktifkan simulasi');
+    } finally {
+      setSimLoading(false);
+    }
+  };
+
+  const handleDeactivateSimulation = async () => {
+    setSimLoading(true);
+    try {
+      await deactivateSimulation();
+    } catch (err) {
+      alert('Gagal menonaktifkan simulasi');
+    } finally {
+      setSimLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isSuperAdmin) {
@@ -223,7 +325,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       </AnimatePresence>
 
       {/* Desktop Sidebar - Hidden on mobile/tablet */}
-      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 hidden xl:flex flex-col sticky top-0 h-screen ${isSidebarOpen ? 'xl:w-56 2xl:w-64' : 'w-20'}`}>
+      <aside className={`bg-white border-r border-slate-200 transition-all duration-300 hidden xl:flex flex-col sticky top-0 h-screen ${isSidebarOpen ? 'xl:w-72 2xl:w-80' : 'w-24'}`}>
         <div className="p-4 2xl:p-6 flex items-center gap-3">
           <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shrink-0 shadow-sm border border-slate-100 overflow-hidden">
             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain p-1" />
@@ -231,7 +333,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           {isSidebarOpen && <span className="font-bold text-slate-800 truncate">HBM Budgeting</span>}
         </div>
 
-        <nav className="flex-1 px-3 2xl:px-4 space-y-4 2xl:space-y-6 pt-3 2xl:pt-4 overflow-y-auto scrollbar-none pb-6 2xl:pb-8">
+        <nav className="flex-1 px-3 2xl:px-4 space-y-4 2xl:space-y-6 pt-3 2xl:pt-4 overflow-y-auto custom-scrollbar pb-6 2xl:pb-8">
           {navGroups.map((group) => (
             <div key={group.group} className="space-y-1.5">
               {isSidebarOpen && (
@@ -309,6 +411,75 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4">
+            {/* Simulation Toggle for Super Admin */}
+            {(isSuperAdmin && !isSimulating) && (
+              <div className="relative" ref={simRef}>
+                <button
+                  onClick={() => setShowSimDropdown(!showSimDropdown)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-violet-50 text-violet-600 rounded-xl text-xs font-bold hover:bg-violet-100 transition-colors border border-violet-200"
+                >
+                  <Eye size={14} />
+                  <span className="hidden sm:inline">Simulasi Role</span>
+                  <ChevronDown size={12} />
+                </button>
+
+                <AnimatePresence>
+                  {showSimDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                      className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 p-4 space-y-3"
+                    >
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Simulasi Sebagai</p>
+                      <select
+                        value={simSelectedRole}
+                        onChange={e => setSimSelectedRole(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-sm font-bold rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-violet-200"
+                      >
+                        <option value="">Pilih Role...</option>
+                        {simRoles.map(r => (
+                          <option key={r.id} value={r.name}>{r.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={simSelectedDivision}
+                        onChange={e => setSimSelectedDivision(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 text-sm font-bold rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-violet-200"
+                      >
+                        <option value="">Divisi (Opsional)...</option>
+                        {simDivisions.map((d: any) => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                      <button
+                        disabled={!simSelectedRole || simLoading}
+                        onClick={handleActivateSimulation}
+                        className="w-full py-2.5 bg-violet-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-violet-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {simLoading ? <Loader2 size={14} className="animate-spin" /> : <Eye size={14} />}
+                        Aktifkan Simulasi
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            {/* Decimals Format Toggle */}
+            <button
+              onClick={handleToggleDecimals}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border ${
+                showDecimals 
+                  ? 'bg-sky-50 text-sky-600 border-sky-200 shadow-sm animate-in fade-in' 
+                  : 'bg-slate-50 text-slate-400 border-slate-200 hover:text-slate-600'
+              }`}
+              title={showDecimals ? 'Sembunyikan Desimal (.00)' : 'Tampilkan Desimal (.00)'}
+            >
+              <span className="font-mono font-black">.00</span>
+              <span className="hidden md:inline">{showDecimals ? 'Desimal: On' : 'Desimal: Off'}</span>
+            </button>
+
             <NotificationDropdown userId={user?.id || 0} />
             <div className="h-8 w-px bg-slate-200 mx-1"></div>
             <div className="relative" ref={profileRef}>
@@ -382,7 +553,33 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
         {/* Page Body */}
         <section className="flex-1 p-4 sm:p-6 xl:p-5 2xl:p-8 bg-slate-50/50">
-          {!user?.signature_path && pathname !== '/profile' && (
+          {/* Simulation Banner */}
+          {isSimulating && (
+            <div className="mb-4 p-3 rounded-2xl bg-violet-50 border-2 border-violet-200 flex items-center justify-between gap-4 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-violet-100 rounded-xl text-violet-600 shrink-0">
+                  <Eye size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-violet-800 uppercase tracking-widest">
+                    Mode Simulasi Aktif: {(user as any)?.simulated_role}
+                    {(user as any)?.simulated_division ? ` • ${(user as any)?.simulated_division?.name}` : ''}
+                  </p>
+                  <p className="text-[10px] text-violet-500 font-medium">Semua aksi tercatat di audit log dengan penanda [SIM]</p>
+                </div>
+              </div>
+              <button
+                onClick={handleDeactivateSimulation}
+                disabled={simLoading}
+                className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all shrink-0"
+              >
+                {simLoading ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={12} />}
+                Kembali ke Super Admin
+              </button>
+            </div>
+          )}
+
+          {!user?.signature_path && pathname !== '/profile' && !isSimulating && (
             <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-4 shadow-sm relative overflow-hidden animate-in fade-in slide-in-from-top-4 duration-500">
               <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
               <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0 shadow-sm border border-amber-200 mt-0.5">
@@ -396,8 +593,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           )}
-
-
 
           {children}
         </section>

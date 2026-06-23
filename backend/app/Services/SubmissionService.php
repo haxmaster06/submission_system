@@ -31,8 +31,6 @@ class SubmissionService
 
             $submission = Submission::create($data);
 
-            AuditTrailService::log('create', 'Submission', $submission->id, null, $submission->toArray());
-
             if (!$isDraft) {
                 // Notify HRD
                 $approvers = User::role('HRD')->get();
@@ -85,10 +83,11 @@ class SubmissionService
                     'qty' => $item['qty'],
                     'uom_id' => $item['uom_id'],
                     'nominal' => $item['nominal'],
+                    'currency' => $item['currency'] ?? 'IDR',
+                    'kurs' => $item['kurs'] ?? 1.0,
+                    'nominal_valas' => $item['nominal_valas'] ?? 0,
                 ]);
             }
-
-            AuditTrailService::log('create', 'Submission', $submission->load('items')->id, null, $submission->toArray());
 
             if (!$isDraft) {
                 // Notify HRD

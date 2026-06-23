@@ -11,8 +11,17 @@ class AuditTrailService
     public static function log($action, $model, $modelId, $oldData = null, $newData = null)
     {
         try {
+            // Prefix action with simulation marker if Super Admin is simulating a role
+            $userId = Auth::id();
+            if ($userId) {
+                $simulation = \Illuminate\Support\Facades\Cache::get("simulation:user:{$userId}");
+                if ($simulation) {
+                    $action = "[SIM:{$simulation['role_name']}] {$action}";
+                }
+            }
+
             AuditTrail::create([
-                'user_id' => Auth::id() ?? null, // Handle seeding/system actions
+                'user_id' => $userId ?? null,
                 'action' => $action,
                 'model' => $model,
                 'model_id' => $modelId,

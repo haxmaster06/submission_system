@@ -8,6 +8,21 @@ import { Save, Send, Loader2, Info, Users, CalendarDays, Check, FileText, Trash2
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
+import Swal from 'sweetalert2';
+
+const formatDateToYmd = (dateStr: string) => {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr.split(' ')[0] || '';
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  } catch (e) {
+    return dateStr.split(' ')[0] || '';
+  }
+};
 
 function NewSalarySubmissionContent() {
   const router = useRouter();
@@ -37,6 +52,7 @@ function NewSalarySubmissionContent() {
   });
 
   const isSuperAdmin = user?.roles?.some((role: any) => role.name === 'Super Admin');
+  const isAdminEdit = searchParams.get('edit') && searchParams.get('admin') === 'true' && isSuperAdmin;
   const canSubmitSalary = user?.permissions?.some((p: any) => p.name === 'manage employees') || isSuperAdmin;
 
   const [form, setForm] = useState({
@@ -54,7 +70,7 @@ function NewSalarySubmissionContent() {
 
   useEffect(() => {
      if (user && !canSubmitSalary) {
-         router.push('/submissions');
+          router.push('/submissions');
      }
   }, [user, canSubmitSalary, router]);
 
@@ -86,7 +102,7 @@ function NewSalarySubmissionContent() {
           description: d.description || '',
           notes: d.notes || '',
           final_status: d.final_status || '',
-          tanggal_pengajuan: d.tanggal_pengajuan || new Date().toISOString().split('T')[0],
+          tanggal_pengajuan: formatDateToYmd(d.tanggal_pengajuan) || new Date().toISOString().split('T')[0],
         });
 
         if (d.payload) {
@@ -234,7 +250,7 @@ function NewSalarySubmissionContent() {
       const newMatrix = { ...prev };
       filteredEmployees.forEach(emp => {
         if (!newMatrix[emp.id]) newMatrix[emp.id] = {};
-        const dailyRate = Math.round((parseFloat(emp.base_salary) || 0) / 25);
+        const dailyRate = (parseFloat(emp.base_salary) || 0) / 25;
         activeDatesArray.forEach(date => {
           newMatrix[emp.id][date] = dailyRate;
         });
@@ -253,7 +269,7 @@ function NewSalarySubmissionContent() {
     setMatrixData(prev => {
       const emp = employees.find(e => e.id === empId);
       if (!emp) return prev;
-      const dailyRate = Math.round((parseFloat(emp.base_salary) || 0) / 25);
+      const dailyRate = (parseFloat(emp.base_salary) || 0) / 25;
       const rowUpdates: Record<string, number | ''> = { ...(prev[empId] || {}) };
       activeDatesArray.forEach(d => rowUpdates[d] = dailyRate);
       return { ...prev, [empId]: rowUpdates };
@@ -347,7 +363,7 @@ function NewSalarySubmissionContent() {
           res = await api.post('/submissions', payload);
       }
       
-      const submissionId = editId || res.data.id;
+      const submissionId = res.data.data?.id || res.data.id || editId;
 
       if (files.length > 0) {
         for (const file of files) {
@@ -365,7 +381,8 @@ function NewSalarySubmissionContent() {
       }
 
       // If user is editing a draft and clicking published (not draf button)
-      if (editId && form.final_status === 'draf' && !isDraft) {
+      // Skip publish for admin edits on live submissions
+      if (editId && form.final_status === 'draf' && !isDraft && !isAdminEdit) {
         await api.post(`/submissions/${editId}/publish`);
       }
 
@@ -460,7 +477,40 @@ function NewSalarySubmissionContent() {
                     <button
                       key={urgency.code}
                       type="button"
-                      onClick={() => setForm({ ...form, status_urgent: urgency.code })}
+                      onClick={() => {
+                        if (urgency.code === 'urgent') {
+                          Swal.fire({
+                            title: 'Peringatan Status Urgent',
+                            html: `
+                              <div class="text-left text-xs sm:text-sm text-slate-600 space-y-3 leading-relaxed">
+                                <p>Memilih status <strong class="text-rose-500">Urgent (Darurat)</strong> akan mengubah alur persetujuan:</p>
+                                <ul class="list-disc list-inside space-y-1.5 pl-2">
+                                  <li><strong>Persetujuan Paralel:</strong> Proses persetujuan oleh semua Approver akan berjalan secara paralel (bersamaan), tidak perlu menunggu giliran secara berurutan.</li>
+                                  <li><strong>Auto-Approve Director:</strong> Jika <strong>Director</strong> menyetujui pengajuan ini terlebih dahulu, maka seluruh approver di tingkat bawahnya otomatis dianggap menyetujui.</li>
+                                </ul>
+                                <p class="pt-2 font-bold text-slate-800 border-t border-slate-100">Apakah Anda yakin ingin melanjutkan dengan status Urgent?</p>
+                              </div>
+                            `,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#ef4444',
+                            cancelButtonColor: '#64748b',
+                            confirmButtonText: 'Ya, Gunakan Urgent',
+                            cancelButtonText: 'Batal, Tetap Normal',
+                            background: '#ffffff',
+                            customClass: {
+                              popup: 'rounded-3xl border border-slate-100 shadow-2xl p-6 font-sans',
+                              title: 'text-base sm:text-lg font-black text-slate-900 mb-2',
+                            }
+                          }).then((result) => {
+                            if (result.isConfirmed) {
+                              setForm({ ...form, status_urgent: 'urgent' });
+                            }
+                          });
+                        } else {
+                          setForm({ ...form, status_urgent: urgency.code });
+                        }
+                      }}
                       className={`flex-1 py-3 rounded-xl border text-sm font-bold capitalize transition-all ${form.status_urgent === urgency.code
                         ? 'border-transparent text-white shadow-lg'
                         : 'bg-white border-slate-200 text-slate-400 hover:border-slate-300'
@@ -691,16 +741,16 @@ function NewSalarySubmissionContent() {
                                                   type="number" 
                                                   value={matrixData[emp.id]?.[date] ?? ''}
                                                   onChange={(e) => handleMatrixChange(emp.id, date, e.target.value)}
-                                                  className="w-full text-center px-2 py-1.5 text-xs font-bold text-slate-700 border border-slate-200 rounded focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder:font-normal placeholder:text-slate-300 transition-all bg-white"
                                                   placeholder="0"
                                                   min="0"
+                                                  step="0.00001"
                                                 />
                                             </td>
                                         ))}
                                         <td className="sticky right-0 z-10 px-5 py-3 border-l border-slate-200 text-right bg-indigo-50/50 group-hover:bg-indigo-50 transition-colors shadow-[-4px_0_12px_rgba(0,0,0,0.03)] hidden sm:table-cell">
                                           <div className="flex flex-col items-end">
                                               <span className="font-bold text-sm text-indigo-900 group-hover:text-indigo-600 transition-colors">
-                                                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(totalCellSalary as number)}
+                                                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(totalCellSalary as number)}
                                               </span>
                                               <span className="text-[10px] uppercase font-black tracking-widest text-slate-500">{rowCheckedCount} Hari</span>
                                           </div>
@@ -716,7 +766,7 @@ function NewSalarySubmissionContent() {
                   <div className="bg-indigo-500 rounded-xl p-6 sm:p-8 flex flex-col sm:flex-row justify-between sm:items-center gap-4 shadow-xl shadow-indigo-500/20 text-white">
                       <span className="text-sm font-black uppercase tracking-widest text-indigo-100">Grand Total Pengajuan:</span>
                       <span className="text-3xl sm:text-4xl font-black tracking-tight text-right">
-                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(matrixGrandTotal)}
+                          {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(matrixGrandTotal)}
                       </span>
                   </div>
               </motion.div>
@@ -787,23 +837,37 @@ function NewSalarySubmissionContent() {
             >
               Batal
             </button>
-            <button
-              type="button"
-              onClick={(e) => handleSubmit(new Event('submit') as any, true)}
-              disabled={submitting}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-indigo-200 text-indigo-600 font-bold hover:bg-indigo-50 transition-all text-center flex items-center justify-center gap-2"
-            >
-              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
-              Simpan Draf
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-lg"
-            >
-              {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
-              {submitting ? 'Menyimpan...' : (searchParams.get('edit') && form.final_status === 'draf' ? 'TERBITKAN' : 'Simpan & Ajukan Gaji')}
-            </button>
+
+            {isAdminEdit ? (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-orange-500 text-white font-bold hover:bg-orange-600 shadow-xl shadow-orange-100 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-lg"
+              >
+                {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
+                Simpan Perubahan (Admin)
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => handleSubmit(new Event('submit') as any, true)}
+                  disabled={submitting}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl border border-indigo-200 text-indigo-600 font-bold hover:bg-indigo-50 transition-all text-center flex items-center justify-center gap-2"
+                >
+                  {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Save className="w-5 h-5" />}
+                  Simpan Draf
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full sm:w-auto px-10 py-3.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-70 transition-all text-lg"
+                >
+                  {submitting ? <Loader2 className="animate-spin w-5 h-5" /> : <Send className="w-5 h-5" />}
+                  {submitting ? 'Menyimpan...' : (searchParams.get('edit') && form.final_status === 'draf' ? 'TERBITKAN' : 'Simpan & Ajukan Gaji')}
+                </button>
+              </>
+            )}
           </div>
         </form>
       </div>

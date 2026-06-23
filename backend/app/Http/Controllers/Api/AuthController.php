@@ -61,6 +61,31 @@ class AuthController extends Controller
         $userData = $user->toArray();
         $userData['is_approver'] = $this->checkIsApprover($user);
 
+        // Check if Super Admin has an active role simulation
+        if ($user->hasRole('Super Admin')) {
+            $simulation = \Illuminate\Support\Facades\Cache::get("simulation:user:{$user->id}");
+            if ($simulation) {
+                $role = \Spatie\Permission\Models\Role::where('name', $simulation['role_name'])->first();
+                if ($role) {
+                    $userData['roles'] = [['name' => $role->name]];
+                    $userData['permissions'] = $role->permissions->map(fn($p) => ['name' => $p->name])->values()->toArray();
+                    $userData['is_simulating'] = true;
+                    $userData['simulated_role'] = $simulation['role_name'];
+                    $userData['original_role'] = 'Super Admin';
+                    $userData['is_approver'] = true; // Simulation always has approver access for testing
+
+                    if (!empty($simulation['division_id'])) {
+                        $division = \App\Models\Division::find($simulation['division_id']);
+                        if ($division) {
+                            $userData['division_id'] = $division->id;
+                            $userData['division'] = ['id' => $division->id, 'name' => $division->name, 'code' => $division->code ?? null];
+                            $userData['simulated_division'] = $userData['division'];
+                        }
+                    }
+                }
+            }
+        }
+
         return response()->json($userData);
     }
 

@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Receipt, History, AlertCircle, Plus, FileText, Copy, Paperclip, Download, Image as ImageIcon, Eye, Save } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, User, Calendar, CreditCard, Printer, Loader2, Trash2, Pencil, Receipt, History, AlertCircle, Plus, FileText, Copy, Paperclip, Download, Image as ImageIcon, Eye, Save } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import RealizationForm from '@/components/realizations/RealizationForm';
 import RequestAttachmentModal from './RequestAttachmentModal';
-import { UserPlus, Upload } from 'lucide-react';
+import { UserPlus, Upload, Shield } from 'lucide-react';
 
 interface SubmissionDetailViewProps {
   submission: any;
@@ -16,7 +16,10 @@ interface SubmissionDetailViewProps {
   onDelete?: () => void;
 }
 
-export default function SubmissionDetailView({ submission, onClose, showPrintButton = true, onDelete }: SubmissionDetailViewProps) {
+export default function SubmissionDetailView({ submission: initialSubmission, onClose, showPrintButton = true, onDelete }: SubmissionDetailViewProps) {
+  const [submission, setSubmission] = React.useState<any>(initialSubmission);
+  const [loadingDetail, setLoadingDetail] = React.useState(false);
+
   const [printing, setPrinting] = React.useState(false);
   const [exporting, setExporting] = React.useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
@@ -28,6 +31,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   const [realizations, setRealizations] = React.useState<any[]>([]);
   const [loadingRealizations, setLoadingRealizations] = React.useState(false);
   const [showRealizationForm, setShowRealizationForm] = React.useState(false);
+  const [editingRealization, setEditingRealization] = React.useState<any>(null);
 
   const [showRequestModal, setShowRequestModal] = React.useState(false);
   const [fulfilling, setFulfilling] = React.useState(false);
@@ -41,6 +45,28 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
   const { user } = useAuth();
   const router = useRouter();
   const printIframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  // Auto-fetch full submission detail (with attachments, attachment_requests, etc.)
+  const fetchFullSubmission = React.useCallback(async () => {
+    try {
+      setLoadingDetail(true);
+      const res = await api.get(`/submissions/${initialSubmission.id}`);
+      const data = res.data.data || res.data;
+      setSubmission(data);
+    } catch (err) {
+      console.error('Failed to fetch full submission detail:', err);
+      // Keep using initial data as fallback
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, [initialSubmission.id]);
+
+  useEffect(() => {
+    // Only fetch if attachments are NOT already loaded (lightweight data from list)
+    if (!initialSubmission.attachments) {
+      fetchFullSubmission();
+    }
+  }, [initialSubmission.id]);
 
   const pendingRequestsForMe = React.useMemo(() => {
     return (submission.attachment_requests || []).filter((req: any) => 
@@ -77,6 +103,16 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
       console.error(err);
     } finally {
       setLoadingRealizations(false);
+    }
+  };
+
+  const handleDeleteRealization = async (id: number) => {
+    if (!confirm('Apakah Anda yakin ingin menghapus kartu realisasi ini? Data tidak dapat dipulihkan.')) return;
+    try {
+      await api.delete(`/realizations/${id}`);
+      fetchRealizations();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Gagal menghapus realisasi');
     }
   };
 
@@ -305,6 +341,25 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             </button>
           )}
 
+          {/* ADMIN EDIT BUTTON — Super Admin only, for non-rejected submissions */}
+          {user?.roles?.some((r: any) => r.name === 'Super Admin') 
+            && submission.final_status !== 'rejected'
+            && !(submission.final_status === 'draf' && user?.id === submission.user_id)
+            && !(submission.final_status === 'on_hold' && user?.id === submission.user_id)
+            && (
+            <button
+              onClick={() => {
+                const isSalary = submission.payload && submission.payload.employees;
+                const path = isSalary ? '/submissions/salary/new' : '/submissions/new';
+                router.push(`${path}?edit=${submission.id}&admin=true`);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-orange-600 font-bold rounded-lg hover:bg-orange-100 transition-colors border border-orange-200 shadow-sm"
+            >
+              <Shield className="w-4 h-4" />
+              Edit (Admin)
+            </button>
+          )}
+
           <button
             onClick={handlePrint}
             disabled={printing || exporting}
@@ -363,7 +418,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 <div className="sm:text-right w-full sm:w-auto p-3 sm:p-4 md:p-0 bg-slate-50 md:bg-transparent rounded-xl sm:rounded-2xl border border-slate-100 md:border-0 shadow-inner md:shadow-none shrink-0">
                   <p className="text-[8px] sm:text-[9px] text-slate-400 uppercase font-black tracking-[0.2em] sm:tracking-[0.3em] mb-1 sm:mb-2 leading-none">TOTAL ANGGARAN</p>
                   <p className="text-xl sm:text-2xl md:text-3xl font-black text-sky-600 font-mono tracking-tighter leading-none">
-                    Rp {(!isNaN(parseFloat(submission.total)) ? parseFloat(submission.total).toLocaleString('id-ID') : '0')}
+                    Rp {(!isNaN(parseFloat(submission.total)) ? new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.total)) : '0')}
                   </p>
                 </div>
               </div>
@@ -531,14 +586,14 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                                      <td className="sticky left-0 z-10 bg-white group-hover:bg-slate-50/90 border-r border-indigo-50 px-6 py-4 shadow-[4px_0_12px_rgba(0,0,0,0.03)] transition-colors">
                                         <p className="font-bold text-sm text-slate-800 truncate block whitespace-nowrap overflow-hidden max-w-[200px]">{emp.employee_name}</p>
                                          <p className="text-[10px] font-black tracking-widest text-slate-400 font-mono uppercase truncate block whitespace-nowrap overflow-hidden">
-                                            {emp.department} • <span className="text-emerald-600">Rp {new Intl.NumberFormat('id-ID').format(parseFloat(emp.base_salary))}</span>/Bulan
+                                            {emp.department} • <span className="text-emerald-600">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(emp.base_salary))}</span>/Bulan
                                          </p>
                                      </td>
                                      {emp.daily_records?.map((d: any) => (
                                          <td key={d.date} className="px-2 py-4 border-l border-indigo-50 text-center">
                                              {d.nominal > 0 ? (
                                                  <div className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded border border-emerald-100 inline-block shadow-sm">
-                                                    Rp {new Intl.NumberFormat('id-ID').format(d.nominal)}
+                                                    Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(d.nominal)}
                                                  </div>
                                              ) : (
                                                  <div className="text-slate-300 text-[10px] font-black">-</div>
@@ -548,7 +603,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                                      <td className="px-6 py-4 border-l border-indigo-50 text-right bg-slate-50/50">
                                         <div className="flex flex-col items-end">
                                             <span className="font-bold text-sm text-indigo-900">
-                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(emp.total_salary)}
+                                                {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(emp.total_salary)}
                                             </span>
                                             <span className="text-[10px] uppercase font-black tracking-widest text-slate-400">{emp.total_days} Hari</span>
                                         </div>
@@ -562,7 +617,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                                       Grand Total Pengajuan:
                                   </td>
                                   <td className="px-8 py-6 text-right font-black text-indigo-600 text-3xl tracking-tight whitespace-nowrap">
-                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(submission.payload.total_amount || submission.total)}
+                                      {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(submission.payload.total_amount || submission.total)}
                                   </td>
                               </tr>
                           </tfoot>
@@ -573,31 +628,38 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 <div className="border border-slate-100 rounded-[24px] overflow-hidden bg-white shadow-inner">
                   {/* Desktop Table */}
                   <div className="hidden md:block overflow-x-auto custom-scrollbar">
-                    <table className="w-full text-left min-w-[700px]">
+                    <table className="w-full text-left min-w-[600px]">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>
-                          <th className="px-6 py-5 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[300px]">Description</th>
-                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">Qty</th>
-                          <th className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-24">UoM</th>
-                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-48">Unit Price</th>
-                          <th className="px-6 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-56">Total</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[200px]">Description</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-16">Qty</th>
+                          <th className="px-4 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest w-20">UoM</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-36">Unit Price</th>
+                          <th className="px-4 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest w-40">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
                         {submission.items?.map((item: any) => (
                           <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                            <td className="px-6 py-5 text-[14px] font-bold text-slate-700 leading-relaxed">{item.description}</td>
-                            <td className="px-6 py-5 text-right font-black text-slate-900 text-[14px]">{parseFloat(item.qty).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-5 text-center text-slate-500 font-bold text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
-                            <td className="px-6 py-5 text-right font-bold text-slate-900 text-[14px] whitespace-nowrap">Rp {parseFloat(item.nominal).toLocaleString('id-ID')}</td>
-                            <td className="px-6 py-5 text-right font-black text-sky-600 text-[15px] whitespace-nowrap">Rp {(parseFloat(item.qty) * parseFloat(item.nominal)).toLocaleString('id-ID')}</td>
+                            <td className="px-4 py-3 text-[13px] font-semibold text-slate-700 leading-relaxed">
+                              <div>{item.description}</div>
+                              {item.currency === 'USD' && (
+                                <div className="text-[10px] text-amber-600 font-semibold mt-1">
+                                  Valas: USD {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(parseFloat(item.nominal_valas))} @ Rp {new Intl.NumberFormat('id-ID').format(parseFloat(item.kurs))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right font-medium text-slate-900 text-[13px]">{new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.qty))}</td>
+                            <td className="px-4 py-3 text-center text-slate-500 font-medium text-xs uppercase">{item.uom?.code || item.uom?.name}</td>
+                            <td className="px-4 py-3 text-right font-medium text-slate-900 text-[13px] whitespace-nowrap">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.nominal))}</td>
+                            <td className="px-4 py-3 text-right font-semibold text-sky-600 text-[13px] whitespace-nowrap">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.qty) * parseFloat(item.nominal))}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot className="bg-sky-50 border-t-2 border-sky-100">
                         <tr>
-                          <td colSpan={4} className="px-8 py-8 text-right font-black text-slate-400 uppercase text-[11px] tracking-widest whitespace-nowrap">Grand Total:</td>
-                          <td className="px-8 py-8 text-right font-black text-sky-600 text-3xl tracking-tight whitespace-nowrap">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</td>
+                          <td colSpan={4} className="px-6 py-5 text-right font-black text-slate-400 uppercase text-[10px] tracking-widest whitespace-nowrap">Grand Total:</td>
+                          <td className="px-6 py-5 text-right font-black text-sky-600 text-xl tracking-tight whitespace-nowrap">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.total))}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -607,38 +669,47 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     {submission.items?.map((item: any) => (
                       <div key={item.id} className="px-4 py-3 space-y-1">
                         <p className="text-xs font-bold text-slate-800 leading-snug">{item.description}</p>
+                        {item.currency === 'USD' && (
+                          <p className="text-[10px] text-amber-600 font-semibold leading-none">
+                            Valas: USD {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(parseFloat(item.nominal_valas))} @ Rp {new Intl.NumberFormat('id-ID').format(parseFloat(item.kurs))}
+                          </p>
+                        )}
                         <div className="flex items-center justify-between">
                           <p className="text-[11px] text-slate-500">
-                            {parseFloat(item.qty).toLocaleString('id-ID')} {item.uom?.code || item.uom?.name} × Rp {parseFloat(item.nominal).toLocaleString('id-ID')}
+                            {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.qty))} {item.uom?.code || item.uom?.name} × Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.nominal))}
                           </p>
-                          <p className="text-sm font-black text-sky-600">Rp {(parseFloat(item.qty) * parseFloat(item.nominal)).toLocaleString('id-ID')}</p>
+                          <p className="text-sm font-black text-sky-600">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(item.qty) * parseFloat(item.nominal))}</p>
                         </div>
                       </div>
                     ))}
                     <div className="bg-sky-50/50 px-4 py-3 flex items-center justify-between border-t border-sky-100">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grand Total</span>
-                      <span className="text-lg font-black text-sky-600">Rp {parseFloat(submission.total).toLocaleString('id-ID')}</span>
+                      <span className="text-lg font-black text-sky-600">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.total))}</span>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="max-w-xl">
-                  <div className="flex items-center justify-between py-5 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Quantity ({submission.uom?.code || '-'})</span>
-                    <span className="text-slate-900 font-black text-lg">
-                      {!isNaN(parseFloat(submission.qty)) ? parseFloat(submission.qty).toLocaleString('id-ID') : '0'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between py-5 border-b border-slate-100">
-                    <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Nominal per unit</span>
-                    <span className="text-slate-900 font-black text-xl">
-                      Rp {!isNaN(parseFloat(submission.nominal)) ? parseFloat(submission.nominal).toLocaleString('id-ID') : '0'}
-                    </span>
-                  </div>
+                  {(parseFloat(submission.qty) > 0 || parseFloat(submission.nominal) > 0) && (
+                    <>
+                      <div className="flex items-center justify-between py-5 border-b border-slate-100">
+                        <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Quantity ({submission.uom?.code || '-'})</span>
+                        <span className="text-slate-900 font-black text-lg">
+                          {!isNaN(parseFloat(submission.qty)) ? new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.qty)) : '0'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between py-5 border-b border-slate-100">
+                        <span className="text-slate-500 font-bold text-sm uppercase tracking-widest">Nominal per unit</span>
+                        <span className="text-slate-900 font-black text-xl">
+                          Rp {!isNaN(parseFloat(submission.nominal)) ? new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.nominal)) : '0'}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex items-center justify-between py-8">
                     <span className="text-sky-600 font-black uppercase text-xs tracking-[0.3em]">Total Grand</span>
                     <span className="text-sky-600 font-black text-3xl">
-                      Rp {!isNaN(parseFloat(submission.total)) ? parseFloat(submission.total).toLocaleString('id-ID') : '0'}
+                      Rp {!isNaN(parseFloat(submission.total)) ? new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(submission.total)) : '0'}
                     </span>
                   </div>
                 </div>
@@ -742,7 +813,12 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     <History size={14} className="text-amber-500" />
                     Permintaan Lampiran {submission.attachment_requests?.length > 0 && `(${submission.attachment_requests.length})`}
                   </h3>
-                  {(user?.id === submission.user_id || user?.roles?.some((r: any) => r.name === 'Super Admin') || user?.permissions?.some((p: any) => p.name === 'request attachments')) && submission.final_status !== 'rejected' && (
+                  {(
+                    user?.id === submission.user_id ||
+                    user?.roles?.some((r: any) => r.name === 'Super Admin') ||
+                    user?.permissions?.some((p: any) => p.name === 'request attachments') ||
+                    submission.approvals?.some((a: any) => a.approver_id === user?.id)
+                  ) && submission.final_status !== 'rejected' && (
                     <button
                       onClick={() => setShowRequestModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-amber-100 transition-colors border border-amber-100"
@@ -819,6 +895,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file || !fulfillingId) return;
@@ -832,14 +909,16 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       headers: { 'Content-Type': 'multipart/form-data' }
                     });
 
-                    // Refresh page to show new attachment
-                    window.location.reload();
+                    // Refresh to show new attachment
+                    fetchFullSubmission();
                   } catch (err: any) {
                     console.error(err);
                     alert(err.response?.data?.message || 'Gagal mengunggah berkas');
                   } finally {
                     setFulfilling(false);
                     setFulfillingId(null);
+                    // Reset input agar file yang sama bisa dipilih ulang
+                    if (fileInputRef.current) fileInputRef.current.value = '';
                   }
                 }}
               />
@@ -848,7 +927,8 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                 isOpen={showRequestModal}
                 onClose={() => setShowRequestModal(false)}
                 submissionId={submission.id}
-                onSuccess={() => window.location.reload()}
+                lockedTarget={user?.id !== submission.user_id ? { id: submission.user_id, name: submission.user?.name || 'Pembuat Pengajuan' } : null}
+                onSuccess={() => fetchFullSubmission()}
               />
             </div>
           </div>
@@ -865,7 +945,10 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
             {user?.roles?.some((r: any) => r.name === 'Finance' || r.name === 'Super Admin') && submission.final_status === 'approved' && (
               <button
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 text-white font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-50 active:scale-95"
-                onClick={() => setShowRealizationForm(true)}
+                onClick={() => {
+                  setEditingRealization(null);
+                  setShowRealizationForm(true);
+                }}
               >
                 <Plus size={16} />
                 Baru
@@ -888,7 +971,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     Total Budgeting (Pengajuan)
                   </p>
                   <p className="text-3xl lg:text-4xl font-black text-indigo-700 font-mono tracking-tighter">
-                    Rp {new Intl.NumberFormat('id-ID').format(submission.payload?.total_amount || submission.total)}
+                    Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(submission.payload?.total_amount || submission.total)}
                   </p>
                 </div>
               </div>
@@ -902,7 +985,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                     Total Realisasi Aktual
                   </p>
                   <p className="text-3xl lg:text-4xl font-black text-emerald-700 font-mono tracking-tighter">
-                    Rp {new Intl.NumberFormat('id-ID').format(realizations.reduce((acc, r) => acc + r.details.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0), 0))}
+                    Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(realizations.reduce((acc, r) => acc + r.details.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0), 0))}
                   </p>
                   
                   {/* Selisih Indicator */}
@@ -915,7 +998,7 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       <div className="mt-4 pt-4 border-t border-emerald-100/50 flex items-center justify-between">
                         <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Sisa Anggaran</span>
                         <span className={`text-sm font-black tracking-tight ${selisih < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                          {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID').format(Math.abs(selisih))}
+                          {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(Math.abs(selisih))}
                         </span>
                       </div>
                     );
@@ -965,21 +1048,29 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                       {(() => {
                         const budgetedItems = (submission.payload && submission.payload.employees)
                           ? submission.payload.employees?.map((emp: any) => ({ name: emp.employee_name, budget: parseFloat(emp.total_salary) }))
-                          : (submission.items || [])?.map((item: any) => ({ name: item.description, budget: parseFloat(item.total) }));
+                          : (submission.items && submission.items.length > 0)
+                            ? submission.items.map((item: any) => ({
+                                name: item.description,
+                                budget: parseFloat(item.total) || (parseFloat(item.qty || 0) * parseFloat(item.nominal || 0))
+                              }))
+                            : [{
+                                name: `Anggaran ${submission.jenis_pengajuan || 'Global'}`,
+                                budget: parseFloat(submission.total) || 0
+                              }];
 
                         return (budgetedItems || [])?.map((bItem: any, idx: number) => {
                           const realizedAmount = (realizations || [])?.reduce((acc: number, r: any) => 
-                            acc + (r.details || [])?.filter((d: any) => d.item_name === bItem.name)?.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0)
+                            acc + (r.details || [])?.filter((d: any) => d.item_name === bItem.name || (bItem.name.includes('Anggaran') && d.item_name === d.item_name))?.reduce((sum: number, d: any) => sum + parseFloat(d.total), 0)
                           , 0);
                           const selisih = bItem.budget - realizedAmount;
 
                           return (
                             <tr key={idx} className="hover:bg-slate-50 transition-colors">
                               <td className="px-6 py-4 font-bold text-slate-700">{bItem.name}</td>
-                              <td className="px-6 py-4 text-right font-mono text-indigo-600 font-bold">Rp {new Intl.NumberFormat('id-ID').format(bItem.budget)}</td>
-                              <td className="px-6 py-4 text-right font-mono text-emerald-600 font-bold">Rp {new Intl.NumberFormat('id-ID').format(realizedAmount)}</td>
+                              <td className="px-6 py-4 text-right font-mono text-indigo-600 font-bold">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(bItem.budget)}</td>
+                              <td className="px-6 py-4 text-right font-mono text-emerald-600 font-bold">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(realizedAmount)}</td>
                               <td className={`px-6 py-4 text-right font-mono font-black ${selisih < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
-                                {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID').format(Math.abs(selisih))}
+                                {selisih < 0 ? '-' : ''}Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(Math.abs(selisih))}
                               </td>
                             </tr>
                           );
@@ -1010,9 +1101,32 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                         <p className="text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded inline-block border border-slate-100">{r.notes || 'Tidak ada catatan'}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Realisasi</p>
-                      <p className="text-lg font-bold text-sky-600 font-mono">Rp {parseFloat(r.details.reduce((acc: number, d: any) => acc + parseFloat(d.total), 0)).toLocaleString('id-ID')}</p>
+                    <div className="flex flex-col items-end gap-2">
+                      <div className="text-right">
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Realisasi</p>
+                        <p className="text-lg font-bold text-sky-600 font-mono">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(r.details.reduce((acc: number, d: any) => acc + parseFloat(d.total), 0))}</p>
+                      </div>
+                      {user?.permissions?.some((p: any) => p.name === 'manage realizations') && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <button 
+                            onClick={() => {
+                              setEditingRealization(r);
+                              setShowRealizationForm(true);
+                            }}
+                            className="text-[10px] font-bold text-indigo-500 hover:text-white border border-indigo-200 hover:bg-indigo-500 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 uppercase tracking-widest"
+                            title="Edit Kartu Realisasi"
+                          >
+                            <Pencil size={12} /> Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteRealization(r.id)}
+                            className="text-[10px] font-bold text-rose-500 hover:text-white border border-rose-200 hover:bg-rose-500 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 uppercase tracking-widest"
+                            title="Hapus Kartu Realisasi"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1030,9 +1144,9 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
                           {r.details?.map((d: any) => (
                             <tr key={d.id} className="text-slate-600 hover:bg-slate-50 transition-colors">
                               <td className="px-6 py-4 font-bold text-slate-700">{d.item_name}</td>
-                              <td className="px-6 py-4 text-center font-black text-slate-900">{parseFloat(d.qty).toLocaleString('id-ID')}</td>
-                              <td className="px-6 py-4 text-right font-bold text-slate-700">Rp {parseFloat(d.nominal).toLocaleString('id-ID')}</td>
-                              <td className="px-6 py-4 text-right font-black text-emerald-600">Rp {parseFloat(d.total).toLocaleString('id-ID')}</td>
+                              <td className="px-6 py-4 text-center font-black text-slate-900">{new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(d.qty))}</td>
+                              <td className="px-6 py-4 text-right font-bold text-slate-700">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(d.nominal))}</td>
+                              <td className="px-6 py-4 text-right font-black text-emerald-600">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(parseFloat(d.total))}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1225,9 +1339,14 @@ export default function SubmissionDetailView({ submission, onClose, showPrintBut
         {showRealizationForm && (
           <RealizationForm
             submission={submission}
-            onClose={() => setShowRealizationForm(false)}
+            editData={editingRealization}
+            onClose={() => {
+              setShowRealizationForm(false);
+              setEditingRealization(null);
+            }}
             onSuccess={() => {
               setShowRealizationForm(false);
+              setEditingRealization(null);
               fetchRealizations();
             }}
           />

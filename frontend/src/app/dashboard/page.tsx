@@ -8,7 +8,7 @@ import {
   FileText, Clock, CheckCircle, AlertCircle, TrendingUp,
   ArrowRight, Loader2, BarChart3, PieChart as PieIcon,
   History, Shield, Zap, Calendar, User, Users, Activity,
-  AlertTriangle, ChevronRight, Paperclip, Smartphone, Download
+  AlertTriangle, ChevronRight, Paperclip, Smartphone, Download, Coins
 } from 'lucide-react';
 import api from '@/lib/api';
 import { mobileAppsApi, MobileAppRelease } from '@/lib/mobileApps';
@@ -41,6 +41,8 @@ export default function DashboardPage() {
   const [activeApps, setActiveApps] = useState<MobileAppRelease[]>([]);
 
   const isSuperAdmin = user?.roles?.some((r: any) => r.name === 'Super Admin');
+  const isFinance = user?.roles?.some((r: any) => r.name === 'Finance');
+  const [usdRate, setUsdRate] = useState<number | null>(null);
   const [maintenanceActive, setMaintenanceActive] = useState(false);
 
   useEffect(() => {
@@ -51,6 +53,14 @@ export default function DashboardPage() {
       setData(null);
     }
   }, [user, isSuperAdmin]); // Dependency to re-fetch if role loads or user changes
+
+  useEffect(() => {
+    if (user && (isSuperAdmin || isFinance)) {
+      api.get('/lookups/exchange-rate/usd')
+        .then((res: any) => setUsdRate(res.data.rate))
+        .catch((err) => console.error('Failed to fetch exchange rate', err));
+    }
+  }, [user, isSuperAdmin, isFinance]);
 
   // Poll maintenance status independently so banner stays in sync with sidebar toggle
   useEffect(() => {
@@ -143,7 +153,7 @@ export default function DashboardPage() {
           </header>
 
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4 xl:gap-6 mb-8">
             <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-indigo-200">
                 <Users size={24} />
@@ -198,6 +208,31 @@ export default function DashboardPage() {
                   {formatRp(data?.budget?.total_realized || 0)}
                 </p>
               </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex items-center gap-4 hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-orange-200 group-hover:rotate-6 transition-transform">
+                <Coins size={24} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Kurs USD (BI)</p>
+                {usdRate ? (
+                  <>
+                    <p className="text-2xl font-black text-slate-900 leading-none">
+                      Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2 }).format(usdRate)}
+                    </p>
+                    <p className="text-[9px] font-mono font-medium text-slate-400 mt-1.5 opacity-80 leading-tight">
+                      Kurs Tengah BI
+                    </p>
+                  </>
+                ) : (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 size={16} className="animate-spin text-amber-500" />
+                    <span className="text-xs">Memuat...</span>
+                  </div>
+                )}
+              </div>
+              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
             </div>
           </div>
 
@@ -285,7 +320,7 @@ export default function DashboardPage() {
               )}
             </div>
             <h1 className="text-3xl xl:text-3xl 2xl:text-5xl font-black text-slate-900 tracking-tight leading-tight">
-              Halo, <span className="text-sky-500">{user?.name.split(' ')[0]}</span> 👋
+              Halo, <span className="text-sky-500">{user?.name.split(' ')[0]}</span>
             </h1>
             <p className="text-slate-500 font-semibold text-sm xl:text-sm 2xl:text-lg">Berikut adalah analitik anggaran hari ini.</p>
           </div>
@@ -393,7 +428,7 @@ export default function DashboardPage() {
         </AnimatePresence>
 
         {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-5 gap-4 xl:gap-4 2xl:gap-6 mb-8 2xl:mb-12">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 ${isFinance ? '2xl:grid-cols-3' : '2xl:grid-cols-5'} gap-4 xl:gap-4 2xl:gap-6 mb-8 2xl:mb-12`}>
           {[
             { 
               label: data?.role_scope === 'management' ? 'Total Pengajuan (System)' : (data?.role_scope === 'division' ? 'Pengajuan Divisi' : 'Pengajuan Saya'), 
@@ -448,13 +483,13 @@ export default function DashboardPage() {
                       {s.title}
                     </p>
                   )}
-                  {data?.budget?.absorption_rate !== undefined && (
+                  {s.label.includes('Anggaran') && data?.budget?.absorption_rate !== undefined && (
                     <div className="mt-2 flex items-center gap-1.5">
                       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${data?.budget?.absorption_rate}%` }}
-                          className="h-full bg-emerald-500"
+                           initial={{ width: 0 }}
+                           animate={{ width: `${data?.budget?.absorption_rate}%` }}
+                           className="h-full bg-emerald-500"
                         />
                       </div>
                       <span className="text-[10px] font-black text-emerald-600">{data?.budget?.absorption_rate}% Serap</span>
@@ -465,6 +500,40 @@ export default function DashboardPage() {
               <div className={`absolute -right-4 -bottom-4 w-24 h-24 bg-${s.col}-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform`} />
             </motion.div>
           ))}
+          {/* Exchange Rate Widget for Finance */}
+          {isFinance && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white p-4 2xl:p-6 rounded-[20px] 2xl:rounded-[36px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden cursor-pointer"
+            >
+              <div className="flex items-center gap-3 2xl:gap-5 relative z-10">
+                <div className="w-11 h-11 2xl:w-14 2xl:h-14 rounded-xl 2xl:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center group-hover:rotate-6 transition-transform shadow-lg shrink-0">
+                  <Coins className="w-5 h-5 2xl:w-7 2xl:h-7" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 2xl:mb-2">Kurs USD (BI)</p>
+                  {usdRate ? (
+                    <>
+                      <p className="text-2xl font-black text-slate-900 leading-none">
+                        Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2 }).format(usdRate)}
+                      </p>
+                      <p className="text-[9px] font-mono font-medium text-slate-400 mt-1.5 opacity-80 leading-tight">
+                        Kurs Tengah BI
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <Loader2 size={16} className="animate-spin text-amber-500" />
+                      <span className="text-xs">Memuat...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-orange-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+            </motion.div>
+          )}
         </div>
 
         {data?.role_scope !== 'staff' && (
@@ -605,11 +674,13 @@ export default function DashboardPage() {
 
           {/* Ranking Divisi / Urgency Insights */}
           <div className="lg:col-span-2 space-y-5 2xl:space-y-8">
-            {data?.role_scope === 'management' && (
+            {data?.show_division_ranking && (
               <div className="bg-white rounded-[24px] 2xl:rounded-[40px] border border-slate-100 shadow-sm p-5 2xl:p-8">
                 <div className="flex justify-between items-center mb-4 2xl:mb-8">
                   <div>
-                    <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight">Ranking Pengeluaran Divisi</h2>
+                    <h2 className="text-base 2xl:text-xl font-black text-slate-900 leading-tight flex items-center gap-2">
+                      <Activity size={18} className="text-sky-500" /> Top Divisi (Anggaran)
+                    </h2>
                     <p className="text-slate-400 text-xs 2xl:text-sm font-medium">Total budget disetujui per divisi.</p>
                   </div>
                   <Link href="/reporting">
@@ -619,31 +690,43 @@ export default function DashboardPage() {
                   </Link>
                 </div>
 
-                <div className="h-[180px] 2xl:h-[250px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data?.division_ranking} layout="vertical" margin={{ left: 40, right: 40 }}>
-                      <XAxis type="number" hide />
-                      <YAxis
-                        dataKey="name"
-                        type="category"
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 10, fontWeight: 800, fill: '#64748b' }}
-                      />
-                      <Tooltip
-                        formatter={(val: any) => `Rp ${Number(val || 0).toLocaleString('id-ID')}`}
-                        contentStyle={{ backgroundColor: '#1e293b', borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.3)' }}
-                        itemStyle={{ fontWeight: 'bold', fontSize: '12px', color: '#fff' }}
-                        labelStyle={{ fontWeight: 'black', color: '#94a3b8', marginBottom: '4px', fontSize: '10px', textTransform: 'uppercase' }}
-                      />
-                      <Bar
-                        dataKey="total"
-                        fill="#0ea5e9"
-                        radius={[0, 10, 10, 0]}
-                        barSize={30}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="space-y-4">
+                  {data?.division_ranking?.map((div: any, i: number) => {
+                    const maxTotal = data?.division_ranking?.[0]?.total || 1;
+                    const percentage = Math.round((div.total / maxTotal) * 100);
+                    return (
+                      <div key={i} className="group">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 ${
+                              i === 0 ? 'bg-amber-100 text-amber-600' :
+                              i === 1 ? 'bg-slate-200 text-slate-600' :
+                              i === 2 ? 'bg-orange-100 text-orange-600' :
+                              'bg-slate-50 text-slate-400'
+                            }`}>#{i+1}</div>
+                            <p className="text-xs font-bold text-slate-700 truncate">{div.name}</p>
+                          </div>
+                          <p className="text-xs font-black text-emerald-600 ml-2 whitespace-nowrap">{formatRp(div.total)}</p>
+                        </div>
+                        <div className="ml-10 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${percentage}%` }}
+                            transition={{ duration: 0.8, delay: i * 0.1 }}
+                            className={`h-full rounded-full ${
+                              i === 0 ? 'bg-sky-500' :
+                              i === 1 ? 'bg-sky-400' :
+                              i === 2 ? 'bg-sky-300' :
+                              'bg-sky-200'
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!data?.division_ranking || data.division_ranking.length === 0) && (
+                    <p className="text-xs text-slate-400 text-center py-4">Belum ada data divisi.</p>
+                  )}
                 </div>
               </div>
             )}

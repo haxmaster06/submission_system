@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\AttachmentRequestController;
 use App\Http\Controllers\Api\ChunkedUploadController;
 use App\Http\Controllers\Api\MasterDataController;
+use App\Http\Controllers\Api\SimulationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/login', [AuthController::class , 'login']);
@@ -38,6 +39,7 @@ Route::get('/lookups/divisions', [LookupController::class , 'divisions']);
 Route::get('/lookups/jenis-pengajuan', [LookupController::class , 'jenisPengajuan']);
 Route::get('/lookups/jenis-perjalanan', [LookupController::class , 'jenisPerjalanan']);
 Route::get('/lookups/uoms', [LookupController::class , 'uoms']);
+Route::get('/lookups/exchange-rate/usd', [LookupController::class , 'exchangeRate']);
 // Maintenance Status (public — frontend checks this)
 Route::get('/maintenance-status', function () {
     return response()->json([
@@ -82,6 +84,7 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     // Approvals
     Route::get('approvals/history', [ApprovalController::class , 'history']);
     Route::get('/approvals/pending', [ApprovalController::class , 'pending']);
+    Route::post('/approvals/bulk-approve', [ApprovalController::class , 'bulkApprove']);
     Route::post('/approvals/{approval}/approve', [ApprovalController::class , 'approve']);
     Route::post('/approvals/{approval}/reject', [ApprovalController::class , 'reject']);
     Route::post('/approvals/{approval}/hold', [ApprovalController::class , 'hold']);
@@ -90,6 +93,11 @@ Route::middleware(['auth:sanctum', 'maintenance'])->group(function () {
     Route::get('/attachment-requests/my', [AttachmentRequestController::class, 'myRequests']);
     Route::post('/attachment-requests', [AttachmentRequestController::class, 'store']);
     Route::post('/attachment-requests/{attachmentRequest}/fulfill', [AttachmentRequestController::class, 'fulfill']);
+
+    // Role Simulation (Super Admin only)
+    Route::get('/simulation/available-roles', [SimulationController::class, 'availableRoles']);
+    Route::post('/simulation/activate', [SimulationController::class, 'activate']);
+    Route::post('/simulation/deactivate', [SimulationController::class, 'deactivate']);
 
     // Signatures
     Route::get('/signatures', [SignatureController::class , 'show']);

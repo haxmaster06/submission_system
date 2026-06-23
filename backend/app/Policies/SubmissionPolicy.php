@@ -58,15 +58,22 @@ class SubmissionPolicy
      */
     public function update(User $user, Submission $submission): bool
     {
-        // Only owner can update if status is pending or draft (if we had draft)
-        // For now, let's say updates are allowed if it hasn't been finalized
-        if ($user->id === $submission->user_id) {
-             // Maybe restrict updates if already approved/rejected?
-             // For now, keeping it basic: Owner can edit.
-             return true; 
+        // Rejected submissions cannot be edited by anyone
+        if ($submission->final_status === 'rejected') {
+            return false;
         }
 
-        return $user->hasRole('Super Admin');
+        // Super Admin can edit any submission in any status (except rejected, handled above)
+        if ($user->hasRole('Super Admin')) {
+            return true;
+        }
+
+        // Owner can only edit if status is draf or on_hold
+        if ($user->id === $submission->user_id) {
+            return in_array($submission->final_status, ['draf', 'on_hold']);
+        }
+
+        return false;
     }
 
     public function delete(User $user, Submission $submission): bool
@@ -96,6 +103,18 @@ class SubmissionPolicy
     {
         // Owner can request
         if ($user->id === $submission->user_id) {
+            return true;
+        }
+
+        // Approvers involved in this submission can request (regardless of their approval status)
+        // They can only target the submission owner, enforced by the controller.
+        if ($submission->approvals()->where('approver_id', $user->id)->exists()) {
+            return true;
+        }
+
+        // Users with matching approval role can also request
+        $approvalRoles = $submission->approvals()->pluck('role_name')->toArray();
+        if (!empty($approvalRoles) && $user->hasAnyRole($approvalRoles)) {
             return true;
         }
 

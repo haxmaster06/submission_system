@@ -50,7 +50,10 @@ class ApprovalController extends Controller
             });
         }
         else {
-            $query->where('approver_id', $user->id);
+            $query->where(function ($q) use ($user) {
+                $q->where('approver_id', $user->id)
+                  ->orWhereIn('role_name', $user->getRoleNames());
+            });
         }
 
         $query->whereHas('submission', function ($q) {
@@ -104,7 +107,10 @@ class ApprovalController extends Controller
             });
         }
         else {
-            $query->where('approver_id', $user->id);
+            $query->where(function ($q) use ($user) {
+                $q->where('approver_id', $user->id)
+                  ->orWhereIn('role_name', $user->getRoleNames());
+            });
         }
 
         $history = $query->latest('updated_at')
@@ -113,6 +119,42 @@ class ApprovalController extends Controller
         return response()->json(
             ApprovalResource::collection($history)->response()->getData(true)
         );
+    }
+
+    public function bulkApprove(Request $request)
+    {
+        $request->validate([
+            'approval_ids' => 'required|array',
+            'approval_ids.*' => 'integer|exists:submission_approvals,id',
+            'notes' => 'nullable|string',
+            'signature_path' => 'nullable|string',
+            'signed_proof_path' => 'nullable|string',
+            'is_director_proxy' => 'boolean',
+            'override_user_id' => 'nullable|integer|exists:users,id',
+        ]);
+
+        $user = Auth::user();
+        if ($request->input('is_director_proxy') && !$user->hasRole('Super Admin') && !$request->input('signed_proof_path')) {
+            return response()->json([
+                'message' => 'Bukti tanda tangan wajib diunggah untuk persetujuan mewakili Direktur.'
+            ], 422);
+        }
+
+        $results = [];
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, &$results) {
+            foreach ($request->approval_ids as $id) {
+                $approval = SubmissionApproval::find($id);
+                if (!$approval) continue;
+
+                $this->authorizeAction($approval);
+                $results[] = $this->approvalService->approve($approval, $request->all());
+            }
+        });
+
+        return response()->json([
+            'message' => 'Bulk approval processed successfully.',
+            'data' => $results
+        ]);
     }
 
     public function approve(Request $request, SubmissionApproval $approval)
@@ -178,7 +220,7 @@ class ApprovalController extends Controller
 
         $isProxy = $user->hasPermissionTo('proxy director signature') && $approval->role_name === 'Director';
 
-        if ($approval->approver_id !== $user->id && !$isProxy) {
+        if ($approval->approver_id !== $user->id && !$isProxy && !$user->hasRole($approval->role_name)) {
             abort(403, 'Unauthorized action.');
         }
 

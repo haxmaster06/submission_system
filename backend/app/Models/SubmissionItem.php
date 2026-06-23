@@ -16,12 +16,17 @@ class SubmissionItem extends Model
         'uom_id',
         'nominal',
         'total',
+        'currency',
+        'kurs',
+        'nominal_valas',
     ];
 
     protected $casts = [
-        'qty' => 'decimal:2',
-        'nominal' => 'decimal:2',
-        'total' => 'decimal:2',
+        'qty' => 'decimal:5',
+        'nominal' => 'decimal:5',
+        'total' => 'decimal:5',
+        'kurs' => 'decimal:5',
+        'nominal_valas' => 'decimal:5',
     ];
 
     /**

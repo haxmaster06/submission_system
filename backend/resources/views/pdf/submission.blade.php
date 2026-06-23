@@ -138,7 +138,14 @@ default => 'badge-draft'
             @if ($submission->items && $submission->items->count() > 0)
             @foreach ($submission->items as $item)
             <tr>
-                <td class="td-bold">{{ $item->description }}</td>
+                <td class="td-bold">
+                    {{ $item->description }}
+                    @if(isset($item->currency) && $item->currency === 'USD')
+                        <div style="font-size: 8px; color: #b45309; font-weight: normal; margin-top: 3px; font-style: italic;">
+                            Valas: USD {{ number_format($item->nominal_valas, 2, '.', ',') }} @ Rp {{ number_format($item->kurs, 0, ',', '.') }}
+                        </div>
+                    @endif
+                </td>
                 <td class="td-right td-mono">{{ number_format($item->qty, 0, ',', '.') }}</td>
                 <td class="td-center td-muted">{{ optional($item->uom)->code ?? optional($item->uom)->name ??
                     '-' }}</td>

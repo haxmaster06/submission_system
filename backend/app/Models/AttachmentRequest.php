@@ -20,7 +20,7 @@ class AttachmentRequest extends Model
 
     public function getRequesterNameAttribute()
     {
-        return $this->requester->name ?? 'Unknown';
+        return $this->requestedBy->name ?? 'Unknown';
     }
 
     public function getTargetUserNameAttribute()
@@ -33,7 +33,7 @@ class AttachmentRequest extends Model
         return $this->belongsTo(Submission::class);
     }
 
-    public function requester(): BelongsTo
+    public function requestedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'requested_by');
     }

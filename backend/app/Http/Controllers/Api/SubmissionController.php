@@ -143,24 +143,56 @@ class SubmissionController extends Controller
             $this->approvalService->initializeApprovals($submission);
         }
 
-        AuditTrailService::log('CREATED', 'Submission', $submission->id, null, $submission->toArray());
+        $actionLog = $isDraft ? 'SAVED_DRAFT' : 'CREATED_AND_PUBLISHED';
+        AuditTrailService::log($actionLog, 'Submission', $submission->id, null, $submission->toArray());
 
         return new SubmissionResource($submission->load(['approvals', 'items.uom']));
     }
 
     public function update(UpdateSubmissionRequest $request, Submission $submission)
     {
-        // Only owner or admin can update
-        if (Auth::id() !== $submission->user_id && !Auth::user()->hasRole('Super Admin')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
+        $this->authorize('update', $submission);
 
         $validated = $request->validated();
         $isOnHold = $submission->final_status === 'on_hold';
+        $isAdminEdit = Auth::user()->hasRole('Super Admin') && Auth::id() !== $submission->user_id;
+        $isAdminEditLive = $isAdminEdit && !in_array($submission->final_status, ['draf', 'on_hold']);
 
-        return DB::transaction(function () use ($request, $submission, $isOnHold) {
-            $data = $request->except('items');
+        return DB::transaction(function () use ($request, $submission, $isOnHold, $isAdminEdit, $isAdminEditLive) {
+            // Capture old data for audit trail comparison
+            $oldData = $submission->only(['description', 'notes', 'status_urgent', 'total', 'division_id', 'jenis_pengajuan_id']);
+
+            $data = $request->except(['items', 'is_draft']);
             
+            // Preserve the original time part of tanggal_pengajuan if it is being updated/edited
+            if (isset($data['tanggal_pengajuan'])) {
+                if ($submission->tanggal_pengajuan) {
+                    $originalTime = $submission->tanggal_pengajuan->format('H:i:s');
+                    try {
+                        $parsedNewDate = \Carbon\Carbon::parse($data['tanggal_pengajuan']);
+                        $data['tanggal_pengajuan'] = $parsedNewDate->setTimeFromTimeString($originalTime);
+                    } catch (\Exception $e) {
+                        $data['tanggal_pengajuan'] = $submission->tanggal_pengajuan;
+                    }
+                } else {
+                    try {
+                        $parsedNewDate = \Carbon\Carbon::parse($data['tanggal_pengajuan']);
+                        if ($parsedNewDate->format('H:i:s') === '00:00:00') {
+                            $data['tanggal_pengajuan'] = $parsedNewDate->setTimeFromTimeString(now()->format('H:i:s'));
+                        } else {
+                            $data['tanggal_pengajuan'] = $parsedNewDate;
+                        }
+                    } catch (\Exception $e) {
+                        unset($data['tanggal_pengajuan']);
+                    }
+                }
+            }
+
+            // Admin editing live submissions must NOT change final_status
+            if ($isAdminEditLive) {
+                unset($data['final_status']);
+            }
+
             // If total is explicitly provided (e.g. from Salary Matrix), use it.
             // Otherwise, recalculate total ONLY if items are provided and not empty.
             if ($request->has('total')) {
@@ -185,22 +217,17 @@ class SubmissionController extends Controller
             // Force touch updated_at to reflect latest save regardless of data diff
             $submission->touch();
 
-            // Deteksi perubahan status ke Urgent
-            if (
-                $request->input('status_urgent') === 'urgent'
-                && $submission->getOriginal('status_urgent') === 'normal'
-                && $submission->final_status === 'pending'
-            ) {
-                // Kirim notifikasi ke semua approver yang masih pending
-                $this->approvalService->notifyAllApprovers($submission);
-                AuditTrailService::log('ESCALATED_TO_URGENT', 'Submission', $submission->id);
-            }
+            // --- Audit Log & Side Effects ---
 
-            // If submission was on_hold, mark as revised and notify approver
-            if ($isOnHold) {
+            if ($isAdminEditLive) {
+                // Super Admin editing a live (pending/approved) submission
+                // Do NOT reset approvals, do NOT change status — just log with clear marker
+                $newData = $submission->only(['description', 'notes', 'status_urgent', 'total', 'division_id', 'jenis_pengajuan_id']);
+                AuditTrailService::log('ADMIN_EDITED', 'Submission', $submission->id, $oldData, $newData);
+            } elseif ($isOnHold) {
+                // Owner or admin revising an on_hold submission
                 $submission->update(['final_status' => 'pending']);
 
-                // Find the on_hold approval and set to revised
                 $holdApproval = $submission->approvals()
                     ->where('status', 'on_hold')
                     ->where('step_order', $submission->current_approval_step)
@@ -209,7 +236,6 @@ class SubmissionController extends Controller
                 if ($holdApproval) {
                     $holdApproval->update(['status' => 'revised']);
 
-                    // Notify the approver that the submission has been revised
                     if ($holdApproval->approver) {
                         $holdApproval->approver->notify(
                             new \App\Notifications\SubmissionRevisedNotification($submission, $submission->user->name)
@@ -217,9 +243,20 @@ class SubmissionController extends Controller
                     }
                 }
 
-                AuditTrailService::log('REVISED', 'Submission', $submission->id, null, $submission->toArray());
+                AuditTrailService::log('REVISED', 'Submission', $submission->id, $oldData, $submission->toArray());
             } else {
+                // Normal draft update
                 AuditTrailService::log('UPDATED_DRAFT', 'Submission', $submission->id, null, $submission->toArray());
+            }
+
+            // Detect escalation to urgent
+            if (
+                $request->input('status_urgent') === 'urgent'
+                && $submission->getOriginal('status_urgent') === 'normal'
+                && in_array($submission->final_status, ['pending'])
+            ) {
+                $this->approvalService->notifyAllApprovers($submission);
+                AuditTrailService::log('ESCALATED_TO_URGENT', 'Submission', $submission->id);
             }
 
             return new SubmissionResource($submission->load('items.uom'));

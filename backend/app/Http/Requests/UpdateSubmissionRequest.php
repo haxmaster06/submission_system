@@ -38,6 +38,9 @@ class UpdateSubmissionRequest extends FormRequest
             'items.*.qty' => 'required|numeric|min:0',
             'items.*.uom_id' => 'required|exists:uoms,id',
             'items.*.nominal' => 'required|numeric|min:0',
+            'items.*.currency' => 'nullable|string|in:IDR,USD',
+            'items.*.kurs' => 'nullable|numeric|min:0',
+            'items.*.nominal_valas' => 'nullable|numeric|min:0',
             'payload' => 'nullable|array',
             'total' => 'nullable|numeric|min:0',
         ];

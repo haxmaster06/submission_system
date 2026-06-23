@@ -9,6 +9,8 @@ interface RequestAttachmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   submissionId: number;
+  /** If provided, the requester is an Approver — lock target to submission owner */
+  lockedTarget?: { id: number; name: string } | null;
   onSuccess?: () => void;
 }
 
@@ -16,6 +18,7 @@ export default function RequestAttachmentModal({
   isOpen,
   onClose,
   submissionId,
+  lockedTarget,
   onSuccess
 }: RequestAttachmentModalProps) {
   const [loading, setLoading] = useState(false);
@@ -28,9 +31,20 @@ export default function RequestAttachmentModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchSelectableUsers();
+      setIsSuccess(false);
+      setError(null);
+      setDescription('');
+
+      if (lockedTarget) {
+        // Approver mode: auto-select submission owner
+        setSelectedUserId(String(lockedTarget.id));
+      } else {
+        // Owner mode: fetch all selectable users
+        setSelectedUserId('');
+        fetchSelectableUsers();
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, lockedTarget]);
 
   const fetchSelectableUsers = async () => {
     try {
@@ -63,7 +77,7 @@ export default function RequestAttachmentModal({
       setIsSuccess(true);
       if (onSuccess) onSuccess();
       // Reset form but don't close yet if we want to show success
-      setSelectedUserId('');
+      setSelectedUserId(lockedTarget ? String(lockedTarget.id) : '');
       setDescription('');
     } catch (err: any) {
       console.error(err);
@@ -88,7 +102,9 @@ export default function RequestAttachmentModal({
             <div className="space-y-2">
               <h3 className="text-xl font-black text-slate-800 uppercase tracking-tight">Permintaan Terkirim!</h3>
               <p className="text-xs font-bold text-slate-500 leading-relaxed max-w-[280px]">
-                Silakan tunggu user target untuk mengunggah berkas yang diminta.
+                {lockedTarget
+                  ? `Permintaan telah dikirim ke ${lockedTarget.name}. Silakan tunggu berkas diunggah.`
+                  : 'Silakan tunggu user target untuk mengunggah berkas yang diminta.'}
               </p>
             </div>
             <button
@@ -110,31 +126,44 @@ export default function RequestAttachmentModal({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
-                  Pilih User Penerima
+                  {lockedTarget ? 'Ditujukan Kepada' : 'Pilih User Penerima'}
                 </label>
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors">
-                    <User size={18} />
-                  </div>
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    disabled={fetchingUsers}
-                    className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 block p-4 pl-12 transition-all outline-none appearance-none disabled:opacity-50"
-                  >
-                    <option value="">Pilih User...</option>
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name} ({u.division?.name || 'No Division'})
-                      </option>
-                    ))}
-                  </select>
-                  {fetchingUsers && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <Loader2 size={16} className="animate-spin text-sky-500" />
+
+                {lockedTarget ? (
+                  /* Approver mode: show locked target (read-only) */
+                  <div className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold rounded-2xl p-4 pl-12 relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-sky-500">
+                      <User size={18} />
                     </div>
-                  )}
-                </div>
+                    <span className="font-black text-sky-600">{lockedTarget.name}</span>
+                    <span className="text-[9px] ml-2 text-slate-400 font-black uppercase tracking-widest">Pembuat Pengajuan</span>
+                  </div>
+                ) : (
+                  /* Owner mode: show user dropdown */
+                  <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-sky-500 transition-colors">
+                      <User size={18} />
+                    </div>
+                    <select
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      disabled={fetchingUsers}
+                      className="w-full bg-slate-50 border border-slate-100 text-slate-900 text-sm font-bold rounded-2xl focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 block p-4 pl-12 transition-all outline-none appearance-none disabled:opacity-50"
+                    >
+                      <option value="">Pilih User...</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.division?.name || 'No Division'})
+                        </option>
+                      ))}
+                    </select>
+                    {fetchingUsers && (
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <Loader2 size={16} className="animate-spin text-sky-500" />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -160,7 +189,7 @@ export default function RequestAttachmentModal({
               </button>
               <button
                 type="submit"
-                disabled={loading || fetchingUsers}
+                disabled={loading || (!lockedTarget && fetchingUsers)}
                 className="flex-3 py-4 bg-sky-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-sky-100 hover:bg-sky-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 group border-b-4 border-sky-700/30"
               >
                 {loading ? (

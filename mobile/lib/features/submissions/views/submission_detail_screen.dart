@@ -329,7 +329,9 @@ class SubmissionDetailScreen extends ConsumerWidget {
     dynamic user,
     String baseUrl,
   ) {
-    if (submission.attachments.isEmpty && submission.userId != user?.id) {
+    if (submission.attachments.isEmpty &&
+        submission.userId != user?.id &&
+        !submission.approval_stages.any((s) => s.approver_id == user?.id)) {
       return const SizedBox.shrink();
     }
 
@@ -340,7 +342,8 @@ class SubmissionDetailScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             const Text('Lampiran', style: UiKit.heading3),
-            if (submission.userId == user?.id)
+            if (submission.userId == user?.id ||
+                submission.approval_stages.any((s) => s.approver_id == user?.id))
               TextButton.icon(
                 onPressed: () => showDialog(
                   context: context,

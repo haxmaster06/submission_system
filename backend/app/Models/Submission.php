@@ -32,9 +32,9 @@ class Submission extends Model
 
     protected $casts = [
         'tanggal_pengajuan' => 'datetime',
-        'qty' => 'decimal:2',
-        'nominal' => 'decimal:2',
-        'total' => 'decimal:2',
+        'qty' => 'decimal:5',
+        'nominal' => 'decimal:5',
+        'total' => 'decimal:5',
         'is_completed' => 'boolean',
         'payload' => 'array',
     ];

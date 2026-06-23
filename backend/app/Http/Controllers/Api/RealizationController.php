@@ -97,4 +97,50 @@ class RealizationController extends Controller
         $realization->delete();
         return response()->json(['message' => 'Realisasi berhasil dihapus.']);
     }
+
+    /**
+     * Update an existing realization.
+     */
+    public function update(Request $request, RealizationHeader $realization)
+    {
+        $user = Auth::user();
+        if (!$user->can('manage realizations')) {
+            return response()->json(['message' => 'Anda tidak memiliki akses untuk mengubah realisasi.'], 403);
+        }
+
+        $validated = $request->validate([
+            'realization_date' => 'required|date',
+            'notes' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.item_name' => 'required|string',
+            'items.*.qty' => 'required|numeric|min:0',
+            'items.*.nominal' => 'required|numeric|min:0',
+        ]);
+
+        return DB::transaction(function () use ($validated, $realization) {
+            $realization->update([
+                'realization_date' => $validated['realization_date'],
+                'notes' => $validated['notes'],
+            ]);
+
+            // Clear old details
+            $realization->details()->delete();
+
+            // Insert new details
+            foreach ($validated['items'] as $item) {
+                RealizationDetail::create([
+                    'realization_id' => $realization->id,
+                    'item_name' => $item['item_name'],
+                    'qty' => $item['qty'],
+                    'nominal' => $item['nominal'],
+                    'total' => $item['qty'] * $item['nominal'],
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Realisasi berhasil diperbarui.',
+                'data' => $realization->fresh()->load('details')
+            ], 200);
+        });
+    }
 }

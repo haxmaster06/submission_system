@@ -20,10 +20,20 @@ class DashboardController extends Controller
     public function stats()
     {
         $user = Auth::user();
-        $isManagement = $user->hasAnyRole(['Super Admin', 'Director', 'Finance', 'GM']) || $user->hasPermissionTo('view reports');
-        $isDivisionHead = $user->hasAnyRole(['Manager', 'HRD', 'GA Legal']) || ($user->hasPermissionTo('approve submissions') && !$isManagement);
 
-        $cacheKey = "dashboard_stats_{$user->id}";
+        // Check for active simulation
+        $simulation = Cache::get("simulation:user:{$user->id}");
+        $simRole = $simulation ? $simulation['role_name'] : null;
+
+        if ($simRole) {
+            $isManagement = in_array($simRole, ['Super Admin', 'Director', 'Finance', 'GM']);
+            $isDivisionHead = in_array($simRole, ['Manager', 'HRD', 'GA Legal']);
+            $cacheKey = "dashboard_stats_v3_{$user->id}_sim_{$simRole}";
+        } else {
+            $isManagement = $user->hasAnyRole(['Super Admin', 'Director', 'Finance', 'GM']) || $user->hasPermissionTo('view reports');
+            $isDivisionHead = $user->hasAnyRole(['Manager', 'HRD', 'GA Legal']) || ($user->hasPermissionTo('approve submissions') && !$isManagement);
+            $cacheKey = "dashboard_stats_v3_{$user->id}";
+        }
 
         $data = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($user, $isManagement, $isDivisionHead) {
             return $this->buildStats($user, $isManagement, $isDivisionHead);
@@ -34,6 +44,17 @@ class DashboardController extends Controller
 
     private function buildStats($user, bool $isManagement, bool $isDivisionHead): array
     {
+        // Check if this user is Director or GM (real or simulated)
+        $isDirectorOrGM = false;
+        if ($isManagement) {
+            $simulation = Cache::get("simulation:user:{$user->id}");
+            if ($simulation) {
+                $isDirectorOrGM = in_array($simulation['role_name'], ['Director', 'GM']);
+            } else {
+                $isDirectorOrGM = $user->hasAnyRole(['Director', 'GM']);
+            }
+        }
+
         // Base Query Scoping using centralized scope
         $query = Submission::accessibleBy($user);
 
@@ -141,17 +162,18 @@ class DashboardController extends Controller
 
         // 5. Division Ranking (Management Only)
         $divisionRanking = [];
-        if ($isManagement) {
-            $divisionRanking = Division::withSum(['submissions' => function ($q) {
-                $q->where('final_status', 'approved');
-            }], 'total')
+        if ($isManagement && !$isDirectorOrGM) {
+            $divisionRanking = Division::whereNotIn('name', ['Director', 'General Manager'])
+                ->withSum(['submissions' => function ($q) {
+                    $q->where('final_status', 'approved');
+                }], 'total')
                 ->get()
                 ->map(function ($div) {
-                return [
-                'name' => $div->name,
-                'total' => (float)$div->submissions_sum_total ?: 0
-                ];
-            })
+                    return [
+                        'name' => $div->name,
+                        'total' => (float)$div->submissions_sum_total ?: 0
+                    ];
+                })
                 ->sortByDesc('total')
                 ->values()
                 ->take(5);
@@ -252,6 +274,7 @@ class DashboardController extends Controller
 
         return [
             'role_scope' => $isManagement ? 'management' : ($isDivisionHead ? 'division' : 'staff'),
+            'show_division_ranking' => $isManagement && !$isDirectorOrGM,
             'counters' => $counters,
             'approvals_count' => $pendingApprovalsCount,
             'attachment_requests_count' => $pendingAttachmentRequestsCount,
@@ -290,7 +313,7 @@ class DashboardController extends Controller
      */
     public function adminStats()
     {
-        $data = Cache::remember('admin_dashboard_stats', now()->addMinutes(3), function () {
+        $data = Cache::remember('admin_dashboard_stats_v3', now()->addMinutes(3), function () {
             // User Stats
             $totalUsers = \App\Models\User::count();
             $activeUsers = \App\Models\User::where('updated_at', '>=', now()->subDays(7))->count();
@@ -323,14 +346,14 @@ class DashboardController extends Controller
             ]);
 
             // Division budget ranking
-            $divisionRanking = Division::withSum(['submissions' => function ($q) {
+            $divisionRanking = Division::whereNotIn('name', ['Director', 'General Manager'])
+                ->withSum(['submissions' => function ($q) {
                     $q->where('final_status', 'approved');
-                }
-                ], 'total')
-                    ->get()
-                    ->map(fn($d) => ['name' => $d->name, 'total' => (float)($d->submissions_sum_total ?: 0)])
-                    ->sortByDesc('total')
-                    ->values();
+                }], 'total')
+                ->get()
+                ->map(fn($d) => ['name' => $d->name, 'total' => (float)($d->submissions_sum_total ?: 0)])
+                ->sortByDesc('total')
+                ->values();
 
                 // Monthly trends (last 6 months)
                 $sixMonthsAgo = Carbon::now()->subMonths(5)->startOfMonth();
