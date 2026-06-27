@@ -106,19 +106,25 @@
 
 <table style="width: 50%; border: none; margin-bottom: 20px;">
     <tr>
-        <td style="border: none; padding: 2px; font-weight: bold; width: 100px;">Tanggal Filter
-        </td>
+        <td style="border: none; padding: 2px; font-weight: bold; width: 100px;">Filter Periode</td>
         <td style="border: none; padding: 2px;">:
-            @if(!empty($filters['date_from']))
-            {{ \Carbon\Carbon::parse($filters['date_from'])->format('d/m/Y') }}
+            @if(!empty($filters['month']) || !empty($filters['year']))
+                @php
+                    $monthNames = [
+                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                    ];
+                    $monthStr = !empty($filters['month']) ? ($monthNames[(int)$filters['month']] ?? '') : '';
+                    $yearStr = !empty($filters['year']) ? $filters['year'] : '';
+                @endphp
+                {{ trim($monthStr . ' ' . $yearStr) }}
+            @elseif(!empty($filters['date_from']) || !empty($filters['date_to']))
+                {{ !empty($filters['date_from']) ? \Carbon\Carbon::parse($filters['date_from'])->format('d/m/Y') : 'Awal' }}
+                s/d
+                {{ !empty($filters['date_to']) ? \Carbon\Carbon::parse($filters['date_to'])->format('d/m/Y') : 'Sekarang' }}
             @else
-            Awal
-            @endif
-            s/d
-            @if(!empty($filters['date_to']))
-            {{ \Carbon\Carbon::parse($filters['date_to'])->format('d/m/Y') }}
-            @else
-            Sekarang
+                Semua Periode
             @endif
         </td>
     </tr>

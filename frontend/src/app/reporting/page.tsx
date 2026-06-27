@@ -46,6 +46,8 @@ export default function ReportingPage() {
     jenis_pengajuan_id: '',
     date_from: '',
     date_to: '',
+    month: '',
+    year: '',
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -138,6 +140,8 @@ export default function ReportingPage() {
       jenis_pengajuan_id: '',
       date_from: '',
       date_to: '',
+      month: '',
+      year: '',
     });
   };
 
@@ -249,7 +253,7 @@ export default function ReportingPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="pt-4 grid grid-cols-1 md:grid-cols-5 gap-4 border-t border-slate-100">
+                <div className="pt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 border-t border-slate-100">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Status</label>
                     <select
@@ -302,6 +306,41 @@ export default function ReportingPage() {
                       onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
                       className="w-full px-4 py-2 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
                     />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Bulan</label>
+                    <select
+                      value={filters.month}
+                      onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
+                    >
+                      <option value="">Semua Bulan</option>
+                      <option value="1">Januari</option>
+                      <option value="2">Februari</option>
+                      <option value="3">Maret</option>
+                      <option value="4">April</option>
+                      <option value="5">Mei</option>
+                      <option value="6">Juni</option>
+                      <option value="7">Juli</option>
+                      <option value="8">Agustus</option>
+                      <option value="9">September</option>
+                      <option value="10">Oktober</option>
+                      <option value="11">November</option>
+                      <option value="12">Desember</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tahun</label>
+                    <select
+                      value={filters.year}
+                      onChange={(e) => setFilters({ ...filters, year: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-lg border border-slate-200 bg-white text-sm font-bold text-slate-700 focus:ring-2 focus:ring-sky-500 outline-none"
+                    >
+                      <option value="">Semua Tahun</option>
+                      {Array.from({ length: new Date().getFullYear() - 2024 + 2 }, (_, i) => 2024 + i).map(yr => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div className="mt-4 flex justify-end">

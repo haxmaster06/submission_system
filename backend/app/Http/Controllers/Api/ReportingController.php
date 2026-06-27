@@ -20,7 +20,7 @@ class ReportingController extends Controller
     public function exportPdf(Request $request)
     {
         $submissions = $this->buildQuery($request)->latest()->get();
-        $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
+        $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id', 'month', 'year']);
 
         if (!empty($filters['division_id'])) {
             $filters['division_name'] = \App\Models\Division::find($filters['division_id'])?->name;
@@ -49,7 +49,7 @@ class ReportingController extends Controller
     public function printHtml(Request $request)
     {
         $submissions = $this->buildQuery($request)->latest()->get();
-        $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id']);
+        $filters = $request->only(['date_from', 'date_to', 'status', 'division_id', 'jenis_pengajuan_id', 'month', 'year']);
 
         if (!empty($filters['division_id'])) {
             $filters['division_name'] = \App\Models\Division::find($filters['division_id'])?->name;
@@ -113,6 +113,14 @@ class ReportingController extends Controller
 
         if ($request->filled('date_to')) {
             $query->whereDate('tanggal_pengajuan', '<=', $request->date_to);
+        }
+
+        if ($request->filled('month')) {
+            $query->whereMonth('tanggal_pengajuan', $request->month);
+        }
+
+        if ($request->filled('year')) {
+            $query->whereYear('tanggal_pengajuan', $request->year);
         }
 
         return $query;

@@ -79,6 +79,14 @@ class SubmissionController extends Controller
             $query->whereDate('tanggal_pengajuan', '<=', $request->date_to);
         }
 
+        if ($request->filled('month')) {
+            $query->whereMonth('tanggal_pengajuan', $request->month);
+        }
+
+        if ($request->filled('year')) {
+            $query->whereYear('tanggal_pengajuan', $request->year);
+        }
+
         // Clone query for counts before status filter — single query with conditional aggregation
         $countRow = (clone $query)->select([
             DB::raw('COUNT(*) as total'),
